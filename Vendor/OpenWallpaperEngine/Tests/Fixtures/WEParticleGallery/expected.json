@@ -1,0 +1,620 @@
+[
+ {
+  "name": "abstract_0",
+  "coverage": 0.26,
+  "motion": 0.21
+ },
+ {
+  "name": "bubbles_0",
+  "coverage": 0.11,
+  "motion": 0.13
+ },
+ {
+  "name": "bubbles_1",
+  "coverage": 0.17,
+  "motion": 0.15
+ },
+ {
+  "name": "clock_0",
+  "coverage": 0.29,
+  "motion": 0.0
+ },
+ {
+  "name": "clock_1",
+  "coverage": 0.37,
+  "motion": 0.01
+ },
+ {
+  "name": "countdown_0",
+  "coverage": 1.43,
+  "motion": 0.0
+ },
+ {
+  "name": "ember_0",
+  "coverage": 0.11,
+  "motion": 0.03
+ },
+ {
+  "name": "ember_1",
+  "coverage": 0.75,
+  "motion": 0.69
+ },
+ {
+  "name": "ember_2",
+  "coverage": 0.51,
+  "motion": 0.1
+ },
+ {
+  "name": "fire_0",
+  "coverage": 0.66,
+  "motion": 0.24
+ },
+ {
+  "name": "fire_1",
+  "coverage": 14.24,
+  "motion": 4.83
+ },
+ {
+  "name": "fireworks_0",
+  "coverage": 0.12,
+  "motion": 0.06
+ },
+ {
+  "name": "fireworks_1",
+  "coverage": 0.11,
+  "motion": 0.02
+ },
+ {
+  "name": "fireworks_2",
+  "coverage": 0.11,
+  "motion": 0.02
+ },
+ {
+  "name": "fog_0",
+  "coverage": 0.09,
+  "motion": 0.86
+ },
+ {
+  "name": "fog_1",
+  "coverage": 0.04,
+  "motion": 0.41
+ },
+ {
+  "name": "interactive_0",
+  "coverage": 0.28,
+  "motion": 0.22
+ },
+ {
+  "name": "interactive_1",
+  "coverage": 0.1,
+  "motion": 0.0
+ },
+ {
+  "name": "interactive_2",
+  "coverage": 0.31,
+  "motion": 0.39
+ },
+ {
+  "name": "interactive_3",
+  "coverage": 0.15,
+  "motion": 0.04
+ },
+ {
+  "name": "leaves_0",
+  "coverage": 2.16,
+  "motion": 4.4,
+  "knownGap": "PG11: the leaves move about half as much as WE's; not the 3D operators (WE's turbulentvelocityrandom stays in the xy plane with its default axes); cause open"
+ },
+ {
+  "name": "leaves_1",
+  "coverage": 1.38,
+  "motion": 1.93
+ },
+ {
+  "name": "leaves_2",
+  "coverage": 1.55,
+  "motion": 3.0,
+  "knownGap": "PG11: the leaves move about half as much as WE's; not the 3D operators (WE's turbulentvelocityrandom stays in the xy plane with its default axes); cause open"
+ },
+ {
+  "name": "leaves_3",
+  "coverage": 1.21,
+  "motion": 1.51
+ },
+ {
+  "name": "leaves_4",
+  "coverage": 0.75,
+  "motion": 2.08
+ },
+ {
+  "name": "lightning_0",
+  "coverage": 0.16,
+  "motion": 0.11
+ },
+ {
+  "name": "lightning_1",
+  "coverage": 0.26,
+  "motion": 0.41,
+  "knownGap": "PG7: a 0.1 s glow once a second, which the 5 fps clip misses at our phase"
+ },
+ {
+  "name": "lightning_2",
+  "coverage": 0.48,
+  "motion": 0.42
+ },
+ {
+  "name": "lightning_3",
+  "coverage": 0.52,
+  "motion": 0.61
+ },
+ {
+  "name": "lightning_4",
+  "coverage": 0.15,
+  "motion": 0.07
+ },
+ {
+  "name": "lightshafts_0",
+  "coverage": 1.05,
+  "motion": 0.14
+ },
+ {
+  "name": "lightshafts_1",
+  "coverage": 0.4,
+  "motion": 0.05
+ },
+ {
+  "name": "lightshafts_2",
+  "coverage": 0.64,
+  "motion": 0.07
+ },
+ {
+  "name": "lightshafts_3",
+  "coverage": 0.11,
+  "motion": 0.0
+ },
+ {
+  "name": "lightshafts_4",
+  "coverage": 4.22,
+  "motion": 0.28
+ },
+ {
+  "name": "lightshafts_5",
+  "coverage": 3.88,
+  "motion": 0.18,
+  "seeds": 4
+ },
+ {
+  "name": "lightshafts_6",
+  "coverage": 0.41,
+  "motion": 0.32,
+  "seeds": 4,
+  "knownGap": "PG2: WE's capture shows one light-shaft fan at a time, ours two or three"
+ },
+ {
+  "name": "magic_0",
+  "coverage": 0.48,
+  "motion": 0.37
+ },
+ {
+  "name": "magic_1",
+  "coverage": 0.13,
+  "motion": 0.05
+ },
+ {
+  "name": "magic_10",
+  "coverage": 0.25,
+  "motion": 0.16
+ },
+ {
+  "name": "magic_11",
+  "coverage": 1.87,
+  "motion": 0.86
+ },
+ {
+  "name": "magic_12",
+  "coverage": 5.53,
+  "motion": 2.94
+ },
+ {
+  "name": "magic_2",
+  "coverage": 0.18,
+  "motion": 0.13
+ },
+ {
+  "name": "magic_3",
+  "coverage": 2.86,
+  "motion": 1.5
+ },
+ {
+  "name": "magic_4",
+  "coverage": 1.08,
+  "motion": 0.43
+ },
+ {
+  "name": "magic_5",
+  "coverage": 1.87,
+  "motion": 0.53
+ },
+ {
+  "name": "magic_6",
+  "coverage": 2.52,
+  "motion": 1.46
+ },
+ {
+  "name": "magic_7",
+  "coverage": 0.23,
+  "motion": 0.15
+ },
+ {
+  "name": "magic_8",
+  "coverage": 0.25,
+  "motion": 0.2
+ },
+ {
+  "name": "magic_9",
+  "coverage": 0.12,
+  "motion": 0.02
+ },
+ {
+  "name": "ptce_alphachange",
+  "coverage": 8.89,
+  "motion": 1.67
+ },
+ {
+  "name": "ptce_alphafade",
+  "coverage": 7.41,
+  "motion": 1.43
+ },
+ {
+  "name": "ptce_alpharandom",
+  "coverage": 7.04,
+  "motion": 0.99
+ },
+ {
+  "name": "ptce_angularmovement",
+  "coverage": 2.88,
+  "motion": 3.93
+ },
+ {
+  "name": "ptce_angularvelocityrandom",
+  "coverage": 2.3,
+  "motion": 1.28
+ },
+ {
+  "name": "ptce_boids",
+  "coverage": 1.42,
+  "motion": 2.15
+ },
+ {
+  "name": "ptce_boxrandom",
+  "coverage": 8.22,
+  "motion": 3.59
+ },
+ {
+  "name": "ptce_capvelocity",
+  "coverage": 5.52,
+  "motion": 7.66
+ },
+ {
+  "name": "ptce_collisionbounds",
+  "coverage": 4.36,
+  "motion": 7.57
+ },
+ {
+  "name": "ptce_collisionmodel",
+  "coverage": 37.77,
+  "motion": 2.26,
+  "knownGap": "PG6: the particles collide with the sphere, but WE depth-tests them against it in this orthographic scene, where ours has no depth buffer"
+ },
+ {
+  "name": "ptce_collisionplane",
+  "coverage": 14.92,
+  "motion": 14.58
+ },
+ {
+  "name": "ptce_collisionquad",
+  "coverage": 8.92,
+  "motion": 6.45
+ },
+ {
+  "name": "ptce_collisionsphere",
+  "coverage": 18.24,
+  "motion": 8.34
+ },
+ {
+  "name": "ptce_colorchange",
+  "coverage": 13.51,
+  "motion": 1.47
+ },
+ {
+  "name": "ptce_colorlist",
+  "coverage": 19.69,
+  "motion": 2.07
+ },
+ {
+  "name": "ptce_colorrandom",
+  "coverage": 8.59,
+  "motion": 1.59
+ },
+ {
+  "name": "ptce_controlpointattract",
+  "coverage": 1.97,
+  "motion": 3.31
+ },
+ {
+  "name": "ptce_hsvcolorrandom",
+  "coverage": 42.75,
+  "motion": 3.1
+ },
+ {
+  "name": "ptce_inheritcontrolpointvelocity",
+  "coverage": 2.93,
+  "motion": 6.18
+ },
+ {
+  "name": "ptce_inheritinitialvaluefromevent",
+  "coverage": 1.68,
+  "motion": 1.03
+ },
+ {
+  "name": "ptce_inheritvaluefromevent",
+  "coverage": 4.0,
+  "motion": 3.98
+ },
+ {
+  "name": "ptce_layerimage",
+  "coverage": 34.3,
+  "motion": 3.55
+ },
+ {
+  "name": "ptce_lifetimerandom",
+  "coverage": 0.0,
+  "motion": 0.0
+ },
+ {
+  "name": "ptce_maintaindistancebetweencontrolpoints",
+  "coverage": 7.39,
+  "motion": 12.94
+ },
+ {
+  "name": "ptce_maintaindistancetocontrolpoint",
+  "coverage": 2.44,
+  "motion": 2.08
+ },
+ {
+  "name": "ptce_mapsequencearoundcontrolpoint",
+  "coverage": 3.51,
+  "motion": 0.62
+ },
+ {
+  "name": "ptce_mapsequencebetweencontrolpoints",
+  "coverage": 1.3,
+  "motion": 0.62
+ },
+ {
+  "name": "ptce_movement",
+  "coverage": 2.25,
+  "motion": 3.61
+ },
+ {
+  "name": "ptce_oscillatealpha",
+  "coverage": 2.33,
+  "motion": 1.74
+ },
+ {
+  "name": "ptce_oscillateposition",
+  "coverage": 7.99,
+  "motion": 4.26
+ },
+ {
+  "name": "ptce_oscillatesize",
+  "coverage": 5.67,
+  "motion": 3.4
+ },
+ {
+  "name": "ptce_positionoffsetrandom",
+  "coverage": 1.11,
+  "motion": 0.57
+ },
+ {
+  "name": "ptce_reducemovementnearcontrolpoint",
+  "coverage": 6.98,
+  "motion": 2.29
+ },
+ {
+  "name": "ptce_remapinitialvalue",
+  "coverage": 14.79,
+  "motion": 17.23
+ },
+ {
+  "name": "ptce_remapvalue",
+  "coverage": 12.89,
+  "motion": 18.17
+ },
+ {
+  "name": "ptce_rope",
+  "coverage": 9.44,
+  "motion": 8.33
+ },
+ {
+  "name": "ptce_ropetrail",
+  "coverage": 6.13,
+  "motion": 3.59
+ },
+ {
+  "name": "ptce_rotationrandom",
+  "coverage": 1.97,
+  "motion": 0.29
+ },
+ {
+  "name": "ptce_sizechange",
+  "coverage": 14.65,
+  "motion": 5.76
+ },
+ {
+  "name": "ptce_sizerandom",
+  "coverage": 10.75,
+  "motion": 1.38
+ },
+ {
+  "name": "ptce_sphererandom",
+  "coverage": 14.94,
+  "motion": 6.22
+ },
+ {
+  "name": "ptce_sprite",
+  "coverage": 17.64,
+  "motion": 5.62
+ },
+ {
+  "name": "ptce_spritetrail",
+  "coverage": 4.42,
+  "motion": 4.62
+ },
+ {
+  "name": "ptce_turbulence",
+  "coverage": 2.15,
+  "motion": 2.86
+ },
+ {
+  "name": "ptce_turbulentvelocityrandom",
+  "coverage": 3.14,
+  "motion": 1.69
+ },
+ {
+  "name": "ptce_velocityrandom",
+  "coverage": 6.76,
+  "motion": 7.45
+ },
+ {
+  "name": "ptce_vortex",
+  "coverage": 1.36,
+  "motion": 1.91
+ },
+ {
+  "name": "ptce_vortex_v2",
+  "coverage": 13.63,
+  "motion": 17.13
+ },
+ {
+  "name": "rain_0",
+  "coverage": 0.13,
+  "motion": 0.31
+ },
+ {
+  "name": "rain_1",
+  "coverage": 0.14,
+  "motion": 3.66
+ },
+ {
+  "name": "rain_2",
+  "coverage": 49.87,
+  "motion": 1.35
+ },
+ {
+  "name": "rain_3",
+  "coverage": 0.11,
+  "motion": 0.02
+ },
+ {
+  "name": "rain_4",
+  "coverage": 0.11,
+  "motion": 0.01
+ },
+ {
+  "name": "rain_5",
+  "coverage": 0.11,
+  "motion": 0.01
+ },
+ {
+  "name": "smoke_0",
+  "coverage": 0.07,
+  "motion": 0.05
+ },
+ {
+  "name": "smoke_1",
+  "coverage": 0.06,
+  "motion": 0.04
+ },
+ {
+  "name": "smoke_2",
+  "coverage": 0.64,
+  "motion": 0.28
+ },
+ {
+  "name": "smoke_3",
+  "coverage": 0.06,
+  "motion": 0.3
+ },
+ {
+  "name": "smoke_4",
+  "coverage": 0.04,
+  "motion": 0.04
+ },
+ {
+  "name": "snow_0",
+  "coverage": 0.32,
+  "motion": 0.48
+ },
+ {
+  "name": "snow_1",
+  "coverage": 0.24,
+  "motion": 0.36
+ },
+ {
+  "name": "snow_2",
+  "coverage": 14.13,
+  "motion": 4.52,
+  "knownGap": "PG5: the snowstorm's fog child covers twice WE's area"
+ },
+ {
+  "name": "spark_0",
+  "coverage": 0.11,
+  "motion": 0.01
+ },
+ {
+  "name": "stars_0",
+  "coverage": 0.61,
+  "motion": 1.42
+ },
+ {
+  "name": "stars_1",
+  "coverage": 1.57,
+  "motion": 2.17
+ },
+ {
+  "name": "stars_2",
+  "coverage": 0.11,
+  "motion": 0.01
+ },
+ {
+  "name": "water_0",
+  "coverage": 0.11,
+  "motion": 0.02
+ },
+ {
+  "name": "water_1",
+  "coverage": 0.1,
+  "motion": 0.0
+ },
+ {
+  "name": "water_2",
+  "coverage": 0.11,
+  "motion": 0.0
+ },
+ {
+  "name": "water_3",
+  "coverage": 0.1,
+  "motion": 0.0
+ },
+ {
+  "name": "water_4",
+  "coverage": 0.1,
+  "motion": 0.01
+ },
+ {
+  "name": "water_5",
+  "coverage": 0.11,
+  "motion": 0.01
+ }
+]

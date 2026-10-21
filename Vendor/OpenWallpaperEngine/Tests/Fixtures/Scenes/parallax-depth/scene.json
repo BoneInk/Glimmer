@@ -1,0 +1,52 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : {
+		"cameraparallax" : true,
+		"clearcolor" : "0 0 0",
+		"orthogonalprojection" : { "width" : 1920, "height" : 1080 }
+	},
+	"objects" : [
+		{
+			"id" : 1,
+			"name" : "Default depth",
+			"image" : "models/util/solidlayer.json",
+			"origin" : "960 540 0",
+			"size" : "100 100"
+		},
+		{
+			"id" : 2,
+			"name" : "Pinned",
+			"image" : "models/util/solidlayer.json",
+			"origin" : "960 540 0",
+			"size" : "100 100",
+			"parallaxDepth" : "0.00000 0.00000"
+		},
+		{
+			"id" : 3,
+			"name" : "Vertical only",
+			"image" : "models/util/solidlayer.json",
+			"origin" : "960 540 0",
+			"size" : "100 100",
+			"parallaxDepth" : "0.00000 0.50000"
+		},
+		{
+			"id" : 4,
+			"name" : "Text, default depth",
+			"origin" : "960 540 0",
+			"size" : "600 120",
+			"text" : { "value" : "12:00" },
+			"font" : "systemfont_arial",
+			"pointsize" : 32
+		},
+		{
+			"id" : 5,
+			"name" : "Text, authored depth",
+			"origin" : "960 540 0",
+			"size" : "600 120",
+			"text" : { "value" : "12:00" },
+			"font" : "systemfont_arial",
+			"pointsize" : 32,
+			"parallaxDepth" : "0.25000 0.75000"
+		}
+	]
+}

@@ -1,0 +1,68 @@
+{
+	"camera": {
+		"center": "0 0 -1",
+		"eye": "0 0 0",
+		"up": "0 1 0"
+	},
+	"general": {
+		"clearcolor": "0 0 0",
+		"orthogonalprojection": {
+			"width": 64,
+			"height": 64
+		}
+	},
+	"objects": [
+		{
+			"id": 1,
+			"name": "Creator",
+			"origin": {
+				"script": "'use strict';\n\nexport function init(value) {\n\tshared.particles = thisScene.createLayer('particles/sparks.json') !== null;\n\tshared.sound = thisScene.createLayer({ sound: ['sounds/tone.wav'], name: 'Made sound', startsilent: true }) !== null;\n\treturn value;\n}\n",
+				"value": "0 0 0"
+			}
+		},
+		{
+			"id": 2,
+			"name": "Tone",
+			"sound": [
+				"sounds/tone.wav"
+			],
+			"playbackmode": "loop",
+			"volume": {
+				"script": "'use strict';\n\nexport function update(value) {\n\treturn 0.5;\n}\n",
+				"value": 1.0
+			}
+		},
+		{
+			"id": 3,
+			"name": "Stopper",
+			"origin": {
+				"script": "'use strict';\n\nlet frames = 0;\n\nexport function update(value) {\n\tframes += 1;\n\tconst tone = thisScene.getLayer('Tone');\n\tif (frames === 3) tone.stop();\n\tshared.frames = frames;\n\treturn value;\n}\n",
+				"value": "0 0 0"
+			}
+		},
+		{
+			"id": 4,
+			"name": "Dimmed",
+			"image": "models/util/solidlayer.json",
+			"size": "8 8",
+			"color": "1 1 1",
+			"origin": "16 48 0",
+			"brightness": {
+				"script": "'use strict';\n\nexport function update(value) {\n\treturn 0.5;\n}\n",
+				"value": 1.0
+			}
+		},
+		{
+			"id": 5,
+			"name": "Grown",
+			"image": "models/util/solidlayer.json",
+			"size": {
+				"script": "'use strict';\n\nexport function update(value) {\n\treturn new Vec2(16, 16);\n}\n",
+				"value": "8 8"
+			},
+			"color": "1 0 0",
+			"origin": "40 16 0"
+		}
+	],
+	"version": 1
+}

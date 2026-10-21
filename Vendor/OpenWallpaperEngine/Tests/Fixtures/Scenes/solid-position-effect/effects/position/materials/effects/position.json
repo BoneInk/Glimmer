@@ -1,0 +1,10 @@
+{
+	"passes": [{
+		"shader": "effects/position",
+		"blending": "normal",
+		"depthtest": "disabled",
+		"depthwrite": "disabled",
+		"cullmode": "nocull",
+		"textures": [null]
+	}]
+}

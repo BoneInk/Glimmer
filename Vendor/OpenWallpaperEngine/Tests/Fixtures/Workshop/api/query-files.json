@@ -1,0 +1,67 @@
+{
+  "response": {
+    "total": 3,
+    "next_cursor": "AoIIPwYUe3o=",
+    "publishedfiledetails": [
+      {
+        "result": 1,
+        "publishedfileid": "3100000001",
+        "creator": "76561190000000001",
+        "creator_appid": 431960,
+        "consumer_appid": 431960,
+        "file_size": "52428800",
+        "preview_url": "https://images.example.invalid/3100000001.jpg",
+        "title": "Aurora Lake",
+        "short_description": "A lake under the northern lights.",
+        "time_updated": 1790000000,
+        "subscriptions": 120345,
+        "tags": [
+          { "tag": "Wallpaper", "display_name": "Wallpaper" },
+          { "tag": "Scene", "display_name": "Scene" },
+          { "tag": "Everyone", "display_name": "Everyone" },
+          { "tag": "Landscape", "display_name": "Landscape" },
+          { "tag": "Approved", "display_name": "Approved" }
+        ],
+        "kvtags": [ { "key": "app_workshop_eula_version", "value": "3" } ],
+        "vote_data": { "score": 0.97, "votes_up": 9100, "votes_down": 120 },
+        "num_children": 0
+      },
+      {
+        "result": 1,
+        "publishedfileid": "3100000002",
+        "creator": "76561190000000002",
+        "creator_appid": 431960,
+        "consumer_appid": 431960,
+        "file_size": "204800",
+        "preview_url": "https://images.example.invalid/3100000002.gif",
+        "title": "Aurora Lake (pink sky)",
+        "time_updated": 1790000500,
+        "subscriptions": 2010,
+        "tags": [
+          { "tag": "Preset", "display_name": "Preset" },
+          { "tag": "Scene", "display_name": "Scene" },
+          { "tag": "Everyone", "display_name": "Everyone" },
+          { "tag": "Landscape", "display_name": "Landscape" }
+        ],
+        "num_children": 1,
+        "children": [ { "publishedfileid": "3100000001", "sortorder": 0, "file_type": 0 } ]
+      },
+      {
+        "result": 1,
+        "publishedfileid": "3100000003",
+        "creator": "76561190000000003",
+        "creator_appid": 431960,
+        "consumer_appid": 431960,
+        "file_size": "1048576",
+        "title": "Rainy Window",
+        "subscriptions": 88,
+        "tags": [
+          { "tag": "Wallpaper", "display_name": "Wallpaper" },
+          { "tag": "Video", "display_name": "Video" },
+          { "tag": "Everyone", "display_name": "Everyone" },
+          { "tag": "Relaxing", "display_name": "Relaxing" }
+        ]
+      }
+    ]
+  }
+}

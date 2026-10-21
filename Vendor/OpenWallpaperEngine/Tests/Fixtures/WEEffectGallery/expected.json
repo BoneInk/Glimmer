@@ -1,0 +1,344 @@
+[
+ {
+  "effect": "none",
+  "diff": 0.0,
+  "motion": 0.01
+ },
+ {
+  "effect": "blend",
+  "diff": 0.0,
+  "motion": 0.01
+ },
+ {
+  "effect": "blendgradient",
+  "diff": 99.37,
+  "motion": 0.0
+ },
+ {
+  "effect": "blur",
+  "diff": 10.75,
+  "motion": 0.0
+ },
+ {
+  "effect": "blurprecise",
+  "diff": 2.82,
+  "motion": 0.0
+ },
+ {
+  "effect": "blurradial",
+  "diff": 14.64,
+  "motion": 0.0
+ },
+ {
+  "effect": "chromaticaberration",
+  "diff": 5.33,
+  "motion": 0.0
+ },
+ {
+  "effect": "cloudmotion",
+  "diff": 35.98,
+  "motion": 0.92
+ },
+ {
+  "effect": "clouds",
+  "diff": 39.66,
+  "motion": 0.91
+ },
+ {
+  "effect": "colorkey",
+  "diff": 50.98,
+  "motion": 0.0
+ },
+ {
+  "effect": "cursorripple",
+  "diff": 0.0,
+  "motion": 0.01
+ },
+ {
+  "effect": "depthparallax",
+  "diff": 33.32,
+  "motion": 0.0
+ },
+ {
+  "effect": "edgedetection",
+  "diff": 99.16,
+  "motion": 0.01
+ },
+ {
+  "effect": "filmgrain",
+  "diff": 3.31,
+  "motion": 0.69,
+  "diffTolerance": 0.5
+ },
+ {
+  "effect": "fire",
+  "diff": 0.0,
+  "motion": 0.01
+ },
+ {
+  "effect": "fisheye",
+  "diff": 35.92,
+  "motion": 0.01
+ },
+ {
+  "effect": "fluidsimulation",
+  "diff": 3.22,
+  "motion": 0.7
+ },
+ {
+  "effect": "foliagesway",
+  "diff": 7.07,
+  "motion": 2.46
+ },
+ {
+  "effect": "glitter",
+  "diff": 2.76,
+  "motion": 1.47
+ },
+ {
+  "effect": "godrays",
+  "diff": 24.91,
+  "motion": 0.15
+ },
+ {
+  "effect": "iris",
+  "diff": 1.84,
+  "motion": 1.17
+ },
+ {
+  "effect": "lightshafts",
+  "diff": 1.75,
+  "motion": 0.06
+ },
+ {
+  "effect": "localcontrast",
+  "diff": 0.39,
+  "motion": 0.01
+ },
+ {
+  "effect": "motionblur",
+  "diff": 0.0,
+  "motion": 0.01
+ },
+ {
+  "effect": "nitro",
+  "diff": 2.9,
+  "motion": 5.01
+ },
+ {
+  "effect": "opacity",
+  "diff": 0.0,
+  "motion": 0.01
+ },
+ {
+  "effect": "perspective",
+  "diff": 0.0,
+  "motion": 0.01
+ },
+ {
+  "effect": "pulse",
+  "diff": 19.1,
+  "motion": 4.18
+ },
+ {
+  "effect": "reflection",
+  "diff": 57.05,
+  "motion": 0.0
+ },
+ {
+  "effect": "refraction",
+  "diff": 17.66,
+  "motion": 0.01
+ },
+ {
+  "effect": "scroll",
+  "diff": 58.32,
+  "motion": 18.76
+ },
+ {
+  "effect": "shake",
+  "diff": 0.0,
+  "motion": 0.01
+ },
+ {
+  "effect": "shimmer",
+  "diff": 0.0,
+  "motion": 1.48
+ },
+ {
+  "effect": "shine",
+  "diff": 38.0,
+  "motion": 0.19
+ },
+ {
+  "effect": "skew",
+  "diff": 0.0,
+  "motion": 0.01
+ },
+ {
+  "effect": "spin",
+  "diff": 2.2,
+  "motion": 0.64
+ },
+ {
+  "effect": "swing",
+  "diff": 1.45,
+  "motion": 0.89
+ },
+ {
+  "effect": "tint",
+  "diff": 79.91,
+  "motion": 0.0
+ },
+ {
+  "effect": "transform",
+  "diff": 0.0,
+  "motion": 0.01
+ },
+ {
+  "effect": "twirl",
+  "diff": 48.73,
+  "motion": 24.76
+ },
+ {
+  "effect": "vhs",
+  "diff": 2.52,
+  "motion": 0.78
+ },
+ {
+  "effect": "watercaustics",
+  "diff": 2.64,
+  "motion": 0.66
+ },
+ {
+  "effect": "waterflow",
+  "diff": 0.0,
+  "motion": 0.01
+ },
+ {
+  "effect": "waterripple",
+  "diff": 10.5,
+  "motion": 3.5
+ },
+ {
+  "effect": "waterwaves",
+  "diff": 8.02,
+  "motion": 7.44
+ },
+ {
+  "effect": "xray",
+  "diff": 0.0,
+  "motion": 0.01
+ },
+ {
+  "effect": "user_cloud1",
+  "diff": 74.88,
+  "motion": 1.35
+ },
+ {
+  "effect": "user_irism",
+  "diff": 88.83,
+  "motion": 4.86
+ },
+ {
+  "effect": "user_pulse",
+  "diff": 104.24,
+  "motion": 28.36
+ },
+ {
+  "effect": "user_scrol",
+  "diff": 77.23,
+  "motion": 0.0
+ },
+ {
+  "effect": "composite_normal",
+  "uses": "blur",
+  "capture": "extras/composite_normal.png",
+  "passes": [
+   {},
+   {},
+   {},
+   {
+    "combos": {
+     "COMPOSITE": 0
+    }
+   }
+  ],
+  "diff": 10.75,
+  "motion": 0.01
+ },
+ {
+  "effect": "composite_blend_a0.5",
+  "uses": "blur",
+  "capture": "extras/composite_blend_a0.5.png",
+  "passes": [
+   {},
+   {},
+   {},
+   {
+    "combos": {
+     "COMPOSITE": 1
+    },
+    "constantshadervalues": {
+     "compositealpha": 0.5
+    }
+   }
+  ],
+  "diff": 3.47,
+  "motion": 0.01
+ },
+ {
+  "effect": "composite_blend_a1.5",
+  "uses": "blur",
+  "capture": "extras/composite_blend_a1.5.png",
+  "passes": [
+   {},
+   {},
+   {},
+   {
+    "combos": {
+     "COMPOSITE": 1
+    },
+    "constantshadervalues": {
+     "compositealpha": 1.5
+    }
+   }
+  ],
+  "diff": 19.34,
+  "motion": 0.01
+ },
+ {
+  "effect": "composite_under",
+  "uses": "blur",
+  "capture": "extras/composite_under.png",
+  "passes": [
+   {},
+   {},
+   {},
+   {
+    "combos": {
+     "COMPOSITE": 2
+    }
+   }
+  ],
+  "diff": 0.0,
+  "motion": 0.01
+ },
+ {
+  "effect": "composite_cutout",
+  "uses": "blur",
+  "capture": "extras/composite_cutout.png",
+  "passes": [
+   {},
+   {},
+   {},
+   {
+    "combos": {
+     "COMPOSITE": 3
+    }
+   }
+  ],
+  "diff": 82.1,
+  "motion": 0.01
+ }
+]

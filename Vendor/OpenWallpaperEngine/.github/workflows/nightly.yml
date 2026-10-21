@@ -1,0 +1,104 @@
+name: Nightly
+
+# The whole suite, the slow tier included (OWE_SLOW_TESTS=1), with the WE assets, from an
+# optimised Debug build (Scripts/test-build-settings.txt).
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  slow-tests:
+    runs-on: macos-26
+    timeout-minutes: 120
+    # The Steam secrets live in this environment, which only main can use.
+    environment: steam-ci
+    env:
+      WE_ASSETS: ${{ github.workspace }}/../we-assets
+      WE_ASSETS_ENC: ${{ github.workspace }}/../we-assets.tar.enc
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - id: xcode
+        uses: ./.github/actions/select-xcode
+
+      # Restores the encrypted asset cache, or downloads the assets and (on main) saves them.
+      - uses: ./.github/actions/we-assets
+        with:
+          cache-key: ${{ secrets.OWE_ASSET_CACHE_KEY }}
+          steam-user: ${{ secrets.OWE_CI_STEAM_USER }}
+          steam-password: ${{ secrets.OWE_CI_STEAM_PASSWORD }}
+          steam-shared-secret: ${{ secrets.OWE_CI_STEAM_SHARED_SECRET }}
+          save: 'true'
+
+      - name: Print the runner
+        run: python3 Scripts/ci-test-summary.py --env >> "$GITHUB_STEP_SUMMARY"
+
+      # Encrypted: the cache holds MSL translated from Wallpaper Engine's shaders.
+      - id: shadercache
+        uses: ./.github/actions/shader-cache
+        with:
+          mode: restore
+          xcode-version: ${{ steps.xcode.outputs.version }}
+          encryption-key: ${{ secrets.OWE_ASSET_CACHE_KEY }}
+
+      - name: Build and test, slow tests included
+        # A failing test is retried once; a test that fails both times fails the run.
+        env:
+          TEST_RUNNER_OWE_ASSETS: ${{ env.WE_ASSETS }}
+          TEST_RUNNER_OWE_SLOW_TESTS: '1'
+          TEST_RUNNER_OWE_TEST_PHASES: ${{ github.workspace }}/build/results/phases
+        run: |
+          set -o pipefail
+          mkdir -p build/results
+          read -ra OPTIMISE < Scripts/test-build-settings.txt
+          xcodebuild test \
+            -project OpenWallpaperEngine.xcodeproj \
+            -scheme OpenWallpaperEngine \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            -derivedDataPath build/DerivedData \
+            -resultBundlePath build/results/nightly.xcresult \
+            -retry-tests-on-failure -test-iterations 2 \
+            CODE_SIGNING_ALLOWED=NO \
+            "${OPTIMISE[@]}" \
+            | tee build/results/xcodebuild.log
+
+      - name: List the test durations
+        if: ${{ !cancelled() }}
+        run: |
+          python3 Scripts/ci-test-durations.py --phases build/results/phases --csv build/durations.csv \
+            build/results/nightly.xcresult >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the test durations
+        # Test names and times only.
+        if: ${{ !cancelled() && hashFiles('build/durations.csv') != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-durations-nightly
+          path: build/durations.csv
+          retention-days: 30
+
+      - uses: ./.github/actions/shader-cache
+        if: success() && github.ref == 'refs/heads/main'
+        with:
+          mode: save
+          xcode-version: ${{ steps.xcode.outputs.version }}
+          encryption-key: ${{ secrets.OWE_ASSET_CACHE_KEY }}
+          skip: ${{ steps.shadercache.outputs.hit }}
+
+      - name: List the failing tests
+        if: failure()
+        run: python3 Scripts/ci-test-summary.py build/results/nightly.xcresult | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the results
+        # The log and the result bundle only; never the assets.
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-nightly
+          path: build/results
+          retention-days: 7

@@ -1,0 +1,195 @@
+name: Appcast
+
+# Adds a published release to the Sparkle feed, site/appcast.xml, which Pages serves at
+# https://openwallpaperengine.app/appcast.xml. See docs/releasing.md.
+#
+# release.yml leaves a draft with the notarized zip and <zip>.sparkle.json (its EdDSA signature).
+# Publishing the draft runs this workflow:
+#   1. download the new zip and the full zips of the last three releases in the feed;
+#   2. generate_appcast signs the new zip and makes binary deltas from those three to it;
+#   3. check the new zip's signature against the release job's, upload the deltas to the release;
+#   4. merge the new item (channel beta for a pre-release, the release notes, the release page)
+#      into site/appcast.xml and push it to main, which deploys Pages.
+# Re-run it with "Run workflow" and the tag to redo an item; it replaces that build's item.
+#
+# Secrets: SPARKLE_PRIVATE_KEY (signs the zip and the deltas; read from stdin only) and USER_PAT
+# (uploads the deltas and pushes to main; a push by GITHUB_TOKEN would not start Pages).
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Published release tag to add to the appcast (e.g. v1.0.0)"
+        required: true
+
+concurrency:
+  group: appcast
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  appcast:
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      REPO: ${{ github.repository }}
+      TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+      GH_TOKEN: ${{ secrets.USER_PAT }}
+
+    steps:
+      - name: Check secrets
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          USER_PAT: ${{ secrets.USER_PAT }}
+        run: |
+          set -euo pipefail
+          missing=()
+          for name in SPARKLE_PRIVATE_KEY USER_PAT; do
+            [ -n "${!name:-}" ] || missing+=("$name")
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing repository secrets (see docs/releasing.md):"
+            printf '  - %s\n' "${missing[@]}"
+            exit 1
+          fi
+
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          token: ${{ secrets.USER_PAT }}
+
+      - name: Resolve the release
+        id: release
+        run: |
+          set -euo pipefail
+          parsed=$(Scripts/release/release-version.sh "$TAG") \
+            || { echo "::error::tag '$TAG' is not vX.Y.Z or vX.Y.Z-(alpha|beta|rc).N"; exit 1; }
+          echo "$parsed"
+          echo "$parsed" >> "$GITHUB_OUTPUT"
+          draft=$(gh release view "$TAG" --repo "$REPO" --json isDraft --jq .isDraft)
+          [ "$draft" = false ] || { echo "::error::$TAG is still a draft; publish it first"; exit 1; }
+
+      - name: Download the release and the previous archives
+        id: files
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/appcast"
+          ARCHIVES="$WORK/archives"
+          mkdir -p "$ARCHIVES"
+          gh release download "$TAG" --repo "$REPO" --dir "$WORK" --pattern '*.zip' --pattern '*.sparkle.json'
+          META=$(ls "$WORK"/*.sparkle.json)
+          # Release assets are external input: the zip name must be a plain file name, and the
+          # build a number, before either reaches a path or an output.
+          name=$(plutil -extract zip raw "$META")
+          [[ "$name" =~ ^[A-Za-z0-9._-]+\.zip$ && "$name" != .* ]] \
+            || { echo "::error::unexpected zip name in $(basename "$META")"; exit 1; }
+          [[ "$(plutil -extract build raw "$META")" =~ ^[0-9]+$ ]] \
+            || { echo "::error::unexpected build in $(basename "$META")"; exit 1; }
+          ZIP="$WORK/$name"
+          test -f "$ZIP" || { echo "::error::the release has no $(basename "$ZIP")"; exit 1; }
+          mv "$ZIP" "$ARCHIVES/"
+          # The full archives of the newest items already in the feed: deltas start from them.
+          python3 Scripts/release/appcast.py previous --appcast site/appcast.xml --count 3 \
+            | while IFS= read -r url; do
+                name=$(basename "$url")
+                [ -e "$ARCHIVES/$name" ] && name="previous-$name"
+                curl -fsSL --retry 3 -o "$ARCHIVES/$name" "$url" \
+                  || echo "::warning::could not download $url; no delta from it"
+              done
+          ls -l "$ARCHIVES"
+          echo "work=$WORK" >> "$GITHUB_OUTPUT"
+          echo "archives=$ARCHIVES" >> "$GITHUB_OUTPUT"
+          echo "meta=$META" >> "$GITHUB_OUTPUT"
+          echo "zip=$(basename "$ZIP")" >> "$GITHUB_OUTPUT"
+
+      - name: Sign the update and make deltas
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          BIN=$(Scripts/release/fetch-sparkle-tools.sh "$RUNNER_TEMP/sparkle")
+          ARCHIVES="${{ steps.files.outputs.archives }}"
+          GENERATED="${{ steps.files.outputs.work }}/generated.xml"
+          # The download prefix is rewritten per file by appcast.py merge.
+          printf '%s' "$SPARKLE_PRIVATE_KEY" | "$BIN/generate_appcast" --ed-key-file - \
+            --maximum-deltas 3 --maximum-versions 0 \
+            --download-url-prefix "https://github.com/$REPO/releases/download/$TAG/" \
+            -o "$GENERATED" "$ARCHIVES"
+          ls -l "$ARCHIVES"
+
+          # The zip generate_appcast signed is the one the release job signed.
+          META="${{ steps.files.outputs.meta }}"
+          BUILD=$(plutil -extract build raw "$META")
+          python3 - "$GENERATED" "$BUILD" "$(plutil -extract length raw "$META")" \
+            "$(plutil -extract edSignature raw "$META")" <<'PY'
+          import sys, xml.etree.ElementTree as ET
+          path, build, length, signature = sys.argv[1:]
+          S = "{http://www.andymatuschak.org/xml-namespaces/sparkle}"
+          item = next(i for i in ET.parse(path).getroot().iter("item") if i.findtext(S + "version") == build)
+          enclosure = item.find("enclosure")
+          if enclosure.get("length") != length or enclosure.get(S + "edSignature") != signature:
+              sys.exit("::error::generate_appcast's signature or length differs from the release job's")
+          print("The update signature matches the release job's.")
+          PY
+
+      - name: Release notes as HTML
+        # The feed carries no images: the app would load them from remote hosts when it shows the
+        # notes. Image markdown and <img> tags are stripped before and after rendering.
+        run: |
+          set -euo pipefail
+          NOTES="${{ steps.files.outputs.work }}/notes.html"
+          strip_images() {
+            python3 -c '
+          import re, sys
+          text = sys.stdin.read()
+          text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", text)               # ![alt](url)
+          text = re.sub(r"!\[[^\]]*\]\[[^\]]*\]", "", text)               # ![alt][ref]
+          text = re.sub(r"<picture\b.*?</picture\s*>", "", text, flags=re.I | re.S)
+          text = re.sub(r"</?(img|source)\b[^>]*>", "", text, flags=re.I)
+          sys.stdout.write(text)'
+          }
+          body=$(gh release view "$TAG" --repo "$REPO" --json body --jq .body | strip_images)
+          if [ -n "$body" ]; then
+            gh api markdown -f text="$body" -f mode=gfm -f context="$REPO" | strip_images > "$NOTES"
+          else
+            : > "$NOTES"
+          fi
+          ! grep -qi '<img' "$NOTES" || { echo "::error::an image is left in the release notes"; exit 1; }
+
+      - name: Update the appcast and upload the deltas
+        run: |
+          set -euo pipefail
+          WORK="${{ steps.files.outputs.work }}"
+          META="${{ steps.files.outputs.meta }}"
+          deltas=$(python3 Scripts/release/appcast.py merge \
+            --generated "$WORK/generated.xml" --appcast site/appcast.xml \
+            --build "$(plutil -extract build raw "$META")" \
+            --label "${{ steps.release.outputs.label }}" --tag "$TAG" --repo "$REPO" \
+            --archives "${{ steps.files.outputs.archives }}" \
+            --channel "${{ steps.release.outputs.channel }}" --notes-html "$WORK/notes.html")
+          if [ -n "$deltas" ]; then
+            # shellcheck disable=SC2086
+            printf '%s\n' "$deltas" | xargs -I{} gh release upload "$TAG" "{}" --repo "$REPO" --clobber
+          else
+            echo "No deltas (first release in the feed, or none smaller than the full zip)."
+          fi
+          git diff --stat -- site/appcast.xml
+
+      - name: Push the appcast
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/appcast.xml
+          if git diff --cached --quiet; then echo "The appcast is unchanged."; exit 0; fi
+          git commit -m "chore(appcast): ${{ steps.release.outputs.label }}"
+          for attempt in 1 2 3; do
+            git push origin HEAD:main && exit 0
+            git pull --rebase origin main
+          done
+          echo "::error::could not push site/appcast.xml to main"; exit 1

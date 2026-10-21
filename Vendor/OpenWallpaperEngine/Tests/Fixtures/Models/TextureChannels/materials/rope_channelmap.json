@@ -1,0 +1,17 @@
+{
+	"passes" : 
+	[
+		{
+			"blending" : "normal",
+			"combos" : 
+			{
+				"BLENDROWCOUNT" : 1
+			},
+			"cullmode" : "nocull",
+			"depthtest" : "disabled",
+			"depthwrite" : "disabled",
+			"shader" : "puppettexturechannels",
+			"textures" : [ "rope_channelmap", "rope" ]
+		}
+	]
+}

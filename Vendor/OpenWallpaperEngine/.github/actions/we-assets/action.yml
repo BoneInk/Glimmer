@@ -1,0 +1,188 @@
+name: Wallpaper Engine assets
+description: >-
+  Restores Wallpaper Engine's built-in assets into $WE_ASSETS from the encrypted cache, or
+  downloads them from Steam with the CI account (docs/ci-assets.md). Only for jobs in the
+  steam-ci environment. The assets are never uploaded; the cache holds only ciphertext.
+inputs:
+  cache-key:
+    description: The OWE_ASSET_CACHE_KEY secret; empty skips the cache
+    required: false
+    default: ''
+  steam-user:
+    description: The OWE_CI_STEAM_USER secret
+    required: false
+    default: ''
+  steam-password:
+    description: The OWE_CI_STEAM_PASSWORD secret
+    required: false
+    default: ''
+  steam-shared-secret:
+    description: The OWE_CI_STEAM_SHARED_SECRET secret
+    required: false
+    default: ''
+  build-id:
+    description: The Steam build id to restore; empty reads the current one
+    required: false
+    default: ''
+  download:
+    description: "'false' only restores the cache and fails when it can't; it never logs in to Steam"
+    required: false
+    default: 'true'
+  save:
+    description: "'true' saves the encrypted assets on a cache miss (main only)"
+    required: false
+    default: 'false'
+  prime:
+    description: "'true' only makes sure the cache holds this build: a hit restores nothing"
+    required: false
+    default: 'false'
+outputs:
+  build-id:
+    description: The Steam build id the assets are of
+    value: ${{ steps.build.outputs.id }}
+runs:
+  using: composite
+  steps:
+    # actions/cache refuses a path with a '.' or '..' part (it warns and saves nothing), and the
+    # callers put the assets next to the workspace ($GITHUB_WORKSPACE/..).
+    - name: Resolve the asset paths
+      shell: bash
+      run: |
+        for name in WE_ASSETS WE_ASSETS_ENC; do
+          [[ -n "${!name:-}" ]] || { echo "::error::$name is not set"; exit 1; }
+          echo "$name=$(python3 -c 'import os, sys; print(os.path.abspath(sys.argv[1]))' "${!name}")" >> "$GITHUB_ENV"
+        done
+
+    # The cache key is the build and the revision of what Scripts/fetch-we-assets.sh downloads:
+    # bump ASSET_CACHE_REVISION whenever its file list changes, so the next run on main downloads
+    # and saves the assets again instead of restoring an entry without the new files.
+    - name: Read the Wallpaper Engine build
+      id: build
+      shell: bash
+      env:
+        BUILD_ID: ${{ inputs.build-id }}
+        # 2: New Wallpaper's projects/templates and the script editor's ui/dist/monaco/snippets.
+        ASSET_CACHE_REVISION: '2'
+      run: |
+        id=$BUILD_ID
+        [[ -n "$id" ]] || id=$(Scripts/fetch-we-assets.sh --build-id || true)
+        [[ "$id" =~ ^[0-9]+$ ]] || id=unknown
+        echo "id=$id" >> "$GITHUB_OUTPUT"
+        echo "key=we-assets-enc-r$ASSET_CACHE_REVISION-$id" >> "$GITHUB_OUTPUT"
+        echo "Wallpaper Engine build: $id" >> "$GITHUB_STEP_SUMMARY"
+
+    # The assets are cached only as an AES-256 archive. The key lives in the steam-ci
+    # environment; without it the cache is skipped and the assets are downloaded.
+    - name: Check the asset cache key
+      id: cachekey
+      shell: bash
+      env:
+        OWE_ASSET_CACHE_KEY: ${{ inputs.cache-key }}
+        BUILD_ID: ${{ steps.build.outputs.id }}
+        DOWNLOAD: ${{ inputs.download }}
+        PRIME: ${{ inputs.prime }}
+      run: |
+        if [[ -n "$OWE_ASSET_CACHE_KEY" && "$BUILD_ID" =~ ^[0-9]+$ ]]; then
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+        elif [[ "$DOWNLOAD" != true || "$PRIME" == true ]]; then
+          # The asset shards only restore: without the cache they would each log in to Steam.
+          echo "::error::The asset cache is off (OWE_ASSET_CACHE_KEY is empty in steam-ci, or the build id couldn't be read)."
+          exit 1
+        else
+          echo "enabled=false" >> "$GITHUB_OUTPUT"
+          echo "Asset cache skipped (no key or no build id)." >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+    - name: Restore the encrypted assets
+      id: cache
+      if: steps.cachekey.outputs.enabled == 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ env.WE_ASSETS_ENC }}
+        key: ${{ steps.build.outputs.key }}
+        lookup-only: ${{ inputs.prime }}
+        fail-on-cache-miss: ${{ inputs.download != 'true' && inputs.prime != 'true' }}
+
+    - name: Decrypt the assets
+      id: decrypt
+      if: steps.cache.outputs.cache-hit == 'true' && inputs.prime != 'true'
+      shell: bash
+      env:
+        OWE_ASSET_CACHE_KEY: ${{ inputs.cache-key }}
+        DOWNLOAD: ${{ inputs.download }}
+      run: |
+        set -o pipefail
+        rm -rf "$WE_ASSETS" && mkdir -p "$WE_ASSETS"
+        if openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:OWE_ASSET_CACHE_KEY -in "$WE_ASSETS_ENC" \
+            | tar -x -C "$WE_ASSETS" -f - && [[ -d "$WE_ASSETS/assets/shaders" ]]; then
+          echo "restored=true" >> "$GITHUB_OUTPUT"
+        elif [[ "$DOWNLOAD" != true ]]; then
+          rm -rf "$WE_ASSETS" "$WE_ASSETS_ENC"
+          echo "::error::Could not decrypt the cached assets (a rotated OWE_ASSET_CACHE_KEY?)."
+          exit 1
+        else
+          rm -rf "$WE_ASSETS"
+          echo "::warning::Could not decrypt the cached assets; downloading them instead."
+        fi
+        rm -f "$WE_ASSETS_ENC"
+
+    - name: Fetch the assets
+      id: fetch
+      # When priming, only a miss that can be saved downloads. Only restoring never downloads.
+      if: inputs.download == 'true' && steps.decrypt.outputs.restored != 'true' && (inputs.prime != 'true' || (steps.cachekey.outputs.enabled == 'true' && steps.cache.outputs.cache-hit != 'true'))
+      shell: bash
+      env:
+        OWE_CI_STEAM_USER: ${{ inputs.steam-user }}
+        OWE_CI_STEAM_PASSWORD: ${{ inputs.steam-password }}
+        OWE_CI_STEAM_SHARED_SECRET: ${{ inputs.steam-shared-secret }}
+        OWE_TOOLS_DIR: ${{ runner.temp }}/owe-tools
+      run: |
+        # Three attempts, 30 s and then 2 min apart: one Steam login can fail on its own
+        # ("InitializeSteam failed"). Bad arguments, missing credentials and an account without
+        # Wallpaper Engine fail at once. A composite step has no timeout of its own; each attempt
+        # gets 10 minutes (a download takes about one).
+        for attempt in 1 2 3; do
+          status=0
+          perl -e 'alarm shift; exec @ARGV' 600 Scripts/fetch-we-assets.sh --force "$WE_ASSETS" || status=$?
+          (( status == 0 )) && break
+          case $status in 2|3|6) break ;; esac
+          if (( attempt < 3 )); then
+            delay=$(( attempt == 1 ? 30 : 120 ))
+            echo "::warning::Fetching the assets failed (exit $status); retrying in $delay s."
+            sleep "$delay"
+          fi
+        done
+        (( status == 0 )) || exit "$status"
+        echo "done=true" >> "$GITHUB_OUTPUT"
+
+    # Only main saves. tar streams straight into openssl, so no plaintext archive is ever
+    # written; only the ciphertext file is saved.
+    - name: Encrypt the assets
+      id: encrypt
+      if: inputs.save == 'true' && steps.fetch.outputs.done == 'true' && steps.cachekey.outputs.enabled == 'true' && steps.cache.outputs.cache-hit != 'true' && github.ref == 'refs/heads/main'
+      shell: bash
+      env:
+        OWE_ASSET_CACHE_KEY: ${{ inputs.cache-key }}
+      run: |
+        set -o pipefail
+        rm -f "$WE_ASSETS_ENC"
+        tar -C "$WE_ASSETS" -cf - . \
+          | openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass env:OWE_ASSET_CACHE_KEY -out "$WE_ASSETS_ENC"
+        echo "done=true" >> "$GITHUB_OUTPUT"
+
+    - name: Save the encrypted assets
+      if: steps.encrypt.outputs.done == 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ env.WE_ASSETS_ENC }}
+        key: ${{ steps.build.outputs.key }}
+
+    # actions/cache/save only warns when it can't save; the shards depend on this entry.
+    - name: Check that the cache holds the assets
+      if: steps.encrypt.outputs.done == 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ env.WE_ASSETS_ENC }}
+        key: ${{ steps.build.outputs.key }}
+        lookup-only: 'true'
+        fail-on-cache-miss: 'true'

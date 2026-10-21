@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "camera": {
+    "center": "480 300 0",
+    "eye": "480 300 1000",
+    "up": "0 1 0"
+  },
+  "general": {
+    "orthogonalprojection": {
+      "width": 960,
+      "height": 600
+    },
+    "clearcolor": "0.06 0.10 0.16",
+    "clearenabled": true,
+    "bloom": false,
+    "hdr": false,
+    "cameraparallax": false,
+    "camerashake": false,
+    "camerafade": false,
+    "nearz": 0.1,
+    "farz": 10000,
+    "zoom": 1
+  },
+  "objects": [
+    {
+      "id": 1,
+      "name": "自造网格背景",
+      "image": "models/background.json",
+      "origin": "480 300 0",
+      "angles": "0 0 0",
+      "scale": "1 1 1",
+      "size": "960 600",
+      "color": "1 1 1",
+      "alpha": 1,
+      "visible": true,
+      "effects": []
+    },
+    {
+      "id": 2,
+      "name": "可调几何图层",
+      "image": "models/geometry.json",
+      "origin": "480 300 0",
+      "angles": {
+        "value": "0 0 15",
+        "script": "import { origin, angle, configure } from './scripts/motion.js';\nimport tint, { setTint } from './scripts/palette.js';\nexport let renderedFrames=0;\nexport function applyUserProperties(properties) {\n  configure(properties);\n  if(properties.geometrycolor!==undefined) setTint(properties.geometrycolor);\n}\nexport function update(value) {\n  renderedFrames++;\n  thisLayer.origin=origin(engine.runtime);\n  thisLayer.color=tint();\n  return angle(engine.runtime);\n}"
+      },
+      "scale": "1 1 1",
+      "size": "300 300",
+      "color": {
+        "user": "geometrycolor",
+        "value": "1 0.45 0.12"
+      },
+      "alpha": {
+        "user": "geometryopacity",
+        "value": 1
+      },
+      "visible": {
+        "user": "showgeometry",
+        "value": true
+      },
+      "effects": []
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "type": "web",
+  "title": "Aurora · 交互光境",
+  "file": "index.html",
+  "general": {
+    "properties": {
+      "heading": {"type":"text","text":"光境与氛围","order":0},
+      "glow": {"type":"bool","text":"显示光晕","value":true,"order":1},
+      "tint": {"type":"color","text":"光晕颜色","value":"0.3 0.6 1","order":2,"condition":"glow.value == true"},
+      "scale": {"type":"slider","text":"光晕大小","value":60,"min":20,"max":100,"order":3},
+      "mode": {"type":"combo","text":"构图","value":"center","order":4,"options":[{"label":"居中","value":"center"},{"label":"靠左","value":"left"},{"label":"靠右","value":"right"}]},
+      "caption": {"type":"textinput","text":"画面文字","value":"AURORA","order":5},
+      "customimage": {"type":"file","text":"自定义图片","value":"","order":6},
+      "slideshow": {"type":"directory","text":"轮播目录","value":"","mode":"fetchall","order":7}
+    }
+  }
+}

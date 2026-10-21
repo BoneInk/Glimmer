@@ -1,0 +1,11 @@
+{
+	"passes" : [
+		{
+			"blending" : "translucent",
+			"constantshadervalues" : { "ui_editor_properties_overbright" : 1 },
+			"shader" : "genericparticle",
+			"textures" : [ "particle/solid" ],
+			"usershadervalues" : { "glow" : "ui_editor_properties_overbright" }
+		}
+	]
+}

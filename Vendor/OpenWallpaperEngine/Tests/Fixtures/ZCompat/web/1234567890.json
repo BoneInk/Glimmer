@@ -1,0 +1,13 @@
+{
+	"actions" : [{
+		"file" : "js/index.min.js",
+		"replace" : "u(t,e){t.texImage2D",
+		"insert" : "u(t,e){if(e!=null)t.texImage2D"
+	}, {
+		"file" : "js/other.js",
+		"replace" : "a",
+		"insert" : "b"
+	}, {
+		"file" : "js/broken.js"
+	}]
+}

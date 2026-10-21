@@ -1,0 +1,24 @@
+{
+	"file": "scene.json",
+	"general": {
+		"properties": {
+			"lamp": {
+				"order": 0,
+				"text": "Lamp",
+				"type": "slider",
+				"min": 0,
+				"max": 10,
+				"value": 3
+			},
+			"lampcolor": {
+				"order": 1,
+				"text": "Lamp colour",
+				"type": "color",
+				"value": "1 0 0"
+			}
+		}
+	},
+	"title": "Fixture: lights",
+	"type": "scene",
+	"preview": "preview.jpg"
+}

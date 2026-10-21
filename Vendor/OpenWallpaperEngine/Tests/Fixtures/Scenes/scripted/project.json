@@ -1,0 +1,11 @@
+{
+	"file" : "scene.json",
+	"general" : {
+		"properties" : {
+			"label" : { "order" : 0, "text" : "Label", "type" : "textinput", "value" : "WWWW" }
+		}
+	},
+	"preview" : "preview.jpg",
+	"title" : "Fixture: script writes reach the pixels",
+	"type" : "scene"
+}

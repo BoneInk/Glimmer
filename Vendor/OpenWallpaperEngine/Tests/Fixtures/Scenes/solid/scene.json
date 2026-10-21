@@ -1,0 +1,34 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : {
+		"clearcolor" : "0 0 0",
+		"orthogonalprojection" : { "width" : 1920, "height" : 1080 }
+	},
+	"objects" : [
+		{
+			"id" : 1,
+			"name" : "Album Border",
+			"image" : "models/util/solidlayer.json",
+			"origin" : "960 540 0",
+			"scale" : "56 56 56",
+			"size" : "100 100",
+			"alpha" : 0.33
+		},
+		{
+			"id" : 2,
+			"name" : "Tinted",
+			"image" : "models/util/solidlayer.json",
+			"origin" : "960 540 0",
+			"size" : "0 0",
+			"color" : "0.8 0.2 0.2"
+		},
+		{
+			"id" : 3,
+			"name" : "Unsized",
+			"image" : "models/util/solidlayer_depthtest.json",
+			"origin" : "960 540 0",
+			"color" : "0 1 0"
+		}
+	],
+	"version" : 1
+}

@@ -1,0 +1,174 @@
+{
+ "general": {
+  "orthogonalprojection": {
+   "width": 1920,
+   "height": 1080
+  },
+  "bloomstrength": {
+   "script": "'use strict';\nexport function update(value) {\n\treturn 0.5 + 0.25 * Math.sin(engine.runtime);\n}\n",
+   "value": 0.5
+  }
+ },
+ "objects": [
+  {
+   "id": 1,
+   "name": "Clock",
+   "text": {
+    "script": "'use strict';\nfunction pad(n) { return (n < 10 ? '0' : '') + n; }\nexport function update(value) {\n\tconst now = new Date();\n\treturn pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds()) + ' ' + now.getFullYear();\n}\n",
+    "value": "00:00:00"
+   },
+   "origin": "100 100 0",
+   "font": "systemfont_arial",
+   "pointsize": 32,
+   "visible": true
+  },
+  {
+   "id": 2,
+   "name": "Bar",
+   "image": "models/still.json",
+   "origin": "960 540 0",
+   "scale": {
+    "script": "'use strict';\nconst audio = engine.registerAudioBuffers(engine.AUDIO_RESOLUTION_16);\nexport function update(value) {\n\treturn new Vec3(1, 1 + audio.average[0], 1);\n}\n",
+    "value": "1 1 1"
+   },
+   "angles": "0 0 0",
+   "visible": true
+  },
+  {
+   "id": 3,
+   "name": "Cover",
+   "image": "models/still.json",
+   "origin": "960 540 0",
+   "scale": "1 1 1",
+   "angles": "0 0 0",
+   "visible": true,
+   "effects": [
+    {
+     "file": "effects/tint/effect.json",
+     "name": "Tint",
+     "visible": {
+      "script": "'use strict';\nexport function mediaThumbnailChanged(event) {\n\tthisObject.visible = event.hasThumbnail;\n}\n",
+      "value": false
+     },
+     "passes": [
+      {
+       "constantshadervalues": {
+        "multiply": {
+         "script": "'use strict';\nlet animation = null;\nexport function init(value) {\n\tanimation = thisObject.getAnimation();\n\treturn value;\n}\nexport function update(value) {\n\treturn animation === null ? -1 : animation.frameCount;\n}\n",
+         "value": 1,
+         "animation": {
+          "c0": [
+           {
+            "frame": 0,
+            "value": 1
+           },
+           {
+            "frame": 30,
+            "value": 0
+           }
+          ],
+          "options": {
+           "fps": 30,
+           "length": 30,
+           "mode": "loop",
+           "startpaused": false
+          }
+         }
+        }
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": 4,
+   "name": "Title",
+   "text": {
+    "script": "'use strict';\nlet title = '';\nexport function mediaPropertiesChanged(event) {\n\ttitle = event.title;\n}\nexport function update(value) {\n\treturn title;\n}\n",
+    "value": "none"
+   },
+   "origin": "100 200 0",
+   "visible": true
+  },
+  {
+   "id": 5,
+   "name": "Button",
+   "image": "models/still.json",
+   "origin": {
+    "script": "'use strict';\nlet clicks = 0;\nexport function cursorClick(event) {\n\tclicks += 1;\n}\nexport function update(value) {\n\tvalue.x = clicks;\n\treturn value;\n}\n",
+    "value": "0 0 0"
+   },
+   "scale": "1 1 1",
+   "angles": "0 0 0",
+   "visible": true,
+   "solid": true
+  },
+  {
+   "id": 6,
+   "name": "Decoration",
+   "image": "models/still.json",
+   "origin": {
+    "script": "'use strict';\nlet clicks = 0;\nexport function cursorClick(event) {\n\tclicks += 1;\n}\nexport function update(value) {\n\tvalue.x = clicks;\n\treturn value;\n}\n",
+    "value": "0 0 0"
+   },
+   "scale": "1 1 1",
+   "angles": "0 0 0",
+   "visible": true,
+   "solid": false
+  },
+  {
+   "id": 7,
+   "name": "Fader",
+   "image": "models/still.json",
+   "origin": "960 540 0",
+   "scale": "1 1 1",
+   "angles": "0 0 0",
+   "visible": true,
+   "alpha": {
+    "script": "'use strict';\nexport function update(value) {\n\treturn value + engine.frametime;\n}\n",
+    "value": 0
+   }
+  },
+  {
+   "id": 8,
+   "name": "Sparks",
+   "particle": "particles/sparks.json",
+   "origin": "960 540 0",
+   "instanceoverride": {
+    "id": 9,
+    "rate": {
+     "script": "'use strict';\nconst audio = engine.registerAudioBuffers(32);\nlet base = 1;\nexport function init(value) { base = value; }\nexport function update() {\n\treturn base * (0.5 + audio.left[3]);\n}\n",
+     "value": 2
+    }
+   }
+  },
+  {
+   "id": 10,
+   "name": "Spawner",
+   "image": "models/still.json",
+   "origin": "960 540 0",
+   "scale": "1 1 1",
+   "angles": "0 0 0",
+   "visible": {
+    "script": "'use strict';\nlet bar = null;\nexport function init(value) {\n\tbar = thisScene.createLayer('models/bar.json');\n\treturn value;\n}\nexport function update(value) {\n\tif (bar !== null) bar.origin = new Vec3(engine.runtime, 0, 0);\n\treturn bar !== null;\n}\n",
+    "value": true
+   }
+  },
+  {
+   "id": 11,
+   "name": "Flagged",
+   "image": "models/still.json",
+   "origin": "960 540 0",
+   "scale": "1 1 1",
+   "angles": "0 0 0",
+   "visible": {
+    "script": "'use strict';\nexport var scriptProperties = createScriptProperties()\n\t.addCheckbox({ name: 'show', label: 'Show', value: false })\n\t.finish();\nlet userFlag = false;\nexport function applyUserProperties(changed) {\n\tif (changed.flag !== undefined) userFlag = changed.flag;\n}\nexport function update(value) {\n\treturn scriptProperties.show && userFlag;\n}\n",
+    "value": false,
+    "scriptproperties": {
+     "show": true
+    }
+   }
+  }
+ ]
+}

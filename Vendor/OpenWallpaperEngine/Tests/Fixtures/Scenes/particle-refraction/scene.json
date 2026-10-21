@@ -1,0 +1,16 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : {
+		"clearcolor" : "0 0 0",
+		"orthogonalprojection" : { "width" : 1920, "height" : 1080 }
+	},
+	"objects" : [
+		{
+			"id" : 10,
+			"name" : "Drops",
+			"particle" : "particles/drops.json",
+			"origin" : "960 540 0"
+		}
+	],
+	"version" : 1
+}

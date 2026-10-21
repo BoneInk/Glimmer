@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- V8 compiles JavaScript at run time (MAP_JIT), as Chrome's own renderer helper does. -->
+	<key>com.apple.security.cs.allow-jit</key>
+	<true/>
+	<!-- The helper dlopens the CEF framework the app downloaded and verified. CEF's build is
+	     ad-hoc signed, not by this team, so library validation would refuse it. Only this helper
+	     carries the exception; the app keeps library validation. See docs/chromium-engine.md. -->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
+	<true/>
+</dict>
+</plist>

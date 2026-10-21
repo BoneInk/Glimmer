@@ -1,0 +1,34 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : {
+		"bloom" : false,
+		"clearcolor" : "0 0 0",
+		"orthogonalprojection" : { "width" : 256, "height" : 128 }
+	},
+	"objects" : [
+		{
+			"id" : 1,
+			"name" : "Covered",
+			"image" : "models/util/solidlayer.json",
+			"origin" : "128 64 0",
+			"size" : "256 128",
+			"color" : "0.8 0.6 0.2",
+			"effects" : [
+				{ "id" : 7, "file" : "effects/halfcover/effect.json", "name" : "Half cover", "visible" : true,
+				  "passes" : [ { "id" : 8 } ] },
+				{ "id" : 2, "file" : "effects/halfcover/effect.json", "name" : "Half cover again", "visible" : true,
+				  "passes" : [ { "id" : 3 } ] }
+			]
+		},
+		{
+			"id" : 9,
+			"name" : "Motion blur",
+			"image" : "models/util/fullscreenlayer.json",
+			"effects" : [
+				{ "id" : 10, "file" : "effects/motionblur/effect.json", "name" : "Motion blur", "visible" : true,
+				  "passes" : [ { "id" : 11 }, { "id" : 12 }, { "id" : 13 } ] }
+			]
+		}
+	],
+	"version" : 1
+}

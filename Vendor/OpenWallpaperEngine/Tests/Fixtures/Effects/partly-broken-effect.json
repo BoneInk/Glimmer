@@ -1,0 +1,18 @@
+{
+	// comments and trailing commas occur in WE files
+	"version" : 1,
+	"name" : "partly broken",
+	"dependencies" : [ "materials/effects/a.json", 5 ],
+	"passes" : [
+		{ "material" : "materials/effects/a.json", "target" : "_rt_A",
+		  "bind" : [ { "name" : "previous", "index" : 0 }, { "index" : 1 } ],
+		  "conditions" : [ { "MODE" : 1 } ] },
+		"not a pass",
+		{ "command" : "copy", "source" : "_rt_A", "target" : "_rt_B" },
+	],
+	"fbos" : [
+		{ "name" : "_rt_A", "scale" : 2, "format" : "rgba8888" },
+		{ "name" : "_rt_nofmt" },
+		{ "name" : "_rt_B", "format" : "rgba8888", "fit" : 512, "unique" : true },
+	]
+}

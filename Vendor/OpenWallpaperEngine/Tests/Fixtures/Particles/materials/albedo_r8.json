@@ -1,0 +1,9 @@
+{
+	"passes" : [
+		{
+			"blending" : "translucent",
+			"shader" : "genericparticle",
+			"textures" : [ "albedo_r8" ]
+		}
+	]
+}

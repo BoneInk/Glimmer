@@ -1,0 +1,14 @@
+{
+	"passes": [
+		{
+			"blending": "translucent",
+			"cullmode": "nocull",
+			"depthtest": "disabled",
+			"depthwrite": "disabled",
+			"shader": "genericimage2",
+			"textures": [
+				"sheet"
+			]
+		}
+	]
+}

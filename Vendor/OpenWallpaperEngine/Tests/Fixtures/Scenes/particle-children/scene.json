@@ -1,0 +1,13 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : { "orthogonalprojection" : { "width" : 1920, "height" : 1080 } },
+	"objects" : [
+		{
+			"id" : 5,
+			"name" : "Fireworks",
+			"particle" : "particles/rocket.json",
+			"origin" : "500 300 0"
+		}
+	],
+	"version" : 1
+}

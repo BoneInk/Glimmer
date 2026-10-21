@@ -1,0 +1,27 @@
+* text=auto
+*.sh text eol=lf
+*.py text eol=lf
+*.swift text eol=lf
+*.cs text eol=lf
+*.c text eol=lf
+*.h text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.icns binary
+*.mp4 binary
+*.tex binary
+*.dylib binary
+*.dll binary
+*.a binary
+*.zip binary
+*.gz binary
+
+# Preserve third-party snapshots and license files byte for byte.
+Vendor/** -text
+Workers/SceneScript/ThirdParty/** -text
+Workers/SteamContent/Notices/** -text
+Workers/SteamContent/SteamKit2-*.txt -text

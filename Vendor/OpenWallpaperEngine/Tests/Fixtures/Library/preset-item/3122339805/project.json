@@ -1,0 +1,356 @@
+{
+	"contentrating" : "Everyone",
+	"description" : "Features:\n- 24 & 12 hour time\n- Optional notepad\n- Custom image upload\n- Custom colours\n- Date Countdown\n- Naming of some windows\n- Window toggling\n- Mild Interactivity\n\nNotes:\n- For any additional information, some settings have tooltips.\n- For time differences involving 15 and 30 minute values, use 0.25 and 0.50 respectively in time differences.\n- No, the 'log' window is not your computer being hacked. It's simply generated from a list of strings I cooked up.\n- Countdown times are written in the format YYYY-MM-DD.\n- Recommended resolution: 1920 x 1080\n\n\nCredits:\nInspired by bemuse\nLeft GIF: Waiting 2.0 by Pixel Jeff\nMiddle GIF: The Boys Store \"YOU'VE GOT MAIL\" eyes asset\nRight GIF: Sorapoi",
+	"file" : "scene.json",
+	"general" : 
+	{
+		"properties" : 
+		{
+			"_24hourtime" : 
+			{
+				"index" : 6,
+				"order" : 106,
+				"text" : "24 Hour Time",
+				"type" : "bool",
+				"value" : true
+			},
+			"accentcolourdefault800080" : 
+			{
+				"index" : 10,
+				"order" : 110,
+				"text" : "Accent Colour [Default #800080]",
+				"type" : "color",
+				"value" : "0.5019607843137255 0 0.5019607843137255"
+			},
+			"backgroundcolour" : 
+			{
+				"index" : 12,
+				"order" : 112,
+				"text" : "Background Colour [Default #000000]",
+				"type" : "color",
+				"value" : "0 0 0"
+			},
+			"basecolor" : 
+			{
+				"index" : 11,
+				"order" : 111,
+				"text" : "Base Colour [Default #FE19FF]",
+				"type" : "color",
+				"value" : "0.996078431372549 0.09803921568627451 1"
+			},
+			"city1" : 
+			{
+				"index" : 3,
+				"order" : 103,
+				"text" : "City 1",
+				"type" : "textinput",
+				"value" : "TYO"
+			},
+			"city2" : 
+			{
+				"index" : 5,
+				"order" : 105,
+				"text" : "City 2",
+				"type" : "textinput",
+				"value" : "NYC"
+			},
+			"coloursettings" : 
+			{
+				"index" : 7,
+				"order" : 107,
+				"text" : "<br></br><u><h4>Colour Settings:</h4></u></h5>",
+				"type" : "text",
+				"value" : false
+			},
+			"countdown1" : 
+			{
+				"index" : 34,
+				"order" : 134,
+				"text" : "Countdown 1",
+				"type" : "textinput",
+				"value" : "2024-02-28"
+			},
+			"countdown1name" : 
+			{
+				"index" : 33,
+				"order" : 133,
+				"text" : "Countdown 1 Name",
+				"type" : "textinput",
+				"value" : "Birthday"
+			},
+			"countdown2" : 
+			{
+				"index" : 36,
+				"order" : 136,
+				"text" : "Countdown 2",
+				"type" : "textinput",
+				"value" : "2024-05-09"
+			},
+			"countdown2name" : 
+			{
+				"index" : 35,
+				"order" : 135,
+				"text" : "Countdown  2 Name",
+				"type" : "textinput",
+				"value" : "Vacation"
+			},
+			"countdownsettings" : 
+			{
+				"index" : 32,
+				"order" : 132,
+				"text" : "<br></br><h4><u>Countdown Settings:</u><sup><abbr title='Only apply if countdown window is enabled.\nCountdown format is YYYY-MM-DD'>[info]</abbr></sup></h4>",
+				"type" : "text",
+				"value" : false
+			},
+			"customimageleft" : 
+			{
+				"index" : 16,
+				"order" : 116,
+				"text" : "Left Custom Image",
+				"type" : "scenetexture",
+				"value" : ""
+			},
+			"customimagemiddle" : 
+			{
+				"index" : 17,
+				"order" : 117,
+				"text" : "Middle Custom Image",
+				"type" : "scenetexture",
+				"value" : ""
+			},
+			"customimageright" : 
+			{
+				"index" : 18,
+				"order" : 118,
+				"text" : "Right Custom Image",
+				"type" : "scenetexture",
+				"value" : ""
+			},
+			"disablealbumtint" : 
+			{
+				"index" : 9,
+				"order" : 109,
+				"text" : "Disable Album Tint",
+				"type" : "bool",
+				"value" : false
+			},
+			"hideeyeswindow" : 
+			{
+				"index" : 21,
+				"order" : 121,
+				"text" : "Hide Eyes Window",
+				"type" : "bool",
+				"value" : false
+			},
+			"hidenumberswindow" : 
+			{
+				"index" : 20,
+				"order" : 120,
+				"text" : "Hide Numbers Window",
+				"type" : "bool",
+				"value" : false
+			},
+			"imagesettings" : 
+			{
+				"index" : 15,
+				"order" : 115,
+				"text" : "<br></br><u><h4>Image Settings:</h4></u>",
+				"type" : "text",
+				"value" : false
+			},
+			"leftimagewindowheader" : 
+			{
+				"index" : 25,
+				"order" : 125,
+				"text" : "Left Image Window Header",
+				"type" : "textinput",
+				"value" : "NIGHTLIFE"
+			},
+			"logheadercolour" : 
+			{
+				"index" : 14,
+				"order" : 114,
+				"text" : "Log Header Colour",
+				"type" : "color",
+				"value" : "1 1 1"
+			},
+			"middleimagewindowheader" : 
+			{
+				"index" : 26,
+				"order" : 126,
+				"text" : "Middle Image Window Header",
+				"type" : "textinput",
+				"value" : "EYES"
+			},
+			"middlewindowtint" : 
+			{
+				"index" : 8,
+				"order" : 108,
+				"text" : "Middle Window Tint",
+				"type" : "bool",
+				"value" : true
+			},
+			"newproperty" : 
+			{
+				"index" : 28,
+				"order" : 128,
+				"text" : "<br></br><h4><u>Notepad Settings:</u><sup><abbr title='Only apply if notepad window is enabled.'>[info]</abbr></sup></h4>",
+				"type" : "text",
+				"value" : false
+			},
+			"notepadalignment" : 
+			{
+				"index" : 29,
+				"options" : 
+				[
+					{
+						"label" : "Left",
+						"value" : "0"
+					},
+					{
+						"label" : "Center",
+						"value" : "1"
+					},
+					{
+						"label" : "Right",
+						"value" : "2"
+					}
+				],
+				"order" : 129,
+				"text" : "Notepad Alignment",
+				"type" : "combo",
+				"value" : "0"
+			},
+			"notepadtext" : 
+			{
+				"index" : 30,
+				"order" : 130,
+				"text" : "Notes<sup><abbr title='Use \"|\" to start a new line!'>[help]</abbr></sup>",
+				"type" : "textinput",
+				"value" : "-"
+			},
+			"notepadtextopacity" : 
+			{
+				"fraction" : true,
+				"index" : 31,
+				"max" : 1,
+				"min" : 0,
+				"order" : 131,
+				"precision" : 2,
+				"step" : 0.1,
+				"text" : "Notepad Text Opacity",
+				"type" : "slider",
+				"value" : 0.5
+			},
+			"replaceaudiowithwords" : 
+			{
+				"index" : 22,
+				"order" : 122,
+				"text" : "Replace 'Audio' with 'Words'",
+				"type" : "bool",
+				"value" : false
+			},
+			"replacelogswithnotepad" : 
+			{
+				"index" : 23,
+				"order" : 123,
+				"text" : "Replace 'Log' with 'Notepad'",
+				"type" : "bool",
+				"value" : false
+			},
+			"replacewordswithcountdowns" : 
+			{
+				"index" : 24,
+				"order" : 124,
+				"text" : "Replace 'Words' with 'Countdown'",
+				"type" : "bool",
+				"value" : true
+			},
+			"rightimagewindowheader" : 
+			{
+				"index" : 27,
+				"order" : 127,
+				"text" : "Right Image Window Header",
+				"type" : "textinput",
+				"value" : "CITY"
+			},
+			"schemecolor" : 
+			{
+				"index" : 0,
+				"order" : 100,
+				"text" : "ui_browse_properties_scheme_color",
+				"type" : "color",
+				"value" : "0 0 0"
+			},
+			"showdaynighticon" : 
+			{
+				"index" : 1,
+				"order" : 101,
+				"text" : "Show Day/Night Icon",
+				"type" : "bool",
+				"value" : true
+			},
+			"textcolourdefaultffffff" : 
+			{
+				"index" : 13,
+				"order" : 113,
+				"text" : "Text Colour [Default #FFFFFF]",
+				"type" : "color",
+				"value" : "1 1 1"
+			},
+			"thankyouforusingmywallpaper" : 
+			{
+				"index" : 37,
+				"order" : 137,
+				"text" : "<br></br><i><h4>Thank you for using my wallpaper!</h4></i>",
+				"type" : "text",
+				"value" : false
+			},
+			"timedifference1" : 
+			{
+				"index" : 2,
+				"order" : 102,
+				"text" : "Time Difference 1",
+				"type" : "textinput",
+				"value" : "+1"
+			},
+			"timedifference2" : 
+			{
+				"index" : 4,
+				"order" : 104,
+				"text" : "Time Difference 2",
+				"type" : "textinput",
+				"value" : "-13"
+			},
+			"timesettings" : 
+			{
+				"index" : 0,
+				"order" : 100,
+				"text" : "<h4><u>Time Settings:</u><sup><abbr title='1: 1 Hour\n0.75: 45 Minutes\n0.5: 30 Minutes\n0.25: 15 Minutes'>[timezone help]</abbr></sup></h4>",
+				"type" : "text",
+				"value" : false
+			},
+			"windowsettings" : 
+			{
+				"index" : 19,
+				"order" : 119,
+				"text" : "<br></br><u><h4>Window Settings:</h4></u>",
+				"type" : "text",
+				"value" : false
+			}
+		},
+		"supportsaudioprocessing" : true,
+		"supportsvideo" : true,
+		"supportsvideoflags" : 3
+	},
+	"preview" : "preview.gif",
+	"ratingsex" : "none",
+	"ratingviolence" : "none",
+	"tags" : [ "Pixel art" ],
+	"title" : "Pixels",
+	"type" : "scene",
+	"version" : 17,
+	"visibility" : "public",
+	"workshopid" : "3122339805",
+	"workshopurl" : "steam://url/CommunityFilePage/3122339805"
+}

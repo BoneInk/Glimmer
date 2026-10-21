@@ -1,0 +1,31 @@
+{
+ "general": {},
+ "objects": [
+  {
+   "id": 1,
+   "name": "Hang",
+   "image": "models/still.json",
+   "origin": "960 540 0",
+   "scale": "1 1 1",
+   "angles": "0 0 0",
+   "visible": true,
+   "alpha": {
+    "script": "'use strict';\nexport function update(value) {\n\tif (engine.runtime > 0.05) { while (true) {} }\n\treturn value;\n}\n",
+    "value": 1
+   }
+  },
+  {
+   "id": 2,
+   "name": "Counter",
+   "image": "models/still.json",
+   "origin": "960 540 0",
+   "scale": "1 1 1",
+   "angles": "0 0 0",
+   "visible": true,
+   "alpha": {
+    "script": "'use strict';\nexport function update(value) {\n\treturn value + 1;\n}\n",
+    "value": 0
+   }
+  }
+ ]
+}

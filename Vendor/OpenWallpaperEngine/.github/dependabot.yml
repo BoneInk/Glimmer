@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # Workflow and composite actions, pinned to commit SHAs.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  # Swift packages (Package.resolved in the Xcode project).
+  - package-ecosystem: swift
+    directory: /
+    schedule:
+      interval: weekly

@@ -1,0 +1,1 @@
+Intentionally empty: the shim includes these sources through header search paths, nothing is exported to Swift.

@@ -1,0 +1,50 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : {
+		"clearcolor" : "0 0 0",
+		"orthogonalprojection" : { "width" : 1920, "height" : 1080 }
+	},
+	"objects" : [
+		{
+			"id" : 1,
+			"name" : "Title",
+			"origin" : "960 540 0",
+			"size" : "600 120",
+			"text" : { "value" : "Hello" },
+			"font" : "systemfont_arial",
+			"pointsize" : 32,
+			"color" : "1 0 0",
+			"horizontalalign" : "center",
+			"verticalalign" : "center",
+			"visible" : { "user" : "showtitle", "value" : true }
+		},
+		{
+			"id" : 2,
+			"name" : "Solid",
+			"image" : "models/util/solidlayer.json",
+			"origin" : "960 540 0",
+			"size" : "1920 1080",
+			"color" : "0 0 1"
+		},
+		{
+			"id" : 3,
+			"name" : "Compose",
+			"image" : "models/util/composelayer.json",
+			"origin" : "960 540 0",
+			"size" : "1920 1080",
+			"effects" : [
+				{
+					"file" : "effects/tint/effect.json",
+					"id" : 30,
+					"name" : "",
+					"passes" : [ { "constantshadervalues" : { "alpha" : { "user" : "tintamount", "value" : 0.5 } } } ]
+				},
+				{
+					"id" : 31,
+					"name" : "entry without a file"
+				}
+			]
+		}
+	],
+	"version" : 1
+}

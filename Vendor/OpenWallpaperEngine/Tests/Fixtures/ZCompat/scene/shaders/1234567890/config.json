@@ -1,0 +1,5 @@
+{
+	"maximumprojectid" : "2000000000",
+	"frag" : "bars.frag",
+	"vert" : "bars.vert"
+}

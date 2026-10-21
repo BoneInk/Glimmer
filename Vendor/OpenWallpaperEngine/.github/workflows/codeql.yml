@@ -1,0 +1,59 @@
+name: CodeQL
+
+# The same scan as GitHub's default CodeQL setup (languages, autobuild, runners), under CI's rule:
+# on a pull request only once it's labelled "ready to merge" (ci.yml's gate checks it's up to
+# date with main), on main after the merge, and weekly.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [labeled, synchronize, reopened]
+  schedule:
+    - cron: '41 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A run that scans nothing (an unlabelled pull request, or another label added) gets a group of its
+# own, so it never cancels a real run.
+concurrency:
+  group: >-
+    codeql-${{ github.ref }}-${{ (github.event_name != 'pull_request' ||
+    (contains(github.event.pull_request.labels.*.name, 'ready to merge') &&
+    (github.event.action != 'labeled' || github.event.label.name == 'ready to merge'))) && 'run' || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    if: >-
+      github.event_name != 'pull_request' ||
+      (contains(github.event.pull_request.labels.*.name, 'ready to merge') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'ready to merge'))
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { language: actions, build-mode: none, os: ubuntu-latest }
+          - { language: javascript-typescript, build-mode: none, os: ubuntu-latest }
+          - { language: python, build-mode: none, os: ubuntu-latest }
+          - { language: c-cpp, build-mode: none, os: ubuntu-latest }
+          - { language: swift, build-mode: autobuild, os: macos-latest }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        with:
+          category: /language:${{ matrix.language }}

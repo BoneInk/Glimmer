@@ -1,0 +1,294 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSMicrophoneUsageDescription" : {
+      "comment" : "Privacy - Microphone Usage Description",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يقرأ Open Wallpaper Engine جهاز التسجيل الذي تختاره في الإعدادات لتشغيل الخلفيات المتجاوبة مع الصوت. لا يُسجَّل شيء ولا يُرسل إلى أي مكان."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine liest das in den Einstellungen gewählte Aufnahmegerät, um audioreaktive Hintergrundbilder anzutreiben. Nichts wird gespeichert oder irgendwohin gesendet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine lee el dispositivo de grabación que eliges en Ajustes para animar los fondos de pantalla que reaccionan al audio. No se guarda ni se envía nada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine lit l’appareil d’enregistrement choisi dans les réglages pour animer les fonds d’écran réactifs au son. Rien n’est conservé ni envoyé."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine ऑडियो पर प्रतिक्रिया देने वाले वॉलपेपर चलाने के लिए सेटिंग में आपका चुना हुआ रिकॉर्डिंग डिवाइस पढ़ता है। कुछ भी सहेजा या कहीं भेजा नहीं जाता।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine legge il dispositivo di registrazione scelto nelle impostazioni per animare gli sfondi che reagiscono all’audio. Nulla viene salvato o inviato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine は、オーディオに反応する壁紙を動かすために、設定で選んだ録音デバイスを読み取ります。何も保存・送信されません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine은 오디오에 반응하는 배경화면을 구동하기 위해 설정에서 선택한 녹음 장치를 읽습니다. 아무것도 저장되거나 전송되지 않습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine odczytuje urządzenie nagrywania wybrane w ustawieniach, aby napędzać tapety reagujące na dźwięk. Nic nie jest zapisywane ani wysyłane."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Open Wallpaper Engine lê o dispositivo de gravação escolhido nos Ajustes para animar as imagens de fundo que reagem ao áudio. Nada é gravado em arquivo nem enviado."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine считывает выбранное в настройках устройство записи, чтобы управлять обоями, реагирующими на звук. Ничего не сохраняется и никуда не отправляется."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine, sese duyarlı duvar kâğıtlarını çalıştırmak için ayarlarda seçtiğiniz kayıt aygıtını okur. Hiçbir şey saklanmaz veya bir yere gönderilmez."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine зчитує вибраний у параметрах пристрій запису, щоб керувати шпалерами, що реагують на звук. Нічого не зберігається й нікуди не надсилається."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine 读取你在设置中选择的录音设备，以驱动音频响应墙纸。不会保存或发送任何内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine 讀取你在設定中選擇的錄音裝置，以驅動音訊回應背景圖片。不會儲存或傳送任何內容。"
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryAddUsageDescription" : {
+      "comment" : "Privacy - Photo Library Additions Usage Description",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يضيف Open Wallpaper Engine صور Live Photo التي تصدّرها إلى ألبوم في الصور عند تشغيل «الحفظ أيضًا في ألبوم الصور»."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine fügt exportierte Live Photos einem Album in „Fotos“ hinzu, wenn „Auch in Album in ‚Fotos‘ sichern“ aktiviert ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine añade las Live Photos que exportas a un álbum de Fotos cuando activas «Guardar también en un álbum de Fotos»."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine ajoute les Live Photos que vous exportez à un album de Photos lorsque vous activez « Enregistrer aussi dans un album de Photos »."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“फ़ोटो एल्बम में भी सेव करें” चालू करने पर Open Wallpaper Engine आपकी एक्सपोर्ट की गई Live Photo को Photos के एक एल्बम में जोड़ता है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine aggiunge le Live Photo che esporti a un album di Foto quando attivi “Salva anche in un album di Foto”."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“写真”のアルバムにも保存”をオンにすると、Open Wallpaper Engineは書き出したLive Photoを“写真”のアルバムに追加します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‘사진 앨범에도 저장’을 켜면 Open Wallpaper Engine이 내보낸 Live Photo를 사진의 앨범에 추가합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine dodaje eksportowane Live Photo do albumu w Zdjęciach, gdy włączysz „Zachowaj też w albumie w Zdjęciach”."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Open Wallpaper Engine adiciona as Live Photos exportadas a um álbum do Fotos quando você ativa “Salvar Também em Álbum do Fotos”."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine добавляет экспортированные Live Photo в альбом «Фото», когда включен параметр «Также сохранять в альбом „Фото“»."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“Fotoğraflar Albümüne de Kaydet” açıkken Open Wallpaper Engine dışa aktardığınız Live Photo’ları Fotoğraflar’daki bir albüme ekler."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine додає експортовані Live Photo в альбом «Фото», коли ввімкнено параметр «Також зберігати в альбом „Фото“»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开“同时存储到‘照片’相簿”后，Open Wallpaper Engine 会将你导出的实况照片添加到“照片”中的相簿。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟「同時儲存到『照片』相簿」後，Open Wallpaper Engine 會將你輸出的原況照片加入「照片」中的相簿。"
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryUsageDescription" : {
+      "comment" : "Privacy - Photo Library Usage Description",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعثر Open Wallpaper Engine على الألبوم الذي اخترته في الصور أو ينشئه ويضيف إليه صور Live Photo التي تصدّرها، فقط عند تشغيل «الحفظ أيضًا في ألبوم الصور»."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine sucht oder erstellt das gewählte Album in „Fotos“ und fügt ihm exportierte Live Photos hinzu, nur wenn „Auch in Album in ‚Fotos‘ sichern“ aktiviert ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine busca o crea el álbum que elegiste en Fotos y le añade las Live Photos que exportas, solo cuando activas «Guardar también en un álbum de Fotos»."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine trouve ou crée l’album choisi dans Photos et y ajoute les Live Photos que vous exportez, uniquement lorsque vous activez « Enregistrer aussi dans un album de Photos »."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "केवल “फ़ोटो एल्बम में भी सेव करें” चालू करने पर, Open Wallpaper Engine Photos में आपका चुना हुआ एल्बम ढूँढता या बनाता है और उसमें आपकी एक्सपोर्ट की गई Live Photo जोड़ता है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine trova o crea in Foto l’album che hai scelto e vi aggiunge le Live Photo che esporti, solo quando attivi “Salva anche in un album di Foto”."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“写真”のアルバムにも保存”をオンにしたときだけ、Open Wallpaper Engineは選んだアルバムを“写真”で探すか作成し、書き出したLive Photoを追加します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‘사진 앨범에도 저장’을 켠 경우에만 Open Wallpaper Engine이 사진에서 선택한 앨범을 찾거나 만들고 내보낸 Live Photo를 추가합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine znajduje lub tworzy wybrany album w Zdjęciach i dodaje do niego eksportowane Live Photo, tylko gdy włączysz „Zachowaj też w albumie w Zdjęciach”."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Open Wallpaper Engine encontra ou cria no Fotos o álbum escolhido e adiciona a ele as Live Photos exportadas, somente quando você ativa “Salvar Também em Álbum do Fotos”."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine находит или создает выбранный альбом в «Фото» и добавляет в него экспортированные Live Photo, только когда включен параметр «Также сохранять в альбом „Фото“»."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine, yalnızca “Fotoğraflar Albümüne de Kaydet” açıkken Fotoğraflar’da seçtiğiniz albümü bulur veya oluşturur ve dışa aktardığınız Live Photo’ları ona ekler."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wallpaper Engine знаходить або створює вибраний альбом у «Фото» й додає до нього експортовані Live Photo, лише коли ввімкнено параметр «Також зберігати в альбом „Фото“»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅在打开“同时存储到‘照片’相簿”时，Open Wallpaper Engine 才会在“照片”中查找或创建你选择的相簿，并将你导出的实况照片添加到其中。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "僅在開啟「同時儲存到『照片』相簿」時，Open Wallpaper Engine 才會在「照片」中尋找或建立你選擇的相簿，並將你輸出的原況照片加入其中。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

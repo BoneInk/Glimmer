@@ -1,0 +1,9 @@
+{
+	"version": 1,
+	"name": "UV ramp",
+	"passes": [
+		{
+			"material": "materials/effects/uvramp.json"
+		}
+	]
+}

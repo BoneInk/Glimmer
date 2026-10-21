@@ -1,0 +1,10 @@
+{
+ "passes": [
+  {
+   "shader": "genericimage2",
+   "textures": [
+    "still"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,1 @@
+{"passes":[{"blending":"normal","combos":{"METALLIC_MAP":1,"REFLECTION":1,"REFLECTION_MAP":1,"ROUGHNESS_MAP":1,"SCENE_ORTHO":1},"constantshadervalues":{"reflectivity":4},"cullmode":"nocull","depthtest":"disabled","depthwrite":"disabled","shader":"genericimage4","textures":["layer","reflection_normal","reflection_mask"]}]}

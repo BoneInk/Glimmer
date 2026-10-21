@@ -1,0 +1,9 @@
+{
+	"passes" : [
+		{
+			"blending" : "additive",
+			"shader" : "genericparticle",
+			"textures" : [ "particle/halo" ]
+		}
+	]
+}

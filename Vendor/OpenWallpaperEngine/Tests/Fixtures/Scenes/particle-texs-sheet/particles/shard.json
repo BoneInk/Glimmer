@@ -1,0 +1,12 @@
+{
+	"animationmode" : "randomframe",
+	"emitter" : [ { "distancemax" : 0, "name" : "sphererandom", "rate" : 100 } ],
+	"initializer" : [
+		{ "max" : 1000, "min" : 1000, "name" : "lifetimerandom" },
+		{ "max" : 256, "min" : 256, "name" : "sizerandom" },
+		{ "max" : "255 255 255", "min" : "255 255 255", "name" : "colorrandom" }
+	],
+	"material" : "materials/particle/shard.json",
+	"maxcount" : 1,
+	"renderer" : [ { "name" : "sprite" } ]
+}

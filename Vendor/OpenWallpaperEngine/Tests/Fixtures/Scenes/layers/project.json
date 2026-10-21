@@ -1,0 +1,12 @@
+{
+	"file" : "scene.json",
+	"general" : {
+		"properties" : {
+			"showtitle" : { "order" : 0, "text" : "Show title", "type" : "bool", "value" : true },
+			"tintamount" : { "order" : 1, "text" : "Tint", "type" : "slider", "min" : 0, "max" : 1, "value" : 0.5 }
+		}
+	},
+	"preview" : "preview.jpg",
+	"title" : "Fixture: layer kinds",
+	"type" : "scene"
+}

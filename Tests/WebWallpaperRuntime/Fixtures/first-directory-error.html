@@ -1,0 +1,7 @@
+<!doctype html><html><body><div id="result">pending</div><script>
+window.failDirectory=true;
+window.wallpaperPropertyListener={
+ userDirectoryFilesAddedOrChanged:async (key,paths)=>{if(failDirectory)throw new Error('FIRST_DIRECTORY_FAILURE');document.getElementById('result').textContent=key+':'+paths.length;},
+ userDirectoryFilesRemoved:async ()=>{}
+};
+</script></body></html>

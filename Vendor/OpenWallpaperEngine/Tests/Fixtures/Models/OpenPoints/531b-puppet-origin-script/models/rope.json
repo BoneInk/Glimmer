@@ -1,0 +1,5 @@
+{
+	"autosize" : true,
+	"material" : "materials/rope.json",
+	"puppet" : "models/rope_puppet.mdl"
+}

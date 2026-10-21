@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleIdentifier</key><string>com.boneinkzhong.glimmer.wallpaper-extension</string>
+<key>CFBundleExecutable</key><string>GlimmerWallpaperExtension</string>
+<key>CFBundleName</key><string>Glimmer Native Video</string>
+<key>CFBundleDisplayName</key><string>Glimmer Native Video</string>
+<key>CFBundlePackageType</key><string>XPC!</string>
+<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+<key>CFBundleShortVersionString</key><string>0.5.0</string>
+<key>CFBundleVersion</key><string>2</string>
+<key>LSMinimumSystemVersion</key><string>26.0</string>
+<key>EXAppExtensionAttributes</key><dict><key>EXExtensionPointIdentifier</key><string>com.apple.wallpaper</string></dict>
+<key>NSHumanReadableCopyright</key><string>© 2026 Glimmer contributors. Includes MIT-licensed Phosphene interface shims, © 2026 kageroumado.</string>
+</dict></plist>

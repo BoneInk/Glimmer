@@ -1,0 +1,21 @@
+{
+  "source_repository": "https://github.com/deepratna-awale/open-wallpaper-engine-mac",
+  "source_commit": "8d9e86d16e87395d0ab46710b05ecc24fd992539",
+  "research_patch_source": "evidence/research/build/research-isolation.patch",
+  "copy_exclusions": [
+    ".git",
+    ".build",
+    "build",
+    ".swiftpm",
+    "xcuserdata",
+    "-I"
+  ],
+  "private_official_wallpaper_engine_assets_included": false,
+  "purpose": "Signed isolated XPC Scene renderer used by packaged Glimmer. Main application communicates through public DTOs and does not link the GPL framework.",
+  "license": "GPL-3.0 repository code; retain nested upstream dependency licenses. Glimmer original source MIT notices unchanged.",
+  "integration_notes": [
+    "Generic original package/loose/shared VFS, strict GPU shader/script/media readiness; no wallpaper-ID exceptions.",
+    "Live scalar author property callbacks/bindings and one-frame paused updates; original Scene sound preparation with default-muted output.",
+    "Unsupported or unaudited capabilities remain explicit failures; complete Wallpaper Engine parity is not claimed."
+  ]
+}

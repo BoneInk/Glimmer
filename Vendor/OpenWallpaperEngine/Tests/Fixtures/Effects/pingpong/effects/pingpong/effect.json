@@ -1,0 +1,30 @@
+{
+	"version" : 1,
+	"name" : "Ping-pong accumulator",
+	"passes" :
+	[
+		{
+			"material" : "materials/effects/accumulate.json",
+			"target" : "_rt_B",
+			"bind" : [ { "name" : "_rt_A", "index" : 0 } ]
+		},
+		{
+			"material" : "materials/effects/show.json",
+			"bind" : [ { "name" : "_rt_B", "index" : 0 } ]
+		},
+		{
+			"command" : "swap",
+			"source" : "_rt_A",
+			"target" : "_rt_B"
+		}
+	],
+	"fbos" :
+	[
+		{ "name" : "_rt_A", "scale" : 1, "format" : "rgba8888", "clear" : "0 0 0 0", "unique" : true },
+		{ "name" : "_rt_B", "scale" : 1, "format" : "rgba8888", "clear" : "0 0 0 0", "unique" : true }
+	],
+	"functions" :
+	{
+		"reset" : { "action" : "clear", "fbos" : [ "_rt_A", "_rt_B" ] }
+	}
+}

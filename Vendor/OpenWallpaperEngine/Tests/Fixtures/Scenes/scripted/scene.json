@@ -1,0 +1,95 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : {
+		"clearcolor" : "0 0 0",
+		"orthogonalprojection" : { "width" : 128, "height" : 64 }
+	},
+	"objects" : [
+		{
+			"id" : 1,
+			"name" : "Mover",
+			"image" : "models/util/solidlayer.json",
+			"size" : "8 8",
+			"color" : "1 0 0",
+			"origin" : {
+				"script" : "'use strict';\n\nexport function update(value) {\n\tvalue.x = 48;\n\treturn value;\n}\n",
+				"value" : "8 32 0"
+			}
+		},
+		{
+			"id" : 2,
+			"name" : "Hidden at load",
+			"image" : "models/util/solidlayer.json",
+			"size" : "8 8",
+			"color" : "0 1 0",
+			"origin" : "32 56 0",
+			"visible" : {
+				"script" : "export function update() {\n\treturn true;\n}\n",
+				"value" : false
+			}
+		},
+		{
+			"id" : 3,
+			"name" : "Hidden by its script",
+			"image" : "models/util/solidlayer.json",
+			"size" : "8 8",
+			"color" : "0 0 1",
+			"origin" : "32 8 0",
+			"visible" : {
+				"script" : "export function update() {\n\treturn false;\n}\n",
+				"value" : true
+			}
+		},
+		{
+			"id" : 4,
+			"name" : "Tinted",
+			"image" : "models/util/solidlayer.json",
+			"size" : "8 8",
+			"color" : "1 1 1",
+			"origin" : "16 16 0",
+			"effects" : [
+				{
+					"file" : "effects/tint/effect.json",
+					"id" : 40,
+					"name" : "",
+					"passes" : [
+						{
+							"constantshadervalues" : {
+								"alpha" : 1,
+								"color" : {
+									"script" : "export function update() {\n\treturn new Vec3(0, 1, 0);\n}\n",
+									"value" : "0 0 1"
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"id" : 5,
+			"name" : "Creator",
+			"origin" : {
+				"script" : "export function init(value) {\n\tconst made = thisScene.createLayer({ image: 'models/util/solidlayer.json', name: 'Made', size: '8 8', color: '1 1 0', origin: '56 56 0' });\n\tshared.made = made !== null;\n\treturn value;\n}\n",
+				"value" : "0 0 0"
+			}
+		},
+		{
+			"id" : 6,
+			"name" : "Label",
+			"origin" : "96 32 0",
+			"size" : "60 40",
+			"text" : {
+				"script" : "export var scriptProperties = createScriptProperties().addText({ name: 'label', label: 'Label', value: '' }).finish();\n\nexport function update() {\n\treturn scriptProperties.label;\n}\n",
+				"scriptproperties" : { "label" : { "user" : "label", "value" : "" } },
+				"value" : ""
+			},
+			"font" : "systemfont_arial",
+			"pointsize": 5,
+			"color" : "1 1 1",
+			"horizontalalign" : "center",
+			"verticalalign" : "center"
+		}
+	],
+	"version" : 1
+}

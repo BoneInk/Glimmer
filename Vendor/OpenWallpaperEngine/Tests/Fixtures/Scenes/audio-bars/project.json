@@ -1,0 +1,11 @@
+{
+	"file" : "scene.json",
+	"general" : {
+		"properties" : {
+			"bars" : { "order" : 0, "text" : "Audio Bars", "type" : "bool", "value" : false }
+		}
+	},
+	"preview" : "preview.jpg",
+	"title" : "Fixture: audio bars on a composition layer",
+	"type" : "scene"
+}

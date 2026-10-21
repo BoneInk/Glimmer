@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>Open Wallpaper Engine reads the audio your Mac is playing to drive audio visualizers and audio-reactive wallpapers. Nothing is recorded or sent anywhere.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Open Wallpaper Engine reads the recording device you choose in Settings to drive audio-reactive wallpapers. Nothing is recorded or sent anywhere.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Open Wallpaper Engine adds the Live Photos you export to an album in Photos when you turn on “Also Save to Photos Album”.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Open Wallpaper Engine finds or creates the album you chose in Photos and adds the Live Photos you export to it, only when you turn on “Also Save to Photos Album”.</string>
+	<key>OWEVersionLabel</key>
+	<string>$(OWE_VERSION_LABEL)</string>
+	<key>SUAllowsAutomaticUpdates</key>
+	<true/>
+	<key>SUAutomaticallyUpdate</key>
+	<true/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>14400</integer>
+	<key>SUFeedURL</key>
+	<string>https://openwallpaperengine.app/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>$(SPARKLE_PUBLIC_ED_KEY)</string>
+</dict>
+</plist>

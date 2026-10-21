@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071324;color:white;font-family:-apple-system,sans-serif}
+body{display:grid;place-items:center;background:radial-gradient(ellipse at 50% 100%,#253c59,transparent 70%),#071324}
+#selected-image{position:absolute;right:5%;top:10%;width:24%;height:32%;object-fit:contain;border-radius:14px}#directory-image{position:absolute;left:5%;top:10%;width:24%;height:32%;object-fit:contain;border-radius:14px}#resources{position:absolute;bottom:5%;font-size:11px;opacity:.65;letter-spacing:0}
+#orb{position:absolute;left:50%;top:43%;width:60vmin;height:60vmin;transform:translate(-50%,-50%);border-radius:50%;filter:blur(7vmin);opacity:.7;animation:breathe 8s ease-in-out infinite alternate;background:rgb(76,153,255)}
+#orb:after{content:"";position:absolute;inset:20%;border-radius:inherit;background:#ffe0d0;filter:blur(3vmin);opacity:.6}
+main{position:relative;text-align:center;letter-spacing:.5em;line-height:2;text-shadow:0 1px 20px #0005}
+small{font-size:clamp(8px,1.8vw,16px);opacity:.6;letter-spacing:.3em}h1{font-size:clamp(20px,6vw,70px);font-weight:200;margin:0}
+@keyframes breathe{to{transform:translate(-50%,-50%) scale(1.15);opacity:.5}}
+</style></head><body><div id="orb"></div><img id="selected-image" alt=""><img id="directory-image" alt=""><p id="resources"></p><main><small>GLIMMER / INTERACTIVE WEB</small><h1 id="caption">AURORA</h1></main>
+<script>
+window.received=[];window.pauseState=false;window.directoryFiles=[];
+function showDirectory(){const image=document.getElementById("directory-image");if(window.directoryFiles.length)image.src="file:///"+window.directoryFiles[0];else image.removeAttribute("src");document.getElementById("resources").textContent=window.directoryFiles.length?"目录资源 · "+window.directoryFiles.length+" 个文件":"";}
+window.wallpaperPropertyListener={
+ applyUserProperties(p){window.received.push(p);const orb=document.getElementById('orb');
+  if(p.glow)orb.style.visibility=p.glow.value?'visible':'hidden';
+  if(p.tint)orb.style.background='rgb('+p.tint.value.split(/\s+/).map(x=>Math.round(Number(x)*255)).join(',')+')';
+  if(p.scale)orb.style.width=orb.style.height=p.scale.value+'vmin';
+  if(p.mode)orb.style.left=({center:'50%',left:'30%',right:'70%'})[p.mode.value]||'50%';
+  if(p.caption)document.getElementById('caption').textContent=p.caption.value;
+  if(p.customimage){const img=document.getElementById('selected-image');if(p.customimage.value)img.src='file:///'+p.customimage.value;else img.removeAttribute('src');}
+ },
+ userDirectoryFilesAddedOrChanged(key,files){if(key!=="slideshow")return;window.directoryFiles=[...new Set([...window.directoryFiles,...files])];showDirectory();},
+ userDirectoryFilesRemoved(key,files){if(key!=="slideshow")return;window.directoryFiles=window.directoryFiles.filter(path=>!files.includes(path));showDirectory();},
+ setPaused(p){window.pauseState=p;document.getElementById('orb').style.animationPlayState=p?'paused':'running'}
+};
+</script></body></html>

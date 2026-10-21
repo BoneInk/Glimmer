@@ -1,0 +1,41 @@
+{
+	"contentrating" : "Everyone",
+	"description" : "A local wallpaper with user properties",
+	"file" : "scene.json",
+	"general" :
+	{
+		"properties" :
+		{
+			"schemecolor" :
+			{
+				"order" : 0,
+				"text" : "ui_browse_properties_scheme_color",
+				"type" : "color",
+				"value" : "0.5 0.25 1"
+			},
+			"speed" :
+			{
+				"max" : 10,
+				"min" : 0,
+				"order" : 100,
+				"text" : "Speed",
+				"type" : "slider",
+				"value" : 2.5
+			},
+			"showclock" :
+			{
+				"order" : 101,
+				"text" : "Show clock",
+				"type" : "bool",
+				"value" : true
+			}
+		},
+		"supportsaudioprocessing" : true
+	},
+	"preview" : "preview.gif",
+	"tags" : [ "Abstract" ],
+	"title" : "Local wallpaper",
+	"type" : "scene",
+	"version" : 3,
+	"unmodelledkey" : { "nested" : [ 1, "two", null ] }
+}

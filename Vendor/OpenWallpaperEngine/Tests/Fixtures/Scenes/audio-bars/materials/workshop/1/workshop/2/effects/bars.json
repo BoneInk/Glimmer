@@ -1,0 +1,9 @@
+{
+	"passes" : [ {
+		"blending" : "normal",
+		"cullmode" : "nocull",
+		"depthtest" : "disabled",
+		"depthwrite" : "disabled",
+		"shader" : "workshop/1/workshop/2/effects/bars"
+	} ]
+}

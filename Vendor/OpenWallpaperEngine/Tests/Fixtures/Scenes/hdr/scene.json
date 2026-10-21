@@ -1,0 +1,37 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : {
+		"bloom" : true,
+		"bloomstrength" : 2,
+		"bloomthreshold" : 0.65,
+		"bloomtint" : "1 1 1",
+		"hdr" : true,
+		"bloomhdrstrength" : 2,
+		"bloomhdrthreshold" : 1,
+		"bloomhdrfeather" : 0.1,
+		"bloomhdrscatter" : 1.619,
+		"bloomhdriterations" : 8,
+		"clearcolor" : "0 0 0",
+		"orthogonalprojection" : { "width" : 480, "height" : 272 }
+	},
+	"objects" : [
+		{
+			"id" : 1,
+			"name" : "Overbright",
+			"image" : "models/util/solidlayer.json",
+			"origin" : "320 136 0",
+			"size" : "64 64",
+			"color" : "0.8 0.8 0.8",
+			"brightness" : 2
+		},
+		{
+			"id" : 2,
+			"name" : "Dim",
+			"image" : "models/util/solidlayer.json",
+			"origin" : "120 136 0",
+			"size" : "64 64",
+			"color" : "0.85 0.85 0.85"
+		}
+	],
+	"version" : 1
+}

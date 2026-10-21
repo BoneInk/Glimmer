@@ -1,0 +1,63 @@
+[
+  {
+    "_source": "3677897732 'Clock' (origin script and user-bound scale reduced to their authored values)",
+    "id": 363, "name": "Clock", "origin": "0.00000 0.00000 0.00000", "scale": "0.20000 0.20000 0.20000",
+    "angles": "0.00000 0.00000 0.00000", "size": "387.00000 219.00000", "text": "12:34", "pointsize": 32.0,
+    "padding": 32, "horizontalalign": "center", "verticalalign": "center", "anchor": "none", "blockalign": false,
+    "limitwidth": false, "maxwidth": 500.0, "limitrows": false, "maxrows": 1, "limituseellipsis": false,
+    "font": "fonts/workshop/2981960200/Quicksand-Bold.otf", "brightness": 2.3900001, "color": "1.00000 1.00000 1.00000"
+  },
+  {
+    "_source": "3677897732 'D a y'",
+    "id": 372, "parent": 363, "name": "D a y", "origin": "86.46289 567.91528 0.00000",
+    "scale": "4.08332 4.03663 3.41743", "angles": "-0.00000 -0.00000 -0.01036", "size": "368.00000 224.00000",
+    "text": "DAY", "pointsize": 32.0, "padding": 32, "horizontalalign": "center", "verticalalign": "center",
+    "anchor": "none", "blockalign": false, "limitwidth": false, "maxwidth": 500.0, "limitrows": false, "maxrows": 1,
+    "limituseellipsis": false, "font": "fonts/workshop/2981960200/Anurati-Regular.otf", "brightness": 1.4
+  },
+  {
+    "_source": "3546971487 'Media Area' (scripted scale reduced to its authored value)",
+    "id": 47, "name": "Media Area", "image": "models/workshop/3187908708/Media Area.json", "alignment": "bottom",
+    "origin": "3290.85107 752.97852 0.00000", "scale": "0.35984 0.35984 0.35984", "angles": "0.00000 -0.00000 0.00000",
+    "size": "1920.00000 845.00000"
+  },
+  {
+    "_source": "3546971487 'Song Title'",
+    "id": 50, "parent": 47, "name": "Song Title", "origin": "-137.09760 619.67834 0.00000",
+    "scale": "2.24557 2.23990 2.24557", "angles": "0.00000 -0.00000 0.00000", "size": "410.00000 84.00000",
+    "text": "Song Titel", "pointsize": 20.0, "padding": 32, "horizontalalign": "left", "verticalalign": "center",
+    "anchor": "none", "blockalign": false, "limitwidth": true, "maxwidth": 471.0, "limitrows": true, "maxrows": 2,
+    "limituseellipsis": false, "font": "fonts/Monofur-PK7og.ttf"
+  },
+  {
+    "_source": "3352730400 'Vinyl Shadow'",
+    "id": 120, "name": "Vinyl Shadow", "image": "models/workshop/2978738836/coooorl.json",
+    "origin": "294.08212 374.27295 0.00000", "scale": "0.05014 0.05014 0.05014", "size": "1276.00000 1276.00000"
+  },
+  {
+    "_source": "3352730400 'Vinyl Dot'",
+    "id": 178, "parent": 120, "name": "Vinyl Dot", "image": "models/workshop/2978738836/coooorl.json",
+    "origin": "-0.00098 -0.00293 0.00000", "scale": "0.19774 0.19774 0.19774", "size": "1276.00000 1276.00000"
+  },
+  {
+    "_source": "3352730400 'Albuim Art'",
+    "id": 195, "parent": 178, "name": "Albuim Art", "image": "models/util/solidlayer.json",
+    "origin": "-2193.76953 -38.15234 0.00000", "scale": "48.40000 48.40000 48.40000", "size": "100.00000 100.00000"
+  },
+  {
+    "_source": "3352730400 'Artist Title' (stub size)",
+    "id": 206, "parent": 195, "name": "Artist Title", "origin": "74.38000 -16.52905 0.00000",
+    "scale": "0.82645 0.82645 0.82645", "angles": "0.00000 -0.00000 0.00000", "size": "2.00000 2.00000", "text": "",
+    "pointsize": 8.0, "padding": 32, "horizontalalign": "left", "verticalalign": "center", "anchor": "center",
+    "blockalign": false, "limitwidth": true, "maxwidth": 370.94751, "limitrows": true, "maxrows": 1,
+    "limituseellipsis": true, "font": "fonts/Monofur-PK7og.ttf"
+  },
+  {
+    "_source": "3352730400 'Song Title' (stub size)",
+    "id": 212, "parent": 195, "name": "Song Title", "origin": "74.38000 24.79321 0.00000",
+    "scale": "0.82645 0.82645 0.82645", "angles": "0.00000 -0.00000 0.00000", "size": "2.00000 2.00000", "text": "",
+    "pointsize": 10.0, "padding": 32, "horizontalalign": "left", "verticalalign": "center", "anchor": "center",
+    "blockalign": false, "limitwidth": true, "maxwidth": 500.0, "limitrows": true, "maxrows": 1,
+    "limituseellipsis": true, "font": "fonts/Monofur-PK7og.ttf"
+  }
+]

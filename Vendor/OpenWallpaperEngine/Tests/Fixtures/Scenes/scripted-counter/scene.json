@@ -1,0 +1,18 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : {
+		"clearcolor" : "0 0 0",
+		"orthogonalprojection" : { "width" : 64, "height" : 64 }
+	},
+	"objects" : [
+		{
+			"id" : 1,
+			"name" : "Counter",
+			"origin" : {
+				"script" : "'use strict';\n\nlet frames = 0;\nlet offset = 0;\n\nexport function applyUserProperties(changed) {\n\tif (changed.offset !== undefined) offset = changed.offset;\n}\n\nexport function update(value) {\n\tframes += 1;\n\tshared.count = (shared.count || 0) + 1;\n\tvalue.x = frames;\n\tvalue.y = shared.count;\n\tvalue.z = offset;\n\treturn value;\n}\n",
+				"value" : "0 0 0"
+			}
+		}
+	],
+	"version" : 1
+}

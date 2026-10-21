@@ -1,0 +1,29 @@
+{
+  "file": "index.html",
+  "type": "web",
+  "title": "Author schema fixture",
+  "unknownProjectField": {"nested": [true, null, {"future": "preserve me"}]},
+  "general": {
+    "futureGeneral": ["preserve"],
+    "properties": {
+      "heading": {"type":"text","text":"ui_heading","order":0,"futureHeading":"keep"},
+      "showclock": {"type":"bool","value":true,"text":"ui_clock","order":10},
+      "format": {"type":"combo","value":"24h","options":[{"label":"ui_24h","value":"24h","optionExtra":7},{"label":"ui_12h","value":"12h"}],"text":"ui_format","condition":"showclock.value == true","order":20},
+      "schemecolor": {"type":"color","value":"0.25 0.5 1","text":"ui_color","order":30},
+      "speed": {"type":"slider","value":1.25,"min":0,"max":3,"fraction":true,"precision":2,"step":0.25,"text":"Speed","order":40},
+      "count": {"type":"slider","value":2,"min":0,"max":10,"text":"Count","order":50},
+      "caption": {"type":"textinput","value":"Hello","text":"Caption","order":60,"condition":"showclock.value && speed.value >= 1"},
+      "picture": {"type":"file","value":"","text":"Picture","order":70,"fileType":"image"},
+      "gallery": {"type":"directory","value":"","text":"Gallery","order":80,"mode":"fetchall","fileType":"image"},
+      "future": {"type":"future-type","value":{"opaque":[1,false]},"order":90,"unknownDefinition":{"keep":true}},
+      "baddefault": {"type":"slider","value":99,"min":0,"max":1,"order":100}
+    },
+    "localization": {
+      "en-us": {"ui_heading":"Clock options","ui_clock":"Show clock","ui_format":"Clock format","ui_24h":"24-hour","ui_12h":"12-hour","ui_color":"Color"},
+      "zh-chs": {"ui_heading":"时钟选项","ui_clock":"显示时钟","ui_format":"时钟格式","ui_24h":"24小时","ui_12h":"12小时","ui_color":"颜色"},
+      "zh-cht": {"ui_clock":"顯示時鐘"},
+      "ja-jp": {"ui_clock":"時計を表示"},
+      "future-language": {"unknown-token":{"keep":"all"}}
+    }
+  }
+}

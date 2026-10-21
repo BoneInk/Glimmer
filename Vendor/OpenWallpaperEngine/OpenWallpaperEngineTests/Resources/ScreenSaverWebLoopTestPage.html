@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:black}canvas{display:block;width:100%;height:100%}</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// A bar that crosses the page once a second, driven by animation frames and performance.now: in
+// stepped time the recorder finds the loop at exactly 30 frames.
+var canvas = document.getElementById('c'), context = canvas.getContext('2d');
+var start = null, color = 'white';
+window.wallpaperPropertyListener = {
+  applyUserProperties: function(properties) {
+    if (properties.barcolor) color = properties.barcolor.value;
+  }
+};
+window.wallpaperRegisterAudioListener(function(values) { window.audioFrames = (window.audioFrames || 0) + 1; });
+function draw(time) {
+  if (start === null) start = time;
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  var phase = ((performance.now() - start) / 1000) % 1;
+  context.fillStyle = 'black';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = color;
+  context.fillRect(phase * canvas.width, 0, canvas.width / 4, canvas.height);
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

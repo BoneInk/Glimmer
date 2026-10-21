@@ -1,0 +1,5 @@
+{
+	"emitter" : [ { "name" : "boxrandom", "rate" : 10 } ],
+	"material" : "materials/drops.json",
+	"maxcount" : 20
+}

@@ -1,0 +1,1 @@
+Original MIT synthetic fixture with image→transform→transform ancestry, child-before-parent order, local module animation, nonuniform parent scale and child rotation (world shear), and real group visibility/scale author controls. No Workshop or proprietary assets.

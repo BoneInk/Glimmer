@@ -1,0 +1,1241 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Can’t reach Hugging Face to download the depth model. Check your internet connection and try again." : {
+      "comment" : "Depth Map Generation install error",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر الوصول إلى Hugging Face لتنزيل نموذج العمق. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hugging Face ist nicht erreichbar, um das Tiefenmodell zu laden. Prüfe deine Internetverbindung und versuche es erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede acceder a Hugging Face para descargar el modelo de profundidad. Comprueba tu conexión a internet e inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de joindre Hugging Face pour télécharger le modèle de profondeur. Vérifiez votre connexion à Internet et réessayez."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "डेप्थ मॉडल डाउनलोड करने के लिए Hugging Face तक नहीं पहुँचा जा सका। अपना इंटरनेट कनेक्शन जाँचें और फिर से कोशिश करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile raggiungere Hugging Face per scaricare il modello di profondità. Controlla la connessione a Internet e riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "深度モデルをダウンロードするために Hugging Face に接続できません。インターネット接続を確認して、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "깊이 모델을 다운로드하기 위해 Hugging Face에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도하십시오."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można połączyć się z Hugging Face, aby pobrać model głębi. Sprawdź połączenie z internetem i spróbuj ponownie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não é possível acessar o Hugging Face para baixar o modelo de profundidade. Verifique sua conexão com a internet e tente novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удаётся подключиться к Hugging Face для загрузки модели глубины. Проверьте подключение к интернету и повторите попытку."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Derinlik modelini indirmek için Hugging Face’e ulaşılamıyor. İnternet bağlantınızı denetleyip yeniden deneyin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не вдається під’єднатися до Hugging Face, щоб завантажити модель глибини. Перевірте з’єднання з інтернетом і спробуйте ще раз."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法访问 Hugging Face 来下载深度模型。请检查互联网连接，然后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法連線至 Hugging Face 來下載深度模型。請檢查網際網路連線，然後再試一次。"
+          }
+        }
+      }
+    },
+    "Depth Anything V2 Small, Core ML by Apple: Apache License 2.0" : {
+      "comment" : "About window: credit and licence of the depth model the Depth Map Generation plugin downloads",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depth Anything V2 Small، تحويل Core ML من Apple: رخصة Apache 2.0"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depth Anything V2 Small, Core ML von Apple: Apache-Lizenz 2.0"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depth Anything V2 Small, Core ML de Apple: Licencia Apache 2.0"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depth Anything V2 Small, Core ML par Apple : licence Apache 2.0"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depth Anything V2 Small, Apple द्वारा Core ML: Apache License 2.0"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depth Anything V2 Small, Core ML di Apple: Licenza Apache 2.0"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depth Anything V2 Small（Core ML 版：Apple）：Apache License 2.0"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depth Anything V2 Small, Apple의 Core ML: Apache License 2.0"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depth Anything V2 Small, Core ML od Apple: Licencja Apache 2.0"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depth Anything V2 Small, Core ML da Apple: Licença Apache 2.0"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depth Anything V2 Small, Core ML от Apple: лицензия Apache 2.0"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depth Anything V2 Small, Apple’dan Core ML: Apache Lisansı 2.0"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depth Anything V2 Small, Core ML від Apple: ліцензія Apache 2.0"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depth Anything V2 Small，Apple 提供的 Core ML 版本：Apache 许可证 2.0"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depth Anything V2 Small，Apple 提供的 Core ML 版本：Apache 授權條款 2.0"
+          }
+        }
+      }
+    },
+    "Downloads the depth model from Apple’s Core ML release on Hugging Face." : {
+      "comment" : "Settings › Plugins: Install button help",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ينزّل نموذج العمق من إصدار Core ML الخاص بـ Apple على Hugging Face."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lädt das Tiefenmodell aus Apples Core-ML-Veröffentlichung auf Hugging Face."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descarga el modelo de profundidad de la publicación de Core ML de Apple en Hugging Face."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Télécharge le modèle de profondeur depuis la publication Core ML d’Apple sur Hugging Face."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hugging Face पर Apple की Core ML रिलीज़ से डेप्थ मॉडल डाउनलोड करता है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scarica il modello di profondità dalla pubblicazione Core ML di Apple su Hugging Face."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hugging Face 上の Apple の Core ML リリースから深度モデルをダウンロードします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hugging Face에 있는 Apple의 Core ML 릴리스에서 깊이 모델을 다운로드합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pobiera model głębi z publikacji Core ML firmy Apple w serwisie Hugging Face."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Baixa o modelo de profundidade da versão Core ML da Apple no Hugging Face."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Загружает модель глубины из публикации Core ML от Apple на Hugging Face."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Derinlik modelini Apple’ın Hugging Face’teki Core ML yayınından indirir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Завантажує модель глибини з публікації Core ML від Apple на Hugging Face."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从 Apple 在 Hugging Face 上发布的 Core ML 版本下载深度模型。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "從 Apple 在 Hugging Face 上發布的 Core ML 版本下載深度模型。"
+          }
+        }
+      }
+    },
+    "Downloads the depth model this release of the app uses and removes older ones." : {
+      "comment" : "Settings › Plugins: Update button help",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ينزّل نموذج العمق الذي يستخدمه هذا الإصدار من التطبيق ويزيل النماذج الأقدم."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lädt das Tiefenmodell, das diese App-Version verwendet, und entfernt ältere."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descarga el modelo de profundidad que usa esta versión de la app y elimina los anteriores."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Télécharge le modèle de profondeur utilisé par cette version de l’app et supprime les plus anciens."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ऐप के इस रिलीज़ में उपयोग होने वाला डेप्थ मॉडल डाउनलोड करता है और पुराने हटा देता है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scarica il modello di profondità usato da questa versione dell’app e rimuove quelli precedenti."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このバージョンのアプリが使う深度モデルをダウンロードし、古いものを削除します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 버전의 앱에서 사용하는 깊이 모델을 다운로드하고 이전 모델을 제거합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pobiera model głębi używany przez tę wersję aplikacji i usuwa starsze."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Baixa o modelo de profundidade usado por esta versão do app e remove os mais antigos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Загружает модель глубины, которую использует эта версия приложения, и удаляет более старые."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uygulamanın bu sürümünün kullandığı derinlik modelini indirir ve eskileri kaldırır."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Завантажує модель глибини, яку використовує ця версія програми, і вилучає старіші."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下载此版本 App 使用的深度模型，并移除旧版本。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下載此版本 App 使用的深度模型，並移除舊版本。"
+          }
+        }
+      }
+    },
+    "Generates depth maps for depth parallax in Scene Edit / Export and the Wallpaper Editor, on this Mac, with Depth Anything V2 Small (Apache License 2.0). The model is downloaded on demand from Apple’s Core ML release on Hugging Face and checked against the version this app expects." : {
+      "comment" : "Settings › Plugins: what Depth Map Generation is",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ينشئ خرائط عمق لاختلاف منظر العمق في نافذة «تحرير/تصدير المشهد» ومحرر الخلفيات، على جهاز Mac هذا، باستخدام Depth Anything V2 Small (رخصة Apache 2.0). يُنزَّل النموذج عند الطلب من إصدار Core ML الخاص بـ Apple على Hugging Face ويُتحقق منه مقابل الإصدار الذي يتوقعه هذا التطبيق."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erzeugt Tiefenkarten für die Tiefenparallaxe im Fenster „Szene bearbeiten/exportieren“ und im Hintergrundbild-Editor, auf diesem Mac, mit Depth Anything V2 Small (Apache-Lizenz 2.0). Das Modell wird bei Bedarf aus Apples Core-ML-Veröffentlichung auf Hugging Face geladen und mit der Version abgeglichen, die die App erwartet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Genera mapas de profundidad para el paralaje de profundidad en la ventana «Editar/exportar escena» y el Editor de fondos de pantalla, en este Mac, con Depth Anything V2 Small (Licencia Apache 2.0). El modelo se descarga cuando se necesita desde la publicación de Core ML de Apple en Hugging Face y se comprueba con la versión que espera esta app."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Génère des cartes de profondeur pour la parallaxe de profondeur dans la fenêtre « Modifier/exporter la scène » et l’Éditeur de fond d’écran, sur ce Mac, avec Depth Anything V2 Small (licence Apache 2.0). Le modèle est téléchargé à la demande depuis la publication Core ML d’Apple sur Hugging Face et vérifié par rapport à la version attendue par cette app."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“सीन एडिट/एक्सपोर्ट” और वॉलपेपर एडिटर में डेप्थ पैरालैक्स के लिए इसी Mac पर Depth Anything V2 Small (Apache License 2.0) से डेप्थ मैप बनाता है। मॉडल ज़रूरत पड़ने पर Hugging Face पर Apple की Core ML रिलीज़ से डाउनलोड होता है और इस ऐप के अपेक्षित वर्शन से मिलाकर जाँचा जाता है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Genera mappe di profondità per la parallasse di profondità nella finestra “Modifica/esporta scena” e nell’Editor sfondi, su questo Mac, con Depth Anything V2 Small (Licenza Apache 2.0). Il modello viene scaricato quando serve dalla pubblicazione Core ML di Apple su Hugging Face e verificato rispetto alla versione prevista dall’app."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「シーン編集/書き出し」と壁紙エディタの深度視差に使う深度マップを、このMac上で Depth Anything V2 Small（Apache License 2.0）を使って生成します。モデルは必要なときに Hugging Face 上の Apple の Core ML リリースからダウンロードされ、このアプリが想定するバージョンと照合されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‘장면 편집/내보내기’와 배경화면 편집기의 깊이 시차에 쓰이는 깊이 맵을 이 Mac에서 Depth Anything V2 Small(Apache License 2.0)로 생성합니다. 모델은 필요할 때 Hugging Face에 있는 Apple의 Core ML 릴리스에서 다운로드되며, 이 앱이 예상하는 버전과 대조됩니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generuje mapy głębi do paralaksy głębi w oknie „Edycja/eksport sceny” i w Edytorze tapet, na tym Macu, za pomocą Depth Anything V2 Small (Licencja Apache 2.0). Model jest pobierany na żądanie z publikacji Core ML firmy Apple w serwisie Hugging Face i sprawdzany względem wersji oczekiwanej przez aplikację."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gera mapas de profundidade para a paralaxe de profundidade na janela “Editar/Exportar Cena” e no Editor de Imagem de Fundo, neste Mac, com o Depth Anything V2 Small (Licença Apache 2.0). O modelo é baixado sob demanda da versão Core ML da Apple no Hugging Face e verificado com a versão esperada pelo app."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Создаёт карты глубины для параллакса глубины в окне «Правка/экспорт сцены» и в редакторе обоев прямо на этом Mac с помощью Depth Anything V2 Small (лицензия Apache 2.0). Модель загружается по запросу из публикации Core ML от Apple на Hugging Face и сверяется с версией, которую ожидает приложение."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“Sahne Düzenle/Dışa Aktar” penceresindeki ve Duvar Kâğıdı Düzenleyici’deki derinlik paralaksı için derinlik haritalarını bu Mac’te Depth Anything V2 Small (Apache Lisansı 2.0) ile oluşturur. Model, gerektiğinde Apple’ın Hugging Face’teki Core ML yayınından indirilir ve bu uygulamanın beklediği sürümle karşılaştırılır."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Створює карти глибини для паралаксу глибини у вікні «Редагування/експорт сцени» та в редакторі шпалер просто на цьому Mac за допомогою Depth Anything V2 Small (ліцензія Apache 2.0). Модель завантажується за потреби з публікації Core ML від Apple на Hugging Face і звіряється з версією, яку очікує програма."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在这台 Mac 上使用 Depth Anything V2 Small（Apache 许可证 2.0）为“场景编辑/导出”和墙纸编辑器中的深度视差生成深度图。模型会在需要时从 Apple 在 Hugging Face 上发布的 Core ML 版本下载，并与此 App 所需的版本进行核对。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在這部 Mac 上使用 Depth Anything V2 Small（Apache 授權條款 2.0）為「場景編輯/輸出」和背景圖片編輯器中的深度視差產生深度圖。模型會在需要時從 Apple 在 Hugging Face 上發布的 Core ML 版本下載，並與此 App 所需的版本核對。"
+          }
+        }
+      }
+    },
+    "Loaded only while generating, and released after five minutes without use." : {
+      "comment" : "Settings › Plugins: when the depth model takes memory",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يُحمَّل فقط أثناء الإنشاء، ويُحرَّر بعد خمس دقائق من عدم الاستخدام."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird nur beim Erzeugen geladen und nach fünf Minuten ohne Nutzung wieder freigegeben."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo se carga mientras se genera y se libera tras cinco minutos sin uso."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chargé uniquement pendant la génération, puis libéré après cinq minutes d’inactivité."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "केवल बनाते समय लोड होता है, और पाँच मिनट तक इस्तेमाल न होने पर मुक्त हो जाता है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Viene caricato solo durante la generazione e rilasciato dopo cinque minuti di inutilizzo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生成中のみ読み込まれ、5分間使用しないと解放されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "생성하는 동안에만 불러오며, 5분 동안 사용하지 않으면 해제됩니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wczytywany tylko podczas generowania i zwalniany po pięciu minutach bezczynności."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carregado apenas durante a geração e liberado após cinco minutos sem uso."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Загружается только во время создания и выгружается после пяти минут простоя."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yalnızca oluşturma sırasında yüklenir ve beş dakika kullanılmadığında bırakılır."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Завантажується лише під час створення і вивантажується після п’яти хвилин простою."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅在生成时载入，闲置五分钟后释放。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "僅在產生時載入，閒置五分鐘後釋放。"
+          }
+        }
+      }
+    },
+    "Moves the depth model to the Trash. Depth maps already made keep working." : {
+      "comment" : "Settings › Plugins: Remove button help",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ينقل نموذج العمق إلى سلة المهملات. تستمر خرائط العمق المُنشأة بالفعل في العمل."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legt das Tiefenmodell in den Papierkorb. Bereits erzeugte Tiefenkarten funktionieren weiterhin."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mueve el modelo de profundidad a la papelera. Los mapas de profundidad ya creados siguen funcionando."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Place le modèle de profondeur dans la corbeille. Les cartes de profondeur déjà créées continuent de fonctionner."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "डेप्थ मॉडल को ट्रैश में ले जाता है। पहले से बने डेप्थ मैप काम करते रहते हैं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sposta il modello di profondità nel Cestino. Le mappe di profondità già create continuano a funzionare."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "深度モデルをゴミ箱に移動します。作成済みの深度マップは引き続き使えます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "깊이 모델을 휴지통으로 이동합니다. 이미 만든 깊이 맵은 계속 작동합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przenosi model głębi do kosza. Utworzone już mapy głębi nadal działają."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move o modelo de profundidade para o Lixo. Os mapas de profundidade já criados continuam funcionando."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перемещает модель глубины в Корзину. Уже созданные карты глубины продолжат работать."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Derinlik modelini Çöp Sepeti’ne taşır. Önceden oluşturulan derinlik haritaları çalışmaya devam eder."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Переміщує модель глибини в Смітник. Уже створені карти глибини працюватимуть і далі."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将深度模型移到废纸篓。已生成的深度图仍可使用。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "將深度模型移到垃圾桶。已產生的深度圖仍可使用。"
+          }
+        }
+      }
+    },
+    "Preparing the model for this Mac…" : {
+      "comment" : "Settings › Plugins: the depth model is being compiled",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ تجهيز النموذج لجهاز Mac هذا…"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modell wird für diesen Mac vorbereitet …"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparando el modelo para este Mac…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Préparation du modèle pour ce Mac…"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "इस Mac के लिए मॉडल तैयार हो रहा है…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparazione del modello per questo Mac…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このMac用にモデルを準備中…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 Mac용으로 모델 준비 중…"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przygotowywanie modelu dla tego Maca…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparando o modelo para este Mac…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Подготовка модели для этого Mac…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Model bu Mac için hazırlanıyor…"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Підготовка моделі для цього Mac…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在为这台 Mac 准备模型…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在為這部 Mac 準備模型…"
+          }
+        }
+      }
+    },
+    "The depth model can’t be prepared for this Mac: %@" : {
+      "comment" : "Depth Map Generation install error; %@ is the system's reason",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر تجهيز نموذج العمق لجهاز Mac هذا: %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Tiefenmodell kann für diesen Mac nicht vorbereitet werden: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede preparar el modelo de profundidad para este Mac: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de préparer le modèle de profondeur pour ce Mac : %@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "डेप्थ मॉडल को इस Mac के लिए तैयार नहीं किया जा सका: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile preparare il modello di profondità per questo Mac: %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このMac用に深度モデルを準備できません：%@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 Mac용으로 깊이 모델을 준비할 수 없습니다: %@"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można przygotować modelu głębi dla tego Maca: %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não é possível preparar o modelo de profundidade para este Mac: %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удаётся подготовить модель глубины для этого Mac: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Derinlik modeli bu Mac için hazırlanamıyor: %@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не вдається підготувати модель глибини для цього Mac: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法为这台 Mac 准备深度模型：%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法為這部 Mac 準備深度模型：%@"
+          }
+        }
+      }
+    },
+    "The depth model download doesn’t match the version this app expects, so it wasn’t installed. Try again later." : {
+      "comment" : "Depth Map Generation install error: a downloaded file's checksum is wrong",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يطابق نموذج العمق الذي تم تنزيله الإصدار الذي يتوقعه هذا التطبيق، لذا لم يُثبَّت. حاول مرة أخرى لاحقًا."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das geladene Tiefenmodell entspricht nicht der Version, die die App erwartet, und wurde deshalb nicht installiert. Versuche es später erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El modelo de profundidad descargado no coincide con la versión que espera esta app, así que no se instaló. Inténtalo más tarde."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le modèle de profondeur téléchargé ne correspond pas à la version attendue par cette app ; il n’a donc pas été installé. Réessayez plus tard."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "डाउनलोड किया गया डेप्थ मॉडल उस वर्शन से मेल नहीं खाता जिसकी इस ऐप को अपेक्षा है, इसलिए इसे इंस्टॉल नहीं किया गया। बाद में फिर से कोशिश करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il modello di profondità scaricato non corrisponde alla versione prevista dall’app, quindi non è stato installato. Riprova più tardi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ダウンロードした深度モデルがこのアプリの想定するバージョンと一致しないため、インストールしませんでした。後でもう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다운로드한 깊이 모델이 이 앱에서 예상하는 버전과 일치하지 않아 설치하지 않았습니다. 나중에 다시 시도하십시오."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pobrany model głębi nie odpowiada wersji oczekiwanej przez aplikację, więc nie został zainstalowany. Spróbuj ponownie później."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O modelo de profundidade baixado não corresponde à versão esperada pelo app, por isso não foi instalado. Tente novamente mais tarde."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Загруженная модель глубины не совпадает с версией, которую ожидает приложение, поэтому она не установлена. Повторите попытку позже."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İndirilen derinlik modeli bu uygulamanın beklediği sürümle eşleşmediğinden yüklenmedi. Daha sonra yeniden deneyin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Завантажена модель глибини не відповідає версії, яку очікує програма, тому її не встановлено. Спробуйте пізніше."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下载的深度模型与此 App 所需的版本不符，因此未安装。请稍后再试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下載的深度模型與此 App 所需的版本不符，因此未安裝。請稍後再試。"
+          }
+        }
+      }
+    },
+    "The scene couldn’t be drawn to make a depth map." : {
+      "comment" : "Depth map generation error: the offscreen render failed",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر رسم المشهد لإنشاء خريطة عمق."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Szene konnte nicht gezeichnet werden, um eine Tiefenkarte zu erzeugen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo dibujar la escena para crear un mapa de profundidad."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de dessiner la scène pour créer une carte de profondeur."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "डेप्थ मैप बनाने के लिए सीन ड्रॉ नहीं हो सका।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile disegnare la scena per creare una mappa di profondità."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "深度マップを作成するためにシーンを描画できませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "깊이 맵을 만들기 위해 장면을 그릴 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można narysować sceny, aby utworzyć mapę głębi."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível desenhar a cena para criar um mapa de profundidade."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось отрисовать сцену для создания карты глубины."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Derinlik haritası oluşturmak için sahne çizilemedi."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не вдалося намалювати сцену, щоб створити карту глибини."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法绘制场景以生成深度图。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法繪製場景以產生深度圖。"
+          }
+        }
+      }
+    },
+    "There isn’t enough free disk space to install the depth model." : {
+      "comment" : "Depth Map Generation install error",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا توجد مساحة كافية على القرص لتثبيت نموذج العمق."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es ist nicht genug freier Speicherplatz vorhanden, um das Tiefenmodell zu installieren."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay suficiente espacio libre en el disco para instalar el modelo de profundidad."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’espace disque disponible est insuffisant pour installer le modèle de profondeur."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "डेप्थ मॉडल इंस्टॉल करने के लिए डिस्क पर पर्याप्त जगह नहीं है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo spazio libero su disco non è sufficiente per installare il modello di profondità."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "深度モデルをインストールするための空き容量が足りません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "깊이 모델을 설치할 디스크 여유 공간이 부족합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Za mało wolnego miejsca na dysku, aby zainstalować model głębi."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não há espaço livre suficiente em disco para instalar o modelo de profundidade."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Недостаточно свободного места на диске для установки модели глубины."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Derinlik modelini yüklemek için yeterli boş disk alanı yok."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Недостатньо вільного місця на диску, щоб установити модель глибини."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "磁盘空间不足，无法安装深度模型。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "磁碟空間不足，無法安裝深度模型。"
+          }
+        }
+      }
+    },
+    "Wallpaper Engine’s Depth Parallax effect isn’t available. Set up Wallpaper Engine’s assets in Settings › Assets." : {
+      "comment" : "Depth map: WE's depthparallax effect files are missing",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تأثير اختلاف منظر العمق من Wallpaper Engine غير متاح. أعِدّ موارد Wallpaper Engine من الإعدادات › الموارد."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Tiefenparallaxe-Effekt von Wallpaper Engine ist nicht verfügbar. Richte die Assets von Wallpaper Engine unter Einstellungen › Assets ein."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El efecto Paralaje de profundidad de Wallpaper Engine no está disponible. Configura los recursos de Wallpaper Engine en Ajustes › Recursos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’effet Parallaxe de profondeur de Wallpaper Engine n’est pas disponible. Configurez les ressources de Wallpaper Engine dans Réglages › Ressources."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wallpaper Engine का डेप्थ पैरालैक्स इफ़ेक्ट उपलब्ध नहीं है। सेटिंग › ऐसेट में Wallpaper Engine के ऐसेट सेट अप करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’effetto Parallasse di profondità di Wallpaper Engine non è disponibile. Configura le risorse di Wallpaper Engine in Impostazioni › Risorse."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wallpaper Engine の深度視差エフェクトを使用できません。「設定」›「アセット」で Wallpaper Engine のアセットを設定してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wallpaper Engine의 깊이 시차 효과를 사용할 수 없습니다. 설정 › 에셋에서 Wallpaper Engine의 에셋을 설정하십시오."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Efekt Paralaksa głębi z Wallpaper Engine jest niedostępny. Skonfiguruj zasoby Wallpaper Engine w Ustawienia › Zasoby."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O efeito Paralaxe de Profundidade do Wallpaper Engine não está disponível. Configure os recursos do Wallpaper Engine em Ajustes › Recursos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Эффект «Параллакс глубины» из Wallpaper Engine недоступен. Настройте ресурсы Wallpaper Engine в разделе «Настройки» › «Ресурсы»."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wallpaper Engine’in Derinlik Paralaksı efekti kullanılamıyor. Wallpaper Engine varlıklarını Ayarlar › Varlıklar’da ayarlayın."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ефект «Паралакс глибини» з Wallpaper Engine недоступний. Налаштуйте ресурси Wallpaper Engine в розділі «Параметри» › «Ресурси»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wallpaper Engine 的“深度视差”效果不可用。请在“设置”›“资源”中设置 Wallpaper Engine 的资源。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wallpaper Engine 的「深度視差」效果無法使用。請在「設定」›「資源」中設定 Wallpaper Engine 的資源。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

@@ -1,0 +1,2 @@
+All fixtures in this test are generated from original synthetic values by Glimmer contributors.
+They are covered by the repository's MIT license. No Wallpaper Engine or workshop assets are included.

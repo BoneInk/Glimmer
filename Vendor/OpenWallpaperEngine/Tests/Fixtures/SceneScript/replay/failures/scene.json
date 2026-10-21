@@ -1,0 +1,51 @@
+{
+ "general": {},
+ "objects": [
+  {
+   "id": 1,
+   "name": "Broken",
+   "image": "models/still.json",
+   "origin": "960 540 0",
+   "scale": "1 1 1",
+   "angles": "0 0 0",
+   "visible": {
+    "script": "'use strict';\nlet broken = 'one\ntwo';\nexport function update(value) { return value; }\n",
+    "value": true
+   }
+  },
+  {
+   "id": 2,
+   "name": "Thrower",
+   "image": "models/still.json",
+   "origin": "960 540 0",
+   "scale": "1 1 1",
+   "angles": "0 0 0",
+   "visible": true,
+   "alpha": {
+    "script": "'use strict';\nlet calls = 0;\nexport function update(value) {\n\tcalls += 1;\n\tif (calls === 10) throw new Error('update failed once');\n\tshared.updateCalls = calls;\n\treturn value;\n}\nexport function mediaPlaybackChanged(event) {\n\tshared.playbackEvents = (shared.playbackEvents || 0) + 1;\n}\n",
+    "value": 1
+   }
+  },
+  {
+   "id": 3,
+   "name": "Label",
+   "text": {
+    "script": "'use strict';\nlet missing;\nexport function update(value) {\n\treturn 'Now: ' + missing;\n}\n",
+    "value": "x"
+   },
+   "visible": true
+  },
+  {
+   "id": 4,
+   "name": "Lost",
+   "image": "models/still.json",
+   "origin": {
+    "script": "'use strict';\nexport function update(value) {\n\treturn new Vec3(0 / 0, 0, 0);\n}\n",
+    "value": "0 0 0"
+   },
+   "scale": "1 1 1",
+   "angles": "0 0 0",
+   "visible": true
+  }
+ ]
+}

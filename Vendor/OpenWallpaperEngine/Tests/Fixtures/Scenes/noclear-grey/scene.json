@@ -1,0 +1,12 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : {
+		"clearcolor" : "0.15 0.15 0.15",
+		"clearenabled" : false,
+		"orthogonalprojection" : { "width" : 128, "height" : 64 }
+	},
+	"objects" : [
+		{ "id" : 1, "name" : "Square", "image" : "models/util/solidlayer.json", "size" : "8 8", "color" : "1 0 0", "origin" : "16 32 0" }
+	],
+	"version" : 1
+}

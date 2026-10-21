@@ -1,0 +1,15 @@
+{
+ "title": "Replay fixture",
+ "type": "scene",
+ "file": "scene.json",
+ "general": {
+  "properties": {
+   "flag": {
+    "order": 100,
+    "text": "Flag",
+    "type": "bool",
+    "value": false
+   }
+  }
+ }
+}

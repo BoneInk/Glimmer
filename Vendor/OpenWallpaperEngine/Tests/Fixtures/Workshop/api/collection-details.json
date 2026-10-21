@@ -1,0 +1,18 @@
+{
+  "response": {
+    "result": 1,
+    "resultcount": 1,
+    "collectiondetails": [
+      {
+        "publishedfileid": "3000000001",
+        "result": 1,
+        "children": [
+          { "publishedfileid": "3000000013", "sortorder": 3, "filetype": 0 },
+          { "publishedfileid": "3000000011", "sortorder": 1, "filetype": 0 },
+          { "publishedfileid": "3000000099", "sortorder": 4, "filetype": 2 },
+          { "publishedfileid": "3000000012", "sortorder": 2, "filetype": 0 }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+	"file" : "scene.json",
+	"title" : "Fixture: an image layer whose image a texture user property replaces",
+	"type" : "scene",
+	"general" : {
+		"properties" : {
+			"photo" : { "order" : 1, "text" : "Photo", "type" : "scenetexture", "value" : "" }
+		}
+	}
+}

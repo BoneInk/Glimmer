@@ -1,0 +1,116 @@
+name: Shader and pipeline cache
+description: >-
+  Restores or saves the test runs' shader-variant translation cache and Metal pipeline archive
+  (the isolated test copy's shader-variants and pipeline-archives folders), so a run translates
+  and compiles only the shaders the last one didn't. With an encryption key, the cache is stored
+  only as an AES-256 archive, like the asset cache: in the asset jobs it holds MSL translated
+  from Wallpaper Engine's shaders.
+inputs:
+  mode:
+    description: "'restore' or 'save'"
+    required: true
+  xcode-version:
+    description: The Xcode build version (select-xcode's output)
+    required: true
+  encryption-key:
+    description: The OWE_ASSET_CACHE_KEY secret, for a cache that holds translated asset shaders
+    required: false
+    default: ''
+  skip:
+    description: "'true' does nothing (save: the restore was an exact hit)"
+    required: false
+    default: 'false'
+outputs:
+  hit:
+    description: "'true' when the restore matched the key exactly"
+    value: ${{ steps.restore.outputs.cache-hit }}
+runs:
+  using: composite
+  steps:
+    # The key: the translator and archive revisions, Xcode, the macOS build (the pipeline archive
+    # is per OS build) and the shader sources. A partial hit still holds most variants: entries
+    # of another revision or toolchain are never read (they live in another generation folder or
+    # archive file, and the app prunes them).
+    - name: Compute the shader cache key
+      id: key
+      if: inputs.skip != 'true'
+      shell: bash
+      env:
+        XCODE: ${{ inputs.xcode-version }}
+        ENCRYPTED: ${{ inputs.encryption-key != '' }}
+        SOURCES: ${{ hashFiles('OpenWallpaperEngine/Scene/Shaders/**', 'Vendor/ShaderToolchain/**') }}
+      run: |
+        revision() { sed -nE 's/^ *static let revision = ([0-9]+).*/\1/p' "$1" | head -1; }
+        translator=$(revision OpenWallpaperEngine/Scene/Shaders/ShaderVariant.swift)
+        archive=$(revision OpenWallpaperEngine/Scene/Shaders/EffectPipelineArchive.swift)
+        [[ "$translator" =~ ^[0-9]+$ && "$archive" =~ ^[0-9]+$ ]] || { echo "::error::can't read the cache revisions"; exit 1; }
+        os="$(sw_vers -productVersion)-$(sw_vers -buildVersion)"
+        kind=shader-cache ext=tar
+        if [[ "$ENCRYPTED" == true ]]; then kind=shader-cache-enc ext=tar.enc; fi
+        prefix="$kind-t$translator-a$archive-$XCODE"
+        {
+          echo "key=$prefix-$os-$SOURCES"
+          echo "restore-keys<<EOF"
+          echo "$prefix-$os-"
+          echo "$prefix-"
+          echo "EOF"
+          echo "root=$HOME/Library/Caches/Open Wallpaper Engine (isolated tests)/app.openwallpaperengine"
+          echo "file=$RUNNER_TEMP/shader-cache.$ext"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Restore the shader cache
+      id: restore
+      if: inputs.mode == 'restore' && inputs.skip != 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.key.outputs.file }}
+        key: ${{ steps.key.outputs.key }}
+        restore-keys: ${{ steps.key.outputs.restore-keys }}
+
+    - name: Unpack the shader cache
+      if: inputs.mode == 'restore' && steps.restore.outputs.cache-matched-key != ''
+      shell: bash
+      env:
+        KEY: ${{ inputs.encryption-key }}
+        ROOT: ${{ steps.key.outputs.root }}
+        FILE: ${{ steps.key.outputs.file }}
+      run: |
+        set -o pipefail
+        mkdir -p "$ROOT"
+        if [[ -n "$KEY" ]]; then
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:KEY -in "$FILE" | tar -x -C "$ROOT" -f - \
+            || { rm -rf "$ROOT/shader-variants" "$ROOT/pipeline-archives"; echo "::warning::Could not decrypt the shader cache; starting empty."; }
+        else
+          tar -x -C "$ROOT" -f "$FILE" || echo "::warning::Could not unpack the shader cache; starting empty."
+        fi
+        rm -f "$FILE"
+        echo "Shader cache: $(find "$ROOT/shader-variants" -name '*.json' 2>/dev/null | wc -l | tr -d ' ') variants, $(find "$ROOT/pipeline-archives" -name '*.binarchive' 2>/dev/null | wc -l | tr -d ' ') pipeline archives" >> "$GITHUB_STEP_SUMMARY"
+
+    # tar streams straight into openssl when encrypting, so no plaintext archive is written.
+    - name: Pack the shader cache
+      id: pack
+      if: inputs.mode == 'save' && inputs.skip != 'true'
+      shell: bash
+      env:
+        KEY: ${{ inputs.encryption-key }}
+        ROOT: ${{ steps.key.outputs.root }}
+        FILE: ${{ steps.key.outputs.file }}
+      run: |
+        set -o pipefail
+        dirs=()
+        for d in shader-variants pipeline-archives; do [[ -d "$ROOT/$d" ]] && dirs+=("$d"); done
+        (( ${#dirs[@]} )) || { echo "No shader cache to save."; exit 0; }
+        rm -f "$FILE"
+        if [[ -n "$KEY" ]]; then
+          tar -C "$ROOT" -cf - "${dirs[@]}" | openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass env:KEY -out "$FILE"
+        else
+          tar -C "$ROOT" -cf "$FILE" "${dirs[@]}"
+        fi
+        echo "done=true" >> "$GITHUB_OUTPUT"
+
+    - name: Save the shader cache
+      if: steps.pack.outputs.done == 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.key.outputs.file }}
+        key: ${{ steps.key.outputs.key }}

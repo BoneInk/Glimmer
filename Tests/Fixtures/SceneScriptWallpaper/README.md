@@ -1,0 +1,1 @@
+Original MIT synthetic SceneScript fixture. Copies the original geometric static fixture and adds inline update/applyUserProperties for rotation, movement, opacity, visibility and color controls. No Workshop assets. Used only in isolated review and tests.

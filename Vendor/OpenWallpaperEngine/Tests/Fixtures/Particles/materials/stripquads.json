@@ -1,0 +1,9 @@
+{
+	"passes" : [
+		{
+			"blending" : "translucent",
+			"shader" : "stripquads",
+			"textures" : [ "particle/solid" ]
+		}
+	]
+}

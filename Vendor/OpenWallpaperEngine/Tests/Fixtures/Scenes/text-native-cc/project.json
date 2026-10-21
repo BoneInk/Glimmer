@@ -1,0 +1,13 @@
+{
+	"file": "scene.json",
+	"general": {
+		"properties": {
+			"wec_e": { "order": 0, "text": "Show color options", "type": "bool", "value": true },
+			"wec_brs": { "order": 1, "text": "Brightness", "type": "slider", "min": 0, "max": 100, "value": 60 },
+			"wec_sa": { "order": 2, "text": "Saturation", "type": "slider", "min": 0, "max": 100, "value": 20 }
+		}
+	},
+	"preview": "preview.jpg",
+	"title": "Fixture: text over a scene through WE's colour correction, drawn at Display",
+	"type": "scene"
+}

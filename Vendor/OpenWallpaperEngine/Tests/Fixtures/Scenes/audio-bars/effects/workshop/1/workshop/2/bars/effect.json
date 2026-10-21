@@ -1,0 +1,11 @@
+{
+	"dependencies" : [
+		"materials/workshop/1/workshop/2/effects/bars.json",
+		"shaders/workshop/1/workshop/2/effects/bars.frag",
+		"shaders/workshop/1/workshop/2/effects/bars.vert"
+	],
+	"group" : "localeffects",
+	"name" : "Bars",
+	"passes" : [ { "material" : "materials/workshop/1/workshop/2/effects/bars.json" } ],
+	"version" : 1
+}

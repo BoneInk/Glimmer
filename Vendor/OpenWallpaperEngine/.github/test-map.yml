@@ -1,0 +1,178 @@
+# Which test classes a pull request runs, read by Scripts/ci-test-plan.py.
+#
+# Pushes to main, manual runs and the nightly always run every class. On a pull request each
+# changed file (old and new path of a rename) is matched against these sections in order:
+#
+#   all      the whole suite runs (the workflows, the project, the packages, the CI scripts)
+#   ignore   the file needs no tests (documentation, the website)
+#   map      the file selects the test classes whose names match the listed patterns
+#
+# A changed test file selects the classes declared in it. A file no section matches runs the
+# whole suite, so a folder that isn't mapped is always safe.
+#
+# Paths are globs from the repository root: `**` matches any number of folders, `*` anything
+# within one. Class patterns are shell-style (`Web*`); `@name` expands a group from `groups`.
+# `always` lists the classes that run whenever any class runs.
+#
+# `serial` lists the classes that flake under three parallel workers' CPU/GPU contention (timing,
+# frame-timed render and heavy GPU simulation classes). Every shard runs its parallel part first without them, then
+# runs its own serial classes one at a time.
+
+serial:
+  - TimelineCostTests
+  - TimelineRenderTests
+  - ImageMaterialPrelightingTests
+  - SceneScriptRenderTests
+  - ParticleEmitterTimingTests
+  - ParticleSimulationPerformanceTests
+  - SceneFrameBenchmarkTests
+  - SceneDisplayOutputTests
+  - SceneHDRRenderTests
+  - SceneBloomRenderTests
+  - FramePacingTests
+  - ScenePostProcessTests
+  - SceneRendererPlacementTests
+  - SceneLayerAnalysisTests
+
+always:
+  - "Localization*"
+  - "AppStorageIsolationTests"
+  - "AppIdentity*"
+
+all:
+  - ".github/**"
+  - "OpenWallpaperEngine.xcodeproj/**"
+  - "**/Package.swift"
+  - "**/Package.resolved"
+  - "Vendor/**"
+  # Every package, WEFormat too (the file formats the framework and the editor package both link).
+  - "Packages/**"
+  - "OpenWallpaperEngine-Info.plist"
+  - "Scripts/ci-*"
+  - "Scripts/test-build-settings.txt"
+  - "Tests/**"
+  - "OpenWallpaperEngineTests/Support/**"
+  # Moved here from Core/ (unmapped): every feature reads the settings view model.
+  - "OpenWallpaperEngine/Settings/GlobalSettingsViewModel.swift"
+
+ignore:
+  - "**/*.md"
+  - "docs/**"
+  - "site/**"
+  - "Design/**"
+  - "resources/**"
+  - "LICENSE"
+  - "ATTRIBUTION.txt"
+  - "OpenWallpaperEngine/OpenWallpaperEngine.docc/**"
+  # The release scripts have their own tests, which every build-and-test run includes.
+  - "Scripts/**"
+
+groups:
+  scene:
+    - "Scene*"
+    - "Particle*"
+    - "Effect*"
+    - "ImageMaterial*"
+    - "Model*"
+    - "MDL*"
+    - "Render*"
+    - "Texture*"
+    - "Tex*"
+    - "TEX*"
+    - "Lighting*"
+    - "LitLayer*"
+    - "Bloom*"
+    - "HDR*"
+    - "Timeline*"
+    - "Uniform*"
+    - "BuiltinUniform*"
+    - "WE*"
+    - "Shader*"
+    - "GLSL*"
+    - "InProcessShader*"
+    - "FailedShader*"
+    - "GeometryShader*"
+    - "Prelit*"
+    - "Drawable*"
+    - "Volumetrics*"
+    - "Spatial*"
+    - "CameraParallax*"
+    - "Skinning*"
+    - "SpriteSheet*"
+    - "FramePacing*"
+    - "PerceptualCompare*"
+    - "MediaThumbnail*"
+    - "LibrarySweep*"
+    - "Workshop*Asset*"
+    - "UserProperty*"
+    - "WallpaperProperty*"
+    - "UpdateShaderPrewarmer*"
+  script:
+    - "SceneScript*"
+    - "UserShortcut*"
+    - "ModelScript*"
+    - "UniformScript*"
+    - "WECursorCapture*"
+    - "SceneCursor*"
+    - "SceneLiveBinding*"
+    - "SceneBinding*"
+  audio:
+    - "Audio*"
+    - "CaptureFormat*"
+    - "SystemAudio*"
+    - "WallpaperAudio*"
+    - "SceneScriptAudio*"
+    - "SceneSound*"
+    - "ParticleCollisionAudio*"
+    - "VideoMusicSync*"
+    - "MediaSession*"
+    - "NowPlaying*"
+    - "SceneScriptMedia*"
+  library:
+    - "Library*"
+    - "Installed*"
+    - "Wallpaper*"
+    - "Workshop*"
+    - "Playlist*"
+    - "Display*"
+    - "ScreenSaverLayout*"
+    - "Desktop*"
+    - "Steam*"
+    - "ImportedFolder*"
+    - "FolderImport*"
+    - "FilterResults*"
+    - "SortBy*"
+    - "UserProperty*"
+    - "KnownDisplays*"
+    - "StatusMenu*"
+
+map:
+  "OpenWallpaperEngine/Scene/Scripting/**": ["@script"]
+  "OpenWallpaperEngine/Resources/SceneScript/**": ["@script"]
+  "OpenWallpaperEngine/Scene/Sound/**": ["@audio"]
+  "OpenWallpaperEngine/Scene/Rendering/**": ["@scene"]
+  "OpenWallpaperEngine/Scene/Shaders/**": ["@scene"]
+  "OpenWallpaperEngine/Scene/Format/**": ["@scene", "@script", "WallpaperAuthorLocalization*", "MobilePackage*", "MobileFormat*", "DepthMask*", "EditorTEXEncoder*"]
+  "OpenWallpaperEngine/Scene/Loading/**": ["@scene", "@script", "@audio"]
+  "OpenWallpaperEngine/Scene/Plans/**": ["@scene", "@script", "@audio"]
+  "OpenWallpaperEngine/Scene/Textures/**": ["@scene", "@script", "@audio"]
+  "OpenWallpaperEngine/Scene/Values/**": ["@scene", "@script"]
+  "OpenWallpaperEngine/Scene/Prewarm/**": ["Shader*", "UpdateShaderPrewarmer*"]
+  "OpenWallpaperEngine/Scene/UI/**": ["Scene*", "UserProperty*", "WallpaperProperty*", "WallpaperAuthorLocalization*", "WallpaperEngineLabels*", "NumericSlider*", "LivePhoto*", "ScreenSaver*"]
+  "OpenWallpaperEngine/LivePhoto/**": ["LivePhoto*", "AndroidExport*", "SceneEditorExport*"]
+  "OpenWallpaperEngine/AndroidExport/**": ["AndroidExport*", "AndroidWiFi*", "MobilePackage*", "MobileFormat*", "MCPSystem*", "SceneEditorExport*"]
+  "OpenWallpaperEngine/Web/**": ["Web*", "ChromiumWebWallpaper*", "UserPropertyHTML*", "WallpaperProperty*", "Display*"]
+  "OpenWallpaperEngine/Video/**": ["Video*", "WebKitVideo*", "MediaThumbnail*", "Display*", "Cache*"]
+  "OpenWallpaperEngine/Audio/**": ["@audio"]
+  "OpenWallpaperEngine/Library/**": ["@library"]
+  "OpenWallpaperEngine/Workshop/**": ["ClickSelection*", "Workshop*", "WallpaperEngineFavorites*", "Steam*", "WallpaperEngineAssets*", "ImportedFolder*", "Installed*", "Download*"]
+  "OpenWallpaperEngine/Settings/**": ["Settings*", "Cache*", "ApplicationRules*", "Quality*", "PowerPolicy*", "DisplayHDR*", "ReadOnlyDefaults*", "SteamCmd*", "AppUpdate*", "Update*", "WhatsNew*", "MenuShortcut*", "WallpaperEngineAssets*", "GlobalHotKey*", "UserHotKey*", "WallpaperScreenshot*", "AudioRecording*", "WallpaperEngineFavorites*", "WallpaperEngineFolders*", "InstalledFolder*", "WebDevtools*", "BatteryQuality*"]
+  "OpenWallpaperEngine/UI/**": ["ClickSelection*", "DisplayWallpaperPicture*", "Onboarding*", "WhatsNew*", "FilterResults*", "SortBy*", "Menu*", "Playlist*", "UserHotKey*", "Installed*", "NumericSlider*", "Legal*", "Desktop*", "Display*", "Workshop*", "Steam*", "WallpaperPreset*", "Settings*", "WallpaperDisplayOptions*", "WallpaperTransition*", "WallpaperTrust*", "WallpaperSetAs*", "StatusMenu*", "SceneEditorExport*", "ThemeTint*", "WallpaperEngineFavorites*", "WallpaperEngineFolders*", "Download*", "PlayInWindow*"]
+  "OpenWallpaperEngine/Theming/**": ["Theming*", "ThemeTint*", "Settings*", "LockScreenPicture*", "DesktopSnapshot*"]
+  "OpenWallpaperEngine/Localizable.xcstrings": ["Localization*"]
+  "OpenWallpaperEngine/DepthMaps/**": ["DepthMap*", "DepthMask*", "DepthParallax*", "Localization*"]
+  "OpenWallpaperEngine/MCP/**": ["MCP*", "Localization*"]
+  "MCPServer/**": ["MCPServerProcess*"]
+  "OpenWallpaperEngineSaverExtension/**": ["ScreenSaverFrameService*", "ScreenSaverLive*", "LiveSaver*"]
+  "OWESaverBroker/**": ["ScreenSaverFrameService*", "ScreenSaverLiveState*"]
+  "OpenWallpaperEngine/Installs/**": ["VersionedInstall*", "ChromiumEngine*", "DepthMapPlugin*", "WebEngineRouting*"]

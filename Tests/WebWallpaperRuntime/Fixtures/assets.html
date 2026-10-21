@@ -1,0 +1,13 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:white">
+<img id="granted" style="width:120px;height:120px"><div id="background" style="width:120px;height:120px"></div>
+<script>
+window.added=[];window.removed=[];window.files=[];window.assetCalls=[];
+window.wallpaperPropertyListener={
+ applyUserProperties: async properties=>{
+  assetCalls.push(properties);
+  if(properties.picture){let path='file:///'+properties.picture.value;document.getElementById('granted').src=path;document.getElementById('background').style.backgroundImage="url('"+path+"')";window.fetched=await fetch(path).then(r=>r.text());}
+ },
+ userDirectoryFilesAddedOrChanged: async (key,paths)=>{if(window.throwDirectory)throw new Error('DIRECTORY_FAILURE');added.push({key,paths});files=files.filter(x=>!paths.includes(x)).concat(paths);},
+ userDirectoryFilesRemoved: async (key,paths)=>{removed.push({key,paths});files=files.filter(x=>!paths.includes(x));}
+};
+</script></body></html>

@@ -1,0 +1,468 @@
+[
+ {
+  "item": "3159348391",
+  "object": {
+   "camera": "default",
+   "disablepropagation": false,
+   "fov": 31.139999,
+   "id": 203,
+   "name": "Dynamic Cam",
+   "origin": "0.00000 1.40000 4.00000",
+   "path": "scripts/camera_paths_203.json",
+   "queuemode": "random",
+   "solid": true,
+   "visible": {
+    "user": {
+     "condition": "0",
+     "name": "camerastyle"
+    },
+    "value": true
+   },
+   "zoom": 1.0
+  }
+ },
+ {
+  "item": "3159348391",
+  "object": {
+   "camera": "default",
+   "disablepropagation": false,
+   "fov": 42.57,
+   "id": 366,
+   "name": "Center",
+   "origin": "0.00000 1.64696 5.00000",
+   "path": "scripts/camera_paths_366.json",
+   "queuemode": "random",
+   "solid": true,
+   "visible": {
+    "user": {
+     "condition": "1",
+     "name": "camerastyle"
+    },
+    "value": false
+   },
+   "zoom": 1.0
+  }
+ },
+ {
+  "item": "3159348391",
+  "object": {
+   "angles": "0.00000 -0.00000 -0.00000",
+   "camera": "default",
+   "disablepropagation": false,
+   "fov": 60.540001,
+   "id": 367,
+   "name": "Center Full",
+   "origin": "0.00000 1.64696 5.43614",
+   "path": "scripts/camera_paths_367.json",
+   "queuemode": "random",
+   "solid": true,
+   "visible": {
+    "user": {
+     "condition": "2",
+     "name": "camerastyle"
+    },
+    "value": false
+   },
+   "zoom": 1.0
+  }
+ },
+ {
+  "item": "3159348391",
+  "object": {
+   "angles": "-0.38397 0.00000 0.00000",
+   "camera": "default",
+   "disablepropagation": false,
+   "fov": 58.09,
+   "id": 368,
+   "name": "Above",
+   "origin": "0.00000 4.00000 5.00000",
+   "path": "scripts/camera_paths_368.json",
+   "queuemode": "random",
+   "solid": true,
+   "visible": {
+    "user": {
+     "condition": "3",
+     "name": "camerastyle"
+    },
+    "value": false
+   },
+   "zoom": 1.0
+  }
+ },
+ {
+  "item": "3159348391",
+  "object": {
+   "angles": "0.09375 0.31897 -0.10449",
+   "camera": "default",
+   "disablepropagation": false,
+   "fov": 36.040001,
+   "id": 369,
+   "name": "PaRappa Cam",
+   "origin": "-0.87557 0.51116 4.29202",
+   "path": "scripts/camera_paths_369.json",
+   "queuemode": "random",
+   "solid": true,
+   "visible": {
+    "user": {
+     "condition": "4",
+     "name": "camerastyle"
+    },
+    "value": false
+   },
+   "zoom": 1.0
+  }
+ },
+ {
+  "item": "3159348391",
+  "object": {
+   "angles": "0.35700 0.17500 0.00000",
+   "camera": "default",
+   "disablepropagation": false,
+   "fov": 66.260002,
+   "id": 370,
+   "name": "Onion Cam",
+   "origin": "1.03046 0.77700 1.62381",
+   "path": "scripts/camera_paths_370.json",
+   "queuemode": "random",
+   "solid": true,
+   "visible": {
+    "user": {
+     "condition": "5",
+     "name": "camerastyle"
+    },
+    "value": false
+   },
+   "zoom": 1.0
+  }
+ },
+ {
+  "item": "3159348391",
+  "object": {
+   "angles": "-0.18597 0.30507 -0.10361",
+   "camera": "default",
+   "disablepropagation": false,
+   "fov": 45.84,
+   "id": 371,
+   "name": "Outside",
+   "origin": "2.04329 2.80355 8.43157",
+   "path": "scripts/camera_paths_371.json",
+   "queuemode": "random",
+   "solid": true,
+   "visible": {
+    "user": {
+     "condition": "6",
+     "name": "camerastyle"
+    },
+    "value": false
+   },
+   "zoom": 1.0
+  }
+ },
+ {
+  "item": "3159348391",
+  "object": {
+   "camera": "default",
+   "disablepropagation": false,
+   "fov": 50.0,
+   "id": 222,
+   "name": "Camera Start",
+   "origin": {
+    "animation": {
+     "c0": [
+      {
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "frame": 0,
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": 0
+      },
+      {
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "frame": 60,
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": 0
+      },
+      {
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "frame": 132,
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": 0
+      }
+     ],
+     "c1": [
+      {
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "frame": 0,
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": 0
+      },
+      {
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "frame": 60,
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": -0.090000004
+      },
+      {
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "frame": 132,
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": -0.090000004
+      }
+     ],
+     "c2": [
+      {
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "frame": 0,
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": 0
+      },
+      {
+       "back": {
+        "enabled": true,
+        "x": 0,
+        "y": 0
+       },
+       "frame": 60,
+       "front": {
+        "enabled": true,
+        "x": 0,
+        "y": -0.0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": -8
+      },
+      {
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "frame": 132,
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": -9
+      }
+     ],
+     "options": {
+      "events": [
+       {
+        "frame": 132,
+        "name": "end"
+       }
+      ],
+      "fps": 30,
+      "length": 132,
+      "mode": "single",
+      "name": "go",
+      "wraploop": null
+     },
+     "relative": true
+    },
+    "script": "'use strict';\nshared.camoff = 0\n\n/**\n * @param {Vec3} value …",
+    "value": "0.00000 1.75000 13.00000"
+   },
+   "path": "scripts/camera_paths_222.json",
+   "queuemode": "random",
+   "solid": true,
+   "visible": {
+    "script": "'use strict';\n\n/**\n * @param {Boolean} value - for property …",
+    "value": true
+   },
+   "zoom": 1.0
+  }
+ },
+ {
+  "item": "3233200129",
+  "object": {
+   "angles": "-0.31376 -0.00000 0.00000",
+   "camera": "default",
+   "fov": 53.130001,
+   "id": 30,
+   "name": "",
+   "origin": "0.04443 2.31672 3.01193",
+   "path": "scripts/camera_paths_30.json",
+   "queuemode": "random",
+   "zoom": 1.0
+  }
+ },
+ {
+  "item": "3378346807",
+  "object": {
+   "angles": {
+    "script": "'use strict';\n/** Bind this script to the \"Angles\" property …",
+    "value": "0.00000 0.00000 0.00000"
+   },
+   "camera": "default",
+   "fov": {
+    "user": "camerazoom",
+    "value": 75.0
+   },
+   "id": 419,
+   "name": "Auto Cam",
+   "path": "scripts/camera_paths_419.json",
+   "queuemode": "random",
+   "visible": {
+    "user": {
+     "condition": "0",
+     "name": "camerastyle"
+    },
+    "value": true
+   },
+   "zoom": 1.0
+  }
+ },
+ {
+  "item": "3453730450",
+  "object": {
+   "angles": "0.00000 -0.00000 0.00000",
+   "camera": "default",
+   "fov": 50.0,
+   "id": 208,
+   "name": "",
+   "origin": {
+    "script": "'use strict';\n\nexport var scriptProperties = createScriptPro…",
+    "value": "0.00000 0.00000 9.00000"
+   },
+   "path": "scripts/camera_paths_19.json",
+   "queuemode": "random",
+   "zoom": 1.0
+  }
+ },
+ {
+  "item": "3453730450",
+  "object": {
+   "camera": "default",
+   "fov": 50.0,
+   "id": 200,
+   "name": "",
+   "origin": "0.00000 0.00000 8.00000",
+   "path": "scripts/camera_paths_200.json",
+   "queuemode": "random",
+   "visible": false,
+   "zoom": 1.0
+  }
+ },
+ {
+  "item": "3455121165",
+  "object": {
+   "camera": "default",
+   "fov": 50.0,
+   "id": 99,
+   "name": "",
+   "origin": "0.00000 0.00000 3.00000",
+   "path": "scripts/camera_paths_99.json",
+   "queuemode": "random",
+   "zoom": 1.0
+  }
+ },
+ {
+  "item": "3657770939",
+  "object": {
+   "angles": "-0.52360 0.00000 0.00000",
+   "camera": "default",
+   "disablepropagation": false,
+   "fov": 85.0,
+   "id": 616,
+   "name": "",
+   "origin": "0.00000 62.00000 31.00000",
+   "path": "scripts/camera_paths_82.json",
+   "queuemode": "random",
+   "solid": true,
+   "zoom": 1.0
+  }
+ },
+ {
+  "item": "3734636606",
+  "object": {
+   "angles": {
+    "script": "'use strict';\n/**\n * Attach this script to any camera layer.…",
+    "value": "2.61799 0.78540 3.14159"
+   },
+   "camera": "default",
+   "disablepropagation": false,
+   "fov": 60.0,
+   "id": 234,
+   "name": "",
+   "origin": "7.00000 7.00000 -7.00000",
+   "path": "scripts/camera_paths_234.json",
+   "queuemode": "random",
+   "solid": true,
+   "zoom": 1.0
+  }
+ }
+]

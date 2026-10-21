@@ -1,0 +1,14 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : { "orthogonalprojection" : { "width" : 1920, "height" : 1080 } },
+	"objects" : [
+		{ "id" : 1, "name" : "Spark 1", "particle" : "particles/spark.json", "origin" : "200 300 0" },
+		{ "id" : 2, "name" : "Spark 2", "particle" : "particles/spark.json", "origin" : "600 500 0",
+		  "instanceoverride" : { "count" : 2, "rate" : 0.5 } },
+		{ "id" : 3, "name" : "Spark 3", "particle" : "particles/spark.json", "origin" : "900 200 0", "scale" : "2 2 1",
+		  "instanceoverride" : { "size" : 3 } },
+		{ "id" : 4, "name" : "Spark 4", "particle" : "particles/spark.json", "origin" : "1400 700 0", "angles" : "0 0 1" },
+		{ "id" : 5, "name" : "Glow", "particle" : "particles/glow.json", "origin" : "1700 900 0", "visible" : false }
+	],
+	"version" : 1
+}

@@ -1,0 +1,19 @@
+# A test model written by hand for Open Wallpaper Engine's importer tests: two quads, the
+# second material used first, so the meshes follow the .mtl's order rather than the faces'.
+mtllib two-materials.mtl
+v -1 0 0
+v 1 0 0
+v 1 1 0
+v -1 1 0
+v -1 0 -1
+v 1 0 -1
+vt 0 0
+vt 1 0
+vt 1 1
+vt 0 1
+vn 0 0 1
+vn 0 1 0
+usemtl Floor
+f 1/1/2 2/2/2 6/3/2 5/4/2
+usemtl Wall
+f 1/1/1 2/2/1 3/3/1 4/4/1

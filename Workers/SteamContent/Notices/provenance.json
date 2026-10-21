@@ -1,0 +1,26 @@
+[
+  {
+    "file": "ZstdSharp-MIT.txt",
+    "url": "https://raw.githubusercontent.com/oleg-st/ZstdSharp/0ee6121aaa173b42e68d3c6c8816a68e910e0557/LICENSE"
+  },
+  {
+    "file": "protobuf-net-Apache2.txt",
+    "url": "https://raw.githubusercontent.com/protobuf-net/protobuf-net/dfdfce61a739cfd76f05fcdacf8a4b3b9e94e684/Licence.txt"
+  },
+  {
+    "file": "System.IO.Hashing-MIT.txt",
+    "url": "https://raw.githubusercontent.com/dotnet/dotnet/fad253f51b461736dfd3cd9c15977bb7493becef/LICENSE.TXT"
+  },
+  {
+    "file": "dotnet-runtime-MIT.txt",
+    "fromLockedPackage": ".tools/nuget-packages/microsoft.netcore.app.runtime.osx-arm64/10.0.13/LICENSE.TXT"
+  },
+  {
+    "file": "dotnet-runtime-THIRD-PARTY-NOTICES.txt",
+    "fromLockedPackage": ".tools/nuget-packages/microsoft.netcore.app.runtime.osx-arm64/10.0.13/THIRD-PARTY-NOTICES.TXT"
+  },
+  {
+    "file": "System.IO.Hashing-THIRD-PARTY-NOTICES.txt",
+    "fromLockedPackage": ".tools/nuget-packages/system.io.hashing/10.0.1/THIRD-PARTY-NOTICES.TXT"
+  }
+]

@@ -1,0 +1,20 @@
+{
+ "passes": [
+  {
+   "alphawriting": "default",
+   "blending": "translucent",
+   "constantshadervalues": {
+    "Alpha": 1,
+    "Color": "1.00000 1.00000 1.00000",
+    "alpha": 0.5
+   },
+   "cullmode": "normal",
+   "depthtest": "enabled",
+   "depthwrite": "enabled",
+   "shader": "generic4",
+   "textures": [
+    "util/white"
+   ]
+  }
+ ]
+}

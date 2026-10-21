@@ -1,0 +1,7301 @@
+{
+ "_meta": {
+  "source": "panel: VA of the call that adds the field; add_default: VA of the filler that writes it, 'editor-observed' (UIA), or 'unresolved'",
+  "field_keys": "JSON key; flag checkboxes are key 'flags' with 'bit'. Fields are in panel order.",
+  "type": "number = unranged number box (<input type=number step=any>, arrow keys/wheel +-1); slider = float slider (rzslider step 0.01, precision 2; |max-min|<0.5 would use sliderHighPrecision, step 0.001) with a free number box; sliderint = integer slider (step 1) with a free number box; checkbox; checkboxbit (one bit of 'flags'); vec2/vec3 = per-component number boxes (mode 'angle' shows degrees); color/hue = pickers (normalized: 0-1, else 0-255); colorlist = array-size slider + pickers; combo.",
+  "min/max": "slider range from the panel call (immediates / float constants); null = no range",
+  "step": "from scripts.js templates: 'any' for number boxes",
+  "clamp": "false everywhere: no template sets min/max on the typed box and rzslider enforceRange is off; the editor never clamps a typed value",
+  "add_default": "value the editor writes when the component is added (2D/orthographic scene); add_default_3d when the filler picks another value for a perspective scene (the filler flag is the same orthographic test the runtime uses)",
+  "condition": "visibility expression evaluated by the panel (JS); the field is hidden, not removed, when false",
+  "editor_observed": "UI Automation read of the WE editor (Windows session, particle_fields.json): every field it saw (327 values, 42 components) matches this table in order, value and option list; 'match' marks them."
+ },
+ "renderer:sprite": {
+  "display_name": "Sprite",
+  "panel": "0x1401bbe64",
+  "filler": "0x140158c30",
+  "fields": {
+   "orientation": {
+    "label": "Orientation",
+    "label_key": "ui_editor_properties_orientation",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "screen",
+    "options": [
+     {
+      "label": "Screen",
+      "value": "screen"
+     },
+     {
+      "label": "Upright",
+      "value": "upright"
+     },
+     {
+      "label": "Fixed",
+      "value": "fixed"
+     }
+    ],
+    "source": {
+     "panel": "0x1401b842a (0x1401b7e80)",
+     "add_default": "0x140158c30",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "axis": {
+    "label": "Axis",
+    "label_key": "ui_editor_properties_axis",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "condition": "findProperty('orientation').value!='screen'",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401b84d0 (0x1401b7e80)",
+     "add_default": "0x140158c30"
+    }
+   },
+   "flags&0x1": {
+    "label": "Worldspace",
+    "label_key": "ui_editor_properties_worldspace",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401b853e (0x1401b7e80)",
+     "add_default": "0x140158c30"
+    }
+   }
+  }
+ },
+ "renderer:spritetrail": {
+  "display_name": "Sprite trail",
+  "panel": "0x1401bbe8c",
+  "filler": "0x140158f80 (+0x140158c30)",
+  "fields": {
+   "orientation": {
+    "label": "Orientation",
+    "label_key": "ui_editor_properties_orientation",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "screen",
+    "options": [
+     {
+      "label": "Screen",
+      "value": "screen"
+     },
+     {
+      "label": "Upright",
+      "value": "upright"
+     },
+     {
+      "label": "Fixed",
+      "value": "fixed"
+     }
+    ],
+    "source": {
+     "panel": "0x1401b842a (0x1401b7e80)",
+     "add_default": "0x140158c30",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "axis": {
+    "label": "Axis",
+    "label_key": "ui_editor_properties_axis",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "condition": "findProperty('orientation').value!='screen'",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401b84d0 (0x1401b7e80)",
+     "add_default": "0x140158c30"
+    }
+   },
+   "flags&0x1": {
+    "label": "Worldspace",
+    "label_key": "ui_editor_properties_worldspace",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401b853e (0x1401b7e80)",
+     "add_default": "0x140158c30"
+    }
+   },
+   "length": {
+    "label": "Length",
+    "label_key": "ui_editor_properties_length",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.05,
+    "source": {
+     "panel": "0x1401bbf14",
+     "add_default": "0x140158f80",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "maxlength": {
+    "label": "Max length",
+    "label_key": "ui_editor_properties_max_length",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 10,
+    "source": {
+     "panel": "0x1401bbf66",
+     "add_default": "0x140158f80",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "minlength": {
+    "label": "Min length",
+    "label_key": "ui_editor_properties_min_length",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401bbfb8",
+     "add_default": "editor-observed (not filled; read as 0)",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "renderer:rope": {
+  "display_name": "Rope",
+  "panel": "0x1401bbfc2",
+  "filler": "0x140159120 (+0x140158c30)",
+  "fields": {
+   "orientation": {
+    "label": "Orientation",
+    "label_key": "ui_editor_properties_orientation",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "screen",
+    "options": [
+     {
+      "label": "Screen",
+      "value": "screen"
+     },
+     {
+      "label": "Upright",
+      "value": "upright"
+     },
+     {
+      "label": "Fixed",
+      "value": "fixed"
+     }
+    ],
+    "source": {
+     "panel": "0x1401b842a (0x1401b7e80)",
+     "add_default": "0x140158c30",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "axis": {
+    "label": "Axis",
+    "label_key": "ui_editor_properties_axis",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "condition": "findProperty('orientation').value!='screen'",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401b84d0 (0x1401b7e80)",
+     "add_default": "0x140158c30"
+    }
+   },
+   "flags&0x1": {
+    "label": "Worldspace",
+    "label_key": "ui_editor_properties_worldspace",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401b853e (0x1401b7e80)",
+     "add_default": "0x140158c30"
+    }
+   },
+   "subdivision": {
+    "label": "Subdivision",
+    "label_key": "ui_editor_properties_subdivision",
+    "type": "sliderint",
+    "min": 0,
+    "max": 16,
+    "step": 1,
+    "clamp": false,
+    "add_default": 4,
+    "source": {
+     "panel": "0x1401bc05a",
+     "add_default": "0x140159120",
+     "editor_observed": "match (label, order, add_default, slider range)"
+    }
+   },
+   "uvscale": {
+    "label": "UV scale",
+    "label_key": "ui_editor_properties_uv_scale",
+    "type": "slider",
+    "min": 0.1,
+    "max": 3,
+    "step": 0.01,
+    "clamp": false,
+    "add_default": 1,
+    "note": "the filler writes an int 1",
+    "source": {
+     "panel": "0x1401bc0e2",
+     "add_default": "0x140159120",
+     "editor_observed": "match (label, order, add_default, slider range)"
+    }
+   },
+   "uvsmoothing": {
+    "label": "UV smoothing",
+    "label_key": "ui_editor_properties_uv_smoothing",
+    "type": "checkbox",
+    "clamp": false,
+    "add_default": true,
+    "source": {
+     "panel": "0x1401bc14a",
+     "add_default": "0x140159120"
+    }
+   },
+   "uvscrolling": {
+    "label": "UV scrolling",
+    "label_key": "ui_editor_properties_uv_scrolling",
+    "type": "checkbox",
+    "clamp": false,
+    "add_default": false,
+    "source": {
+     "panel": "0x1401bc1b2",
+     "add_default": "0x140159120"
+    }
+   }
+  }
+ },
+ "renderer:ropetrail": {
+  "display_name": "Rope trail",
+  "panel": "0x1401bc1c1",
+  "filler": "0x140159480 (+0x140158c30)",
+  "fields": {
+   "orientation": {
+    "label": "Orientation",
+    "label_key": "ui_editor_properties_orientation",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "screen",
+    "options": [
+     {
+      "label": "Screen",
+      "value": "screen"
+     },
+     {
+      "label": "Upright",
+      "value": "upright"
+     },
+     {
+      "label": "Fixed",
+      "value": "fixed"
+     }
+    ],
+    "source": {
+     "panel": "0x1401b842a (0x1401b7e80)",
+     "add_default": "0x140158c30",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "axis": {
+    "label": "Axis",
+    "label_key": "ui_editor_properties_axis",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "condition": "findProperty('orientation').value!='screen'",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401b84d0 (0x1401b7e80)",
+     "add_default": "0x140158c30"
+    }
+   },
+   "flags&0x1": {
+    "label": "Worldspace",
+    "label_key": "ui_editor_properties_worldspace",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401b853e (0x1401b7e80)",
+     "add_default": "0x140158c30"
+    }
+   },
+   "length": {
+    "label": "Length",
+    "label_key": "ui_editor_properties_length",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401bc241",
+     "add_default": "0x140159480",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "segments": {
+    "label": "Segments",
+    "label_key": "ui_editor_properties_segments",
+    "type": "sliderint",
+    "min": 2,
+    "max": 16,
+    "step": 1,
+    "clamp": false,
+    "add_default": 4,
+    "source": {
+     "panel": "0x1401bc2ae",
+     "add_default": "0x140159480",
+     "editor_observed": "match (label, order, add_default, slider range)"
+    }
+   },
+   "subdivision": {
+    "label": "Subdivision",
+    "label_key": "ui_editor_properties_subdivision",
+    "type": "sliderint",
+    "min": 0,
+    "max": 16,
+    "step": 1,
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401bc322",
+     "add_default": "0x140159480",
+     "editor_observed": "match (label, order, add_default, slider range)"
+    }
+   },
+   "uvscale": {
+    "label": "UV scale",
+    "label_key": "ui_editor_properties_uv_scale",
+    "type": "slider",
+    "min": 0.1,
+    "max": 3,
+    "step": 0.01,
+    "clamp": false,
+    "add_default": 1,
+    "note": "the filler writes an int 1",
+    "source": {
+     "panel": "0x1401bc3aa",
+     "add_default": "0x140159480",
+     "editor_observed": "match (label, order, add_default, slider range)"
+    }
+   },
+   "uvscrolling": {
+    "label": "UV scrolling",
+    "label_key": "ui_editor_properties_uv_scrolling",
+    "type": "checkbox",
+    "clamp": false,
+    "add_default": false,
+    "source": {
+     "panel": "0x1401bc412",
+     "add_default": "0x140159480"
+    }
+   },
+   "fadealpha": {
+    "label": "Fade alpha",
+    "label_key": "ui_editor_properties_fade_alpha",
+    "type": "checkbox",
+    "clamp": false,
+    "add_default": false,
+    "condition": "findProperty('uvscrolling').value",
+    "source": {
+     "panel": "0x1401bc47a",
+     "add_default": "0x140159480"
+    }
+   },
+   "fadesize": {
+    "label": "Fade size",
+    "label_key": "ui_editor_properties_fade_size",
+    "type": "checkbox",
+    "clamp": false,
+    "add_default": false,
+    "condition": "findProperty('uvscrolling').value",
+    "source": {
+     "panel": "0x1401bc4f1",
+     "add_default": "0x140159480"
+    }
+   }
+  }
+ },
+ "emitter:sphererandom": {
+  "display_name": "Sphere random",
+  "panel": "0x1401bc50f",
+  "filler": "0x140150420 (+0x140150070, 0x14014fcc0)",
+  "fields": {
+   "origin": {
+    "label": "Offset",
+    "label_key": "ui_editor_properties_offset",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401bc5a1",
+     "add_default": "0x140150420",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "directions": {
+    "label": "Directions",
+    "label_key": "ui_editor_properties_directions",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "1 1 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401bc627",
+     "add_default": "0x140150420",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "sign": {
+    "label": "Sign",
+    "label_key": "ui_editor_properties_sign",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401bc6ad",
+     "add_default": "0x140150420",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "cone": {
+    "label": "Cone",
+    "label_key": "ui_editor_properties_cone",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401bc712",
+     "add_default": "0x140150420",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "distancemin": {
+    "label": "Distance min",
+    "label_key": "ui_editor_properties_distance_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401bc764",
+     "add_default": "0x140150420",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "distancemax": {
+    "label": "Distance max",
+    "label_key": "ui_editor_properties_distance_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 256,
+    "add_default_3d": 1,
+    "source": {
+     "panel": "0x1401bc7b6",
+     "add_default": "0x140150420",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "controlpoint": {
+    "label": "Control point",
+    "label_key": "ui_editor_properties_control_point",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "integer": true,
+    "source": {
+     "panel": "0x1401bc807",
+     "add_default": "0x140150420",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "rate": {
+    "label": "Rate",
+    "label_key": "ui_editor_properties_rate",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 10,
+    "group": "Count",
+    "source": {
+     "panel": "0x1401bc889",
+     "add_default": "0x140150070",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "flags&0x2": {
+    "label": "Limit to one per frame",
+    "label_key": "ui_editor_properties_not_more_than_one_per_frame",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 2,
+    "source": {
+     "panel": "0x1401bc8e2",
+     "add_default": "0x140150420"
+    }
+   },
+   "duration": {
+    "label": "Duration",
+    "label_key": "ui_editor_properties_duration",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401bc934",
+     "add_default": "0x140150070",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "delay": {
+    "label": "Delay",
+    "label_key": "ui_editor_properties_delay",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401bc986",
+     "add_default": "0x140150070",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "instantaneous": {
+    "label": "Instantaneous",
+    "label_key": "ui_editor_properties_instantaneous",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "integer": true,
+    "source": {
+     "panel": "0x1401bc9d7",
+     "add_default": "0x140150070",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "flags&0x4": {
+    "label": "Random periodic emission",
+    "label_key": "ui_editor_properties_random_periodic_emission",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 4,
+    "source": {
+     "panel": "0x1401bca30",
+     "add_default": "0x140150420"
+    }
+   },
+   "minperiodicduration": {
+    "label": "Min periodic duration",
+    "label_key": "ui_editor_properties_min_periodic_duration",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2,
+    "condition": "checkBit(findProperty('flags').value, 4)",
+    "source": {
+     "panel": "0x1401bca82",
+     "add_default": "0x140150070"
+    }
+   },
+   "maxperiodicduration": {
+    "label": "Max periodic duration",
+    "label_key": "ui_editor_properties_max_periodic_duration",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 3,
+    "condition": "checkBit(findProperty('flags').value, 4)",
+    "source": {
+     "panel": "0x1401bcae3",
+     "add_default": "0x140150070"
+    }
+   },
+   "minperiodicdelay": {
+    "label": "Min periodic delay",
+    "label_key": "ui_editor_properties_min_periodic_delay",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "condition": "checkBit(findProperty('flags').value, 4)",
+    "source": {
+     "panel": "0x1401bcb44",
+     "add_default": "0x140150070"
+    }
+   },
+   "maxperiodicdelay": {
+    "label": "Max periodic delay",
+    "label_key": "ui_editor_properties_max_periodic_delay",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2,
+    "condition": "checkBit(findProperty('flags').value, 4)",
+    "source": {
+     "panel": "0x1401bcba5",
+     "add_default": "0x140150070"
+    }
+   },
+   "maxtoemitperperiod": {
+    "label": "Max to emit per period",
+    "label_key": "ui_editor_properties_max_to_emit_per_period",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "condition": "checkBit(findProperty('flags').value, 4)",
+    "integer": true,
+    "source": {
+     "panel": "0x1401bcc05",
+     "add_default": "0x140150070"
+    }
+   },
+   "speedmin": {
+    "label": "Speed min",
+    "label_key": "ui_editor_properties_speed_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "group": "Speed",
+    "source": {
+     "panel": "0x1401bcc96",
+     "add_default": "0x140150420",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "speedmax": {
+    "label": "Speed max",
+    "label_key": "ui_editor_properties_speed_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401bd3b9 (shared tail)",
+     "add_default": "0x140150420",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "audioprocessingmode": {
+    "label": "Mode",
+    "label_key": "ui_editor_properties_mode",
+    "type": "combo",
+    "clamp": false,
+    "add_default": 0,
+    "options": [
+     {
+      "label": "None",
+      "value": 0
+     },
+     {
+      "label": "Left",
+      "value": 1
+     },
+     {
+      "label": "Right",
+      "value": 2
+     },
+     {
+      "label": "Center",
+      "value": 3
+     }
+    ],
+    "group": "Audio response",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7a23)",
+     "add_default": "0x14014fcc0",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "audioprocessingexponent": {
+    "label": "Exponent",
+    "label_key": "ui_editor_properties_exponent",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7a78)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingbounds": {
+    "label": "Bounds",
+    "label_key": "ui_editor_properties_bounds",
+    "type": "vec2",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0.8 1.0",
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "components": [
+     "X",
+     "Y"
+    ],
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7b01)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingfrequencystart": {
+    "label": "Frequency min",
+    "label_key": "ui_editor_properties_frequency_min",
+    "type": "sliderint",
+    "min": 0,
+    "max": 15,
+    "step": 1,
+    "clamp": false,
+    "add_default": 0,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7d8e)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingfrequencyend": {
+    "label": "Frequency max",
+    "label_key": "ui_editor_properties_frequency_max",
+    "type": "sliderint",
+    "min": 0,
+    "max": 15,
+    "step": 1,
+    "clamp": false,
+    "add_default": 1,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7e1b)",
+     "add_default": "0x14014fcc0"
+    }
+   }
+  }
+ },
+ "emitter:boxrandom": {
+  "display_name": "Box random",
+  "panel": "0x1401bcca5",
+  "filler": "0x140150890 (+0x140150070, 0x14014fcc0)",
+  "fields": {
+   "origin": {
+    "label": "Offset",
+    "label_key": "ui_editor_properties_offset",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401bcd37",
+     "add_default": "0x140150890",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "directions": {
+    "label": "Directions",
+    "label_key": "ui_editor_properties_directions",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "1 1 0",
+    "add_default_3d": "1 1 1",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401bcdbd",
+     "add_default": "0x140150890",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "distancemin": {
+    "label": "Distance min",
+    "label_key": "ui_editor_properties_distance_min",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401bce43",
+     "add_default": "0x140150890",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "distancemax": {
+    "label": "Distance max",
+    "label_key": "ui_editor_properties_distance_max",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "256 256 0",
+    "add_default_3d": "1 1 1",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401bcec9",
+     "add_default": "0x140150890",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "controlpoint": {
+    "label": "Control point",
+    "label_key": "ui_editor_properties_control_point",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "integer": true,
+    "source": {
+     "panel": "0x1401bcf2f",
+     "add_default": "0x140150890",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "rate": {
+    "label": "Rate",
+    "label_key": "ui_editor_properties_rate",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 10,
+    "group": "Count",
+    "source": {
+     "panel": "0x1401bcfb0",
+     "add_default": "0x140150070",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "instantaneous": {
+    "label": "Instantaneous",
+    "label_key": "ui_editor_properties_instantaneous",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "integer": true,
+    "source": {
+     "panel": "0x1401bd000",
+     "add_default": "0x140150070",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "duration": {
+    "label": "Duration",
+    "label_key": "ui_editor_properties_duration",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401bd051",
+     "add_default": "0x140150070",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "delay": {
+    "label": "Delay",
+    "label_key": "ui_editor_properties_delay",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401bd0a5",
+     "add_default": "0x140150070",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "flags&0x2": {
+    "label": "Limit to one per frame",
+    "label_key": "ui_editor_properties_not_more_than_one_per_frame",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 2,
+    "source": {
+     "panel": "0x1401bd100",
+     "add_default": "0x140150890"
+    }
+   },
+   "flags&0x4": {
+    "label": "Random periodic emission",
+    "label_key": "ui_editor_properties_random_periodic_emission",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 4,
+    "source": {
+     "panel": "0x1401bd15b",
+     "add_default": "0x140150890"
+    }
+   },
+   "minperiodicduration": {
+    "label": "Min periodic duration",
+    "label_key": "ui_editor_properties_min_periodic_duration",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2,
+    "condition": "checkBit(findProperty('flags').value, 4)",
+    "source": {
+     "panel": "0x1401bd1af",
+     "add_default": "0x140150070"
+    }
+   },
+   "maxperiodicduration": {
+    "label": "Max periodic duration",
+    "label_key": "ui_editor_properties_max_periodic_duration",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 3,
+    "condition": "checkBit(findProperty('flags').value, 4)",
+    "source": {
+     "panel": "0x1401bd212",
+     "add_default": "0x140150070"
+    }
+   },
+   "minperiodicdelay": {
+    "label": "Min periodic delay",
+    "label_key": "ui_editor_properties_min_periodic_delay",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "condition": "checkBit(findProperty('flags').value, 4)",
+    "source": {
+     "panel": "0x1401bd275",
+     "add_default": "0x140150070"
+    }
+   },
+   "maxperiodicdelay": {
+    "label": "Max periodic delay",
+    "label_key": "ui_editor_properties_max_periodic_delay",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2,
+    "condition": "checkBit(findProperty('flags').value, 4)",
+    "source": {
+     "panel": "0x1401bd2d8",
+     "add_default": "0x140150070"
+    }
+   },
+   "speedmin": {
+    "label": "Speed min",
+    "label_key": "ui_editor_properties_speed_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "group": "Speed",
+    "source": {
+     "panel": "0x1401bd368",
+     "add_default": "0x140150890",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "speedmax": {
+    "label": "Speed max",
+    "label_key": "ui_editor_properties_speed_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401bd3b9",
+     "add_default": "0x140150890",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "audioprocessingmode": {
+    "label": "Mode",
+    "label_key": "ui_editor_properties_mode",
+    "type": "combo",
+    "clamp": false,
+    "add_default": 0,
+    "options": [
+     {
+      "label": "None",
+      "value": 0
+     },
+     {
+      "label": "Left",
+      "value": 1
+     },
+     {
+      "label": "Right",
+      "value": 2
+     },
+     {
+      "label": "Center",
+      "value": 3
+     }
+    ],
+    "group": "Audio response",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7a23)",
+     "add_default": "0x14014fcc0",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "audioprocessingexponent": {
+    "label": "Exponent",
+    "label_key": "ui_editor_properties_exponent",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7a78)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingbounds": {
+    "label": "Bounds",
+    "label_key": "ui_editor_properties_bounds",
+    "type": "vec2",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0.8 1.0",
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "components": [
+     "X",
+     "Y"
+    ],
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7b01)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingfrequencystart": {
+    "label": "Frequency min",
+    "label_key": "ui_editor_properties_frequency_min",
+    "type": "sliderint",
+    "min": 0,
+    "max": 15,
+    "step": 1,
+    "clamp": false,
+    "add_default": 0,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7d8e)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingfrequencyend": {
+    "label": "Frequency max",
+    "label_key": "ui_editor_properties_frequency_max",
+    "type": "sliderint",
+    "min": 0,
+    "max": 15,
+    "step": 1,
+    "clamp": false,
+    "add_default": 1,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7e1b)",
+     "add_default": "0x14014fcc0"
+    }
+   }
+  }
+ },
+ "emitter:layerimage": {
+  "display_name": "Layer image",
+  "panel": "0x1401bd3d6",
+  "filler": "0x140150cc0 (+0x140150070, 0x14014fcc0)",
+  "note": "flags default 0x10000 (Copy layer color on). Conditions are built at run time as \"checkFlags(\" + bit + \")\" (0x1401bd4af...).",
+  "fields": {
+   "flags&0x10000": {
+    "label": "Copy layer color",
+    "label_key": "ui_editor_properties_copy_layer_color",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": true,
+    "bit": 65536,
+    "source": {
+     "panel": "0x1401bd449",
+     "add_default": "0x140150cc0"
+    }
+   },
+   "flags&0x20000": {
+    "label": "Update emission bitmap periodically",
+    "label_key": "ui_editor_properties_update_emission_bitmap_periodically",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 131072,
+    "source": {
+     "panel": "0x1401bd4a1",
+     "add_default": "0x140150cc0"
+    },
+    "hint": "Very high performance cost, only use this option for layers with frequently changing content, like clocks."
+   },
+   "flags&0x40000": {
+    "label": "Inherit layer motion",
+    "label_key": "ui_editor_properties_inherit_layer_motion",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 262144,
+    "source": {
+     "panel": "0x1401bd593",
+     "add_default": "0x140150cc0"
+    }
+   },
+   "speedmin": {
+    "label": "Speed min",
+    "label_key": "ui_editor_properties_speed_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.1,
+    "condition": "checkFlags(262144)",
+    "source": {
+     "panel": "0x1401bd64e",
+     "add_default": "0x140150cc0"
+    }
+   },
+   "speedmax": {
+    "label": "Speed max",
+    "label_key": "ui_editor_properties_speed_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.2,
+    "condition": "checkFlags(262144)",
+    "source": {
+     "panel": "0x1401bd6b6",
+     "add_default": "0x140150cc0"
+    }
+   },
+   "flags&0x80000": {
+    "label": "Random offset",
+    "label_key": "ui_editor_properties_random_offset",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 524288,
+    "source": {
+     "panel": "0x1401bd71c",
+     "add_default": "0x140150cc0"
+    }
+   },
+   "offsetmin": {
+    "label": "Offset min",
+    "label_key": "ui_editor_properties_offset_min",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "-5 -5 0",
+    "add_default_3d": "0 0 0",
+    "condition": "checkFlags(524288)",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401bd7f9",
+     "add_default": "0x140150cc0"
+    }
+   },
+   "offsetmax": {
+    "label": "Offset max",
+    "label_key": "ui_editor_properties_offset_max",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "5 5 0",
+    "add_default_3d": "0 0 0",
+    "condition": "checkFlags(524288)",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401bd894",
+     "add_default": "0x140150cc0"
+    }
+   },
+   "rate": {
+    "label": "Rate",
+    "label_key": "ui_editor_properties_rate",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 10,
+    "group": "Count",
+    "source": {
+     "panel": "0x1401bd932",
+     "add_default": "0x140150070",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "instantaneous": {
+    "label": "Instantaneous",
+    "label_key": "ui_editor_properties_instantaneous",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "integer": true,
+    "source": {
+     "panel": "0x1401bd985",
+     "add_default": "0x140150070",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "duration": {
+    "label": "Duration",
+    "label_key": "ui_editor_properties_duration",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401bd9d9",
+     "add_default": "0x140150070",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "delay": {
+    "label": "Delay",
+    "label_key": "ui_editor_properties_delay",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401bda2d",
+     "add_default": "0x140150070",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "flags&0x2": {
+    "label": "Limit to one per frame",
+    "label_key": "ui_editor_properties_not_more_than_one_per_frame",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 2,
+    "source": {
+     "panel": "0x1401bda88",
+     "add_default": "0x140150cc0"
+    }
+   },
+   "flags&0x4": {
+    "label": "Random periodic emission",
+    "label_key": "ui_editor_properties_random_periodic_emission",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 4,
+    "source": {
+     "panel": "0x1401bdae1",
+     "add_default": "0x140150cc0"
+    }
+   },
+   "minperiodicduration": {
+    "label": "Min periodic duration",
+    "label_key": "ui_editor_properties_min_periodic_duration",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2,
+    "condition": "checkFlags(4)",
+    "source": {
+     "panel": "0x1401bdb35",
+     "add_default": "0x140150070"
+    }
+   },
+   "maxperiodicduration": {
+    "label": "Max periodic duration",
+    "label_key": "ui_editor_properties_max_periodic_duration",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 3,
+    "condition": "checkFlags(4)",
+    "source": {
+     "panel": "0x1401bdb95",
+     "add_default": "0x140150070"
+    }
+   },
+   "minperiodicdelay": {
+    "label": "Min periodic delay",
+    "label_key": "ui_editor_properties_min_periodic_delay",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "condition": "checkFlags(4)",
+    "source": {
+     "panel": "0x1401bdbf5",
+     "add_default": "0x140150070"
+    }
+   },
+   "maxperiodicdelay": {
+    "label": "Max periodic delay",
+    "label_key": "ui_editor_properties_max_periodic_delay",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2,
+    "condition": "checkFlags(4)",
+    "source": {
+     "panel": "0x1401bdc55",
+     "add_default": "0x140150070"
+    }
+   },
+   "audioprocessingmode": {
+    "label": "Mode",
+    "label_key": "ui_editor_properties_mode",
+    "type": "combo",
+    "clamp": false,
+    "add_default": 0,
+    "options": [
+     {
+      "label": "None",
+      "value": 0
+     },
+     {
+      "label": "Left",
+      "value": 1
+     },
+     {
+      "label": "Right",
+      "value": 2
+     },
+     {
+      "label": "Center",
+      "value": 3
+     }
+    ],
+    "group": "Audio response",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7a23)",
+     "add_default": "0x14014fcc0",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "audioprocessingexponent": {
+    "label": "Exponent",
+    "label_key": "ui_editor_properties_exponent",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7a78)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingbounds": {
+    "label": "Bounds",
+    "label_key": "ui_editor_properties_bounds",
+    "type": "vec2",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0.8 1.0",
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "components": [
+     "X",
+     "Y"
+    ],
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7b01)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingfrequencystart": {
+    "label": "Frequency min",
+    "label_key": "ui_editor_properties_frequency_min",
+    "type": "sliderint",
+    "min": 0,
+    "max": 15,
+    "step": 1,
+    "clamp": false,
+    "add_default": 0,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7d8e)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingfrequencyend": {
+    "label": "Frequency max",
+    "label_key": "ui_editor_properties_frequency_max",
+    "type": "sliderint",
+    "min": 0,
+    "max": 15,
+    "step": 1,
+    "clamp": false,
+    "add_default": 1,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7e1b)",
+     "add_default": "0x14014fcc0"
+    }
+   }
+  }
+ },
+ "initializer:lifetimerandom": {
+  "display_name": "Lifetime random",
+  "panel": "0x1401bdc9c",
+  "filler": "0x140150fe0",
+  "fields": {
+   "min": {
+    "label": "Min",
+    "label_key": "ui_editor_properties_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401bdd0c",
+     "add_default": "0x140150fe0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "max": {
+    "label": "Max",
+    "label_key": "ui_editor_properties_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401bdd5d",
+     "add_default": "0x140150fe0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "exponent": {
+    "label": "Exponent",
+    "label_key": "ui_editor_properties_exponent",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401bddb1",
+     "add_default": "0x140150fe0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "initializer:sizerandom": {
+  "display_name": "Size random",
+  "panel": "0x1401bddbb",
+  "filler": "0x140151210",
+  "fields": {
+   "min": {
+    "label": "Min",
+    "label_key": "ui_editor_properties_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 5,
+    "add_default_3d": 0.001,
+    "source": {
+     "panel": "0x1401bdd0c",
+     "add_default": "0x140151210",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "max": {
+    "label": "Max",
+    "label_key": "ui_editor_properties_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 50,
+    "add_default_3d": 1,
+    "source": {
+     "panel": "0x1401bdd5d",
+     "add_default": "0x140151210",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "exponent": {
+    "label": "Exponent",
+    "label_key": "ui_editor_properties_exponent",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401bddb1",
+     "add_default": "0x140151210",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "initializer:alpharandom": {
+  "display_name": "Alpha random",
+  "panel": "0x1401be34b",
+  "filler": "0x140151db0",
+  "fields": {
+   "min": {
+    "label": "Min",
+    "label_key": "ui_editor_properties_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.05,
+    "source": {
+     "panel": "0x1401bdd0c",
+     "add_default": "0x140151db0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "max": {
+    "label": "Max",
+    "label_key": "ui_editor_properties_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401bdd5d",
+     "add_default": "0x140151db0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "exponent": {
+    "label": "Exponent",
+    "label_key": "ui_editor_properties_exponent",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401bddb1",
+     "add_default": "0x140151db0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "initializer:colorrandom": {
+  "display_name": "Color random",
+  "panel": "0x1401bdde0",
+  "filler": "0x1401514b0",
+  "fields": {
+   "min": {
+    "label": "Min",
+    "label_key": "ui_editor_properties_min",
+    "type": "color",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "normalized": false,
+    "note": "colour picker, 0-255 per channel",
+    "source": {
+     "panel": "0x1401bde64",
+     "add_default": "0x1401514b0"
+    }
+   },
+   "max": {
+    "label": "Max",
+    "label_key": "ui_editor_properties_max",
+    "type": "color",
+    "clamp": false,
+    "add_default": "255 255 255",
+    "normalized": false,
+    "note": "colour picker, 0-255 per channel",
+    "source": {
+     "panel": "0x1401bdedc",
+     "add_default": "0x1401514b0"
+    }
+   },
+   "exponent": {
+    "label": "Exponent",
+    "label_key": "ui_editor_properties_exponent",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401bddb1 (shared)",
+     "add_default": "0x1401514b0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "initializer:hsvcolorrandom": {
+  "display_name": "HSV color random",
+  "panel": "0x1401bdefd",
+  "filler": "0x140151780",
+  "fields": {
+   "huemin": {
+    "label": "Hue min",
+    "label_key": "ui_editor_properties_hue_min",
+    "type": "hue",
+    "clamp": false,
+    "add_default": 0,
+    "normalized": true,
+    "note": "hue picker, stored 0-1",
+    "source": {
+     "panel": "0x1401bdf7e",
+     "add_default": "0x140151780"
+    }
+   },
+   "huemax": {
+    "label": "Hue max",
+    "label_key": "ui_editor_properties_hue_max",
+    "type": "hue",
+    "clamp": false,
+    "add_default": 1,
+    "normalized": true,
+    "note": "hue picker, stored 0-1",
+    "source": {
+     "panel": "0x1401bdfee",
+     "add_default": "0x140151780"
+    }
+   },
+   "huesteps": {
+    "label": "Hue steps",
+    "label_key": "ui_editor_properties_hue_steps",
+    "type": "sliderint",
+    "min": 1,
+    "max": 30,
+    "step": 1,
+    "clamp": false,
+    "add_default": 6,
+    "source": {
+     "panel": "0x1401be067",
+     "add_default": "0x140151780",
+     "editor_observed": "match (label, order, add_default, slider range)"
+    }
+   },
+   "saturationmin": {
+    "label": "Saturation min",
+    "label_key": "ui_editor_properties_saturation_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.5,
+    "source": {
+     "panel": "0x1401be0d5",
+     "add_default": "0x140151780",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "saturationmax": {
+    "label": "Saturation max",
+    "label_key": "ui_editor_properties_saturation_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401be129",
+     "add_default": "0x140151780",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "valuemin": {
+    "label": "Value min",
+    "label_key": "ui_editor_properties_value_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.5,
+    "source": {
+     "panel": "0x1401be17d",
+     "add_default": "0x140151780",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "valuemax": {
+    "label": "Value max",
+    "label_key": "ui_editor_properties_value_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401be1d1",
+     "add_default": "0x140151780",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "initializer:colorlist": {
+  "display_name": "Color list",
+  "panel": "0x1401be1df",
+  "filler": "0x140151ab0",
+  "fields": {
+   "colors": {
+    "label": "Colors",
+    "label_key": "ui_editor_properties_colors",
+    "type": "colorlist",
+    "min": 1,
+    "max": 10,
+    "step": 1,
+    "clamp": true,
+    "add_default": "1 1 1",
+    "normalized": true,
+    "note": "array-size slider (scripts.js colorlist template: floor 1, ceil 10, no typed box, so the count is limited to 1-10) plus one normalized colour picker per entry; add-default is one white entry",
+    "source": {
+     "panel": "0x1401be248",
+     "add_default": "0x140151ab0",
+     "editor_observed": "match (label, order, add_default, slider range)"
+    }
+   },
+   "huenoise": {
+    "label": "Hue noise",
+    "label_key": "ui_editor_properties_hue_noise",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401be299",
+     "add_default": "0x140151ab0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "saturationnoise": {
+    "label": "Saturation noise",
+    "label_key": "ui_editor_properties_saturation_noise",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401be2ed",
+     "add_default": "0x140151ab0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "valuenoise": {
+    "label": "Value noise",
+    "label_key": "ui_editor_properties_value_noise",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401be341",
+     "add_default": "0x140151ab0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "initializer:velocityrandom": {
+  "display_name": "Velocity random",
+  "panel": "0x1401be370",
+  "filler": "0x140151ff0",
+  "fields": {
+   "min": {
+    "label": "Speed min",
+    "label_key": "ui_editor_properties_speed_min",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "-32 -32 0",
+    "add_default_3d": "-1 -1 -1",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401be401",
+     "add_default": "0x140151ff0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "max": {
+    "label": "Speed max",
+    "label_key": "ui_editor_properties_speed_max",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "32 32 0",
+    "add_default_3d": "1 1 1",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401be486",
+     "add_default": "0x140151ff0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "exponent": {
+    "label": "Exponent",
+    "label_key": "ui_editor_properties_exponent",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401bddb1 (shared)",
+     "add_default": "0x140151ff0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "initializer:angularvelocityrandom": {
+  "display_name": "Angular velocity random",
+  "panel": "0x1401bec92",
+  "filler": "0x140153100",
+  "fields": {
+   "min": {
+    "label": "Speed min",
+    "label_key": "ui_editor_properties_speed_min",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 -5",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401be401 (shared with velocityrandom)",
+     "add_default": "0x140153100",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "max": {
+    "label": "Speed max",
+    "label_key": "ui_editor_properties_speed_max",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 5",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401be486 (shared with velocityrandom)",
+     "add_default": "0x140153100",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "exponent": {
+    "label": "Exponent",
+    "label_key": "ui_editor_properties_exponent",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401bddb1 (shared)",
+     "add_default": "0x140153100",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "initializer:rotationrandom": {
+  "display_name": "Rotation random",
+  "panel": "0x1401be8f4",
+  "filler": "0x140152a10",
+  "fields": {
+   "min": {
+    "label": "Min",
+    "label_key": "ui_editor_properties_min",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "mode": "angle",
+    "note": "shown in degrees, stored in radians",
+    "source": {
+     "panel": "0x1401be981",
+     "add_default": "0x140152a10",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "max": {
+    "label": "Max",
+    "label_key": "ui_editor_properties_max",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 6.2831853071",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "mode": "angle",
+    "note": "shown in degrees (Z 360), stored in radians",
+    "source": {
+     "panel": "0x1401bea06",
+     "add_default": "0x140152a10",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "exponent": {
+    "label": "Exponent",
+    "label_key": "ui_editor_properties_exponent",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401bddb1 (shared)",
+     "add_default": "0x140152a10",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "initializer:inheritcontrolpointvelocity": {
+  "display_name": "Inherit control point velocity",
+  "panel": "0x1401be494",
+  "filler": "0x140152290",
+  "fields": {
+   "min": {
+    "label": "Speed min",
+    "label_key": "ui_editor_properties_speed_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.1,
+    "source": {
+     "panel": "0x1401be500",
+     "add_default": "0x140152290",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "max": {
+    "label": "Speed max",
+    "label_key": "ui_editor_properties_speed_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.2,
+    "source": {
+     "panel": "0x1401be551",
+     "add_default": "0x140152290",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "controlpoint": {
+    "label": "Control point",
+    "label_key": "ui_editor_properties_control_point",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "integer": true,
+    "source": {
+     "panel": "0x1401bf06e (shared tail)",
+     "add_default": "0x140152290",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "initializer:turbulentvelocityrandom": {
+  "display_name": "Turbulent velocity random",
+  "panel": "0x1401be566",
+  "filler": "0x140152560",
+  "fields": {
+   "scale": {
+    "label": "Scale",
+    "label_key": "ui_editor_properties_scale",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401be5d2",
+     "add_default": "0x140152560",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "timescale": {
+    "label": "Noise speed",
+    "label_key": "ui_editor_properties_noise_speed",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401be623",
+     "add_default": "0x140152560",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "offset": {
+    "label": "Offset",
+    "label_key": "ui_editor_properties_offset",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401be677",
+     "add_default": "0x140152560",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "speedmin": {
+    "label": "Speed min",
+    "label_key": "ui_editor_properties_speed_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 100,
+    "add_default_3d": 0.5,
+    "source": {
+     "panel": "0x1401be6cb",
+     "add_default": "0x140152560",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "speedmax": {
+    "label": "Speed max",
+    "label_key": "ui_editor_properties_speed_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 250,
+    "add_default_3d": 1,
+    "source": {
+     "panel": "0x1401be71f",
+     "add_default": "0x140152560",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "phasemin": {
+    "label": "Phase min",
+    "label_key": "ui_editor_properties_phase_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401be773",
+     "add_default": "0x140152560",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "phasemax": {
+    "label": "Phase max",
+    "label_key": "ui_editor_properties_phase_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.1,
+    "source": {
+     "panel": "0x1401be7c7",
+     "add_default": "0x140152560",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "forward": {
+    "label": "Forward",
+    "label_key": "ui_editor_properties_forward",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 1 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401be83c",
+     "add_default": "0x140152560",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "right": {
+    "label": "Normal",
+    "label_key": "ui_editor_properties_normal",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 1",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401be8c4",
+     "add_default": "0x140152560",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "audioprocessingmode": {
+    "label": "Mode",
+    "label_key": "ui_editor_properties_mode",
+    "type": "combo",
+    "clamp": false,
+    "add_default": 0,
+    "options": [
+     {
+      "label": "None",
+      "value": 0
+     },
+     {
+      "label": "Left",
+      "value": 1
+     },
+     {
+      "label": "Right",
+      "value": 2
+     },
+     {
+      "label": "Center",
+      "value": 3
+     }
+    ],
+    "group": "Audio response",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7a23)",
+     "add_default": "0x14014fcc0",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "audioprocessingexponent": {
+    "label": "Exponent",
+    "label_key": "ui_editor_properties_exponent",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7a78)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingbounds": {
+    "label": "Bounds",
+    "label_key": "ui_editor_properties_bounds",
+    "type": "vec2",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0.8 1.0",
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "components": [
+     "X",
+     "Y"
+    ],
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7b01)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingfrequencystart": {
+    "label": "Frequency min",
+    "label_key": "ui_editor_properties_frequency_min",
+    "type": "sliderint",
+    "min": 0,
+    "max": 15,
+    "step": 1,
+    "clamp": false,
+    "add_default": 0,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7d8e)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingfrequencyend": {
+    "label": "Frequency max",
+    "label_key": "ui_editor_properties_frequency_max",
+    "type": "sliderint",
+    "min": 0,
+    "max": 15,
+    "step": 1,
+    "clamp": false,
+    "add_default": 1,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7e1b)",
+     "add_default": "0x14014fcc0"
+    }
+   }
+  }
+ },
+ "initializer:positionoffsetrandom": {
+  "display_name": "Position offset random",
+  "panel": "0x1401bea14",
+  "filler": "0x140152ce0",
+  "fields": {
+   "directions": {
+    "label": "Directions",
+    "label_key": "ui_editor_properties_directions",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "1 1 0",
+    "add_default_3d": "1 1 1",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401beaa1",
+     "add_default": "0x140152ce0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "sign": {
+    "label": "Sign",
+    "label_key": "ui_editor_properties_sign",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401beb26",
+     "add_default": "0x140152ce0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "distance": {
+    "label": "Distance",
+    "label_key": "ui_editor_properties_distance",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 100,
+    "add_default_3d": 0.1,
+    "source": {
+     "panel": "0x1401beb8d",
+     "add_default": "0x140152ce0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "octaves": {
+    "label": "Octaves",
+    "label_key": "ui_editor_properties_octaves",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 6,
+    "integer": true,
+    "source": {
+     "panel": "0x1401bebe0",
+     "add_default": "0x140152ce0 (value from editor-observed)",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "scale": {
+    "label": "Noise scale",
+    "label_key": "ui_editor_properties_noise_scale",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.001,
+    "add_default_3d": 1,
+    "source": {
+     "panel": "0x1401bec34",
+     "add_default": "0x140152ce0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "timescale": {
+    "label": "Noise speed",
+    "label_key": "ui_editor_properties_noise_speed",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401bec88",
+     "add_default": "0x140152ce0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "initializer:mapsequencearoundcontrolpoint": {
+  "display_name": "ui_editor_particle_element_mapsequencearoundcontrolpoint",
+  "panel": "0x1401becbb",
+  "filler": "0x1401533d0",
+  "fields": {
+   "count": {
+    "label": "Count",
+    "label_key": "ui_editor_properties_count",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 32,
+    "integer": true,
+    "source": {
+     "panel": "0x1401bed27",
+     "add_default": "0x1401533d0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "flags&0x1": {
+    "label": "Modify count with layer settings",
+    "label_key": "ui_editor_properties_modify_count_with_layer_settings",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401bed7f",
+     "add_default": "0x1401533d0"
+    }
+   },
+   "flags&0x2": {
+    "label": "Restart with periodic emission",
+    "label_key": "ui_editor_properties_restart_with_periodic_emission",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 2,
+    "source": {
+     "panel": "0x1401bedda",
+     "add_default": "0x1401533d0"
+    }
+   },
+   "bounds": {
+    "label": "Bounds",
+    "label_key": "ui_editor_properties_bounds",
+    "type": "vec2",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 1",
+    "components": [
+     "Start",
+     "End"
+    ],
+    "source": {
+     "panel": "0x1401bee4f",
+     "add_default": "0x1401533d0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "axis": {
+    "label": "Axis",
+    "label_key": "ui_editor_properties_axis",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 1",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401beeed",
+     "add_default": "0x1401533d0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "speedmin": {
+    "label": "Speed min",
+    "label_key": "ui_editor_properties_speed_min",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401bef75",
+     "add_default": "0x1401533d0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "speedmax": {
+    "label": "Speed max",
+    "label_key": "ui_editor_properties_speed_max",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401beffd",
+     "add_default": "0x1401533d0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "limitbehavior": {
+    "label": "Orientation",
+    "label_key": "ui_editor_properties_orientation",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "repeat",
+    "options": [
+     {
+      "label": "Repeat",
+      "value": "repeat"
+     },
+     {
+      "label": "Mirror",
+      "value": "mirror"
+     }
+    ],
+    "note": "WE labels this combo 'Orientation' (0x1401b8ba0 passes ui_editor_properties_orientation)",
+    "source": {
+     "panel": "0x1401b8ba0 (0x1401b8630)",
+     "add_default": "0x1401533d0",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "controlpoint": {
+    "label": "Control point",
+    "label_key": "ui_editor_properties_control_point",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "integer": true,
+    "source": {
+     "panel": "0x1401bf06e",
+     "add_default": "0x1401533d0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "initializer:mapsequencebetweencontrolpoints": {
+  "display_name": "ui_editor_particle_element_mapsequencebetweencontrolpoints",
+  "panel": "0x1401bf07c",
+  "filler": "0x140153920",
+  "fields": {
+   "count": {
+    "label": "Count",
+    "label_key": "ui_editor_properties_count",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 32,
+    "integer": true,
+    "source": {
+     "panel": "0x1401bf0e8",
+     "add_default": "0x140153920",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "flags&0x10": {
+    "label": "Modify count with layer settings",
+    "label_key": "ui_editor_properties_modify_count_with_layer_settings",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 16,
+    "source": {
+     "panel": "0x1401bf140",
+     "add_default": "0x140153920"
+    }
+   },
+   "flags&0x20": {
+    "label": "Restart with periodic emission",
+    "label_key": "ui_editor_properties_restart_with_periodic_emission",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 32,
+    "source": {
+     "panel": "0x1401bf19b",
+     "add_default": "0x140153920"
+    }
+   },
+   "bounds": {
+    "label": "Bounds",
+    "label_key": "ui_editor_properties_bounds",
+    "type": "vec2",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 1",
+    "components": [
+     "Start",
+     "End"
+    ],
+    "source": {
+     "panel": "0x1401bf210",
+     "add_default": "0x140153920",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "limitbehavior": {
+    "label": "Orientation",
+    "label_key": "ui_editor_properties_orientation",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "repeat",
+    "options": [
+     {
+      "label": "Repeat",
+      "value": "repeat"
+     },
+     {
+      "label": "Mirror",
+      "value": "mirror"
+     }
+    ],
+    "note": "WE labels this combo 'Orientation'",
+    "source": {
+     "panel": "0x1401b8ba0 (0x1401b8630)",
+     "add_default": "0x140153920",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "controlpointstart": {
+    "label": "Control point start",
+    "label_key": "ui_editor_properties_control_point_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "integer": true,
+    "source": {
+     "panel": "0x1401bf297",
+     "add_default": "0x140153920",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "controlpointend": {
+    "label": "Control point end",
+    "label_key": "ui_editor_properties_control_point_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "integer": true,
+    "source": {
+     "panel": "0x1401bf2ea",
+     "add_default": "0x140153920",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "flags&0x1": {
+    "label": "Reduce outer positions",
+    "label_key": "ui_editor_properties_reduce_outer_positions",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401bf345",
+     "add_default": "0x140153920"
+    }
+   },
+   "flags&0x2": {
+    "label": "Reduce outer velocities",
+    "label_key": "ui_editor_properties_reduce_outer_velocities",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 2,
+    "source": {
+     "panel": "0x1401bf3a0",
+     "add_default": "0x140153920"
+    }
+   },
+   "flags&0x4": {
+    "label": "Reduce outer sizes",
+    "label_key": "ui_editor_properties_reduce_outer_sizes",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 4,
+    "source": {
+     "panel": "0x1401bf3fb",
+     "add_default": "0x140153920"
+    }
+   },
+   "sizereductionamount": {
+    "label": "Size reduction amount",
+    "label_key": "ui_editor_properties_size_reduction_amount",
+    "type": "slider",
+    "min": 0,
+    "max": 1,
+    "step": 0.01,
+    "clamp": false,
+    "add_default": 0.9,
+    "condition": "checkFlags(4)",
+    "source": {
+     "panel": "0x1401bf474",
+     "add_default": "0x140153920"
+    }
+   },
+   "flags&0x8": {
+    "label": "Enable arc",
+    "label_key": "ui_editor_properties_enable_arc",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 8,
+    "source": {
+     "panel": "0x1401bf4e8",
+     "add_default": "0x140153920"
+    }
+   },
+   "arcamount": {
+    "label": "Arc amount",
+    "label_key": "ui_editor_properties_arc_amount",
+    "type": "slider",
+    "min": -1,
+    "max": 1,
+    "step": 0.01,
+    "clamp": false,
+    "add_default": 0.3,
+    "condition": "checkFlags(8)",
+    "source": {
+     "panel": "0x1401bf55d",
+     "add_default": "0x140153920"
+    }
+   },
+   "arcdirection": {
+    "label": "Arc direction",
+    "label_key": "ui_editor_properties_arc_direction",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 1 0",
+    "condition": "checkFlags(8)",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401bf5e8",
+     "add_default": "0x140153920"
+    }
+   }
+  }
+ },
+ "initializer:remapinitialvalue": {
+  "display_name": "Remap initial value",
+  "panel": "0x1401bf5f9",
+  "filler": "0x140153df0",
+  "fields": {
+   "input": {
+    "label": "Input",
+    "label_key": "ui_editor_properties_input",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "maxlifetime",
+    "options": [
+     {
+      "label": "Maximum lifetime",
+      "value": "maxlifetime"
+     },
+     {
+      "label": "Size",
+      "value": "size"
+     },
+     {
+      "label": "Opacity",
+      "value": "opacity"
+     },
+     {
+      "label": "Speed",
+      "value": "speed"
+     },
+     {
+      "label": "Rotation",
+      "value": "rotation"
+     },
+     {
+      "label": "Angular speed",
+      "value": "angularspeed"
+     },
+     {
+      "label": "Distance to control point",
+      "value": "distancetocontrolpoint"
+     },
+     {
+      "label": "Position between two control points",
+      "value": "positionbetweentwocontrolpoints"
+     },
+     {
+      "label": "Runtime",
+      "value": "runtime"
+     },
+     {
+      "label": "Time of day",
+      "value": "timeofday"
+     },
+     {
+      "label": "Particle system time",
+      "value": "particlesystemtime"
+     },
+     {
+      "label": "Layer time",
+      "value": "layertime"
+     },
+     {
+      "label": "Color",
+      "value": "color"
+     },
+     {
+      "label": "Position",
+      "value": "position"
+     },
+     {
+      "label": "Velocity",
+      "value": "velocity"
+     },
+     {
+      "label": "Control point",
+      "value": "controlpoint"
+     },
+     {
+      "label": "Delta to control point",
+      "value": "deltatocontrolpoint"
+     },
+     {
+      "label": "Direction to control point",
+      "value": "directiontocontrolpoint"
+     },
+     {
+      "label": "Layer origin",
+      "value": "layerorigin"
+     }
+    ],
+    "source": {
+     "panel": "0x1401bf686",
+     "add_default": "0x140153df0 via 0x140abac30 (value table: remap values, operations 0x140abacd0, event verbs 0x140abacf0, transforms 0x140abad60, components 0x140abada0)",
+     "editor_observed": "match: the Input list has no 'Lifetime fraction' (the operator's has it first)"
+    }
+   },
+   "flags&0x1": {
+    "label": "Clamp input value",
+    "label_key": "ui_editor_properties_clamp_input_value",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401bf6e1",
+     "add_default": "not written by the filler: absent = 0"
+    }
+   },
+   "output": {
+    "label": "Output",
+    "label_key": "ui_editor_properties_output",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "size",
+    "options": [
+     {
+      "label": "Maximum lifetime",
+      "value": "maxlifetime"
+     },
+     {
+      "label": "Size",
+      "value": "size"
+     },
+     {
+      "label": "Opacity",
+      "value": "opacity"
+     },
+     {
+      "label": "Speed",
+      "value": "speed"
+     },
+     {
+      "label": "Rotation",
+      "value": "rotation"
+     },
+     {
+      "label": "Angular speed",
+      "value": "angularspeed"
+     },
+     {
+      "label": "Distance to control point",
+      "value": "distancetocontrolpoint"
+     },
+     {
+      "label": "Position between two control points",
+      "value": "positionbetweentwocontrolpoints"
+     },
+     {
+      "label": "Color",
+      "value": "color"
+     },
+     {
+      "label": "Position",
+      "value": "position"
+     },
+     {
+      "label": "Velocity",
+      "value": "velocity"
+     },
+     {
+      "label": "Control point",
+      "value": "controlpoint"
+     },
+     {
+      "label": "Delta to control point",
+      "value": "deltatocontrolpoint"
+     },
+     {
+      "label": "Direction to control point",
+      "value": "directiontocontrolpoint"
+     }
+    ],
+    "source": {
+     "panel": "0x1401bf760",
+     "add_default": "0x140153df0",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "flags&0x2": {
+    "label": "Clamp output value",
+    "label_key": "ui_editor_properties_clamp_output_value",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 2,
+    "source": {
+     "panel": "0x1401bf7bb",
+     "add_default": "not written by the filler: absent = 0"
+    }
+   },
+   "operation": {
+    "label": "Operation",
+    "label_key": "ui_editor_properties_operation",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "multiply",
+    "options": [
+     {
+      "label": "Assign",
+      "value": "remap"
+     },
+     {
+      "label": "Multiply",
+      "value": "multiply"
+     },
+     {
+      "label": "Add",
+      "value": "add"
+     },
+     {
+      "label": "Subtract",
+      "value": "subtract"
+     }
+    ],
+    "source": {
+     "panel": "0x1401bf80c",
+     "add_default": "0x140153df0",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "transformfunction": {
+    "label": "Transform function",
+    "label_key": "ui_editor_properties_transform_function",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "none",
+    "options": [
+     {
+      "label": "None",
+      "value": "none"
+     },
+     {
+      "label": "Sine wave",
+      "value": "sine"
+     },
+     {
+      "label": "Square wave",
+      "value": "square"
+     },
+     {
+      "label": "Saw wave",
+      "value": "saw"
+     },
+     {
+      "label": "Triangle wave",
+      "value": "triangle"
+     },
+     {
+      "label": "Simplex noise",
+      "value": "simplexnoise"
+     },
+     {
+      "label": "Organic FBM noise",
+      "value": "fbmnoise"
+     }
+    ],
+    "source": {
+     "panel": "0x1401bf84d",
+     "add_default": "0x140153df0",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "transforminputscale": {
+    "label": "Transform input scale",
+    "label_key": "ui_editor_properties_transform_input_scale",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2,
+    "condition": "!checkValue('transformfunction', 'none')",
+    "source": {
+     "panel": "0x1401bf8a5",
+     "add_default": "0x140153df0"
+    }
+   },
+   "transformoctaves": {
+    "label": "Transform octaves",
+    "label_key": "ui_editor_properties_transform_octaves",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 3,
+    "condition": "checkValue('transformfunction', 'fbmnoise')",
+    "integer": true,
+    "source": {
+     "panel": "0x1401bf90c",
+     "add_default": "0x140153df0"
+    }
+   },
+   "inputcontrolpoint0": {
+    "label": "Input control point",
+    "label_key": "ui_editor_properties_input_control_point",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "condition": "checkRemapValueIsControlPoint('input')",
+    "integer": true,
+    "source": {
+     "panel": "0x1401bff26",
+     "add_default": "0x140153df0"
+    }
+   },
+   "inputcontrolpoint1": {
+    "label": "Input control point 2",
+    "label_key": "ui_editor_properties_input_control_point_second",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "condition": "checkRemapValueIsControlPoint2('input')",
+    "integer": true,
+    "source": {
+     "panel": "0x1401bff85",
+     "add_default": "0x140153df0"
+    }
+   },
+   "inputcomponent": {
+    "label": "Input component",
+    "label_key": "ui_editor_properties_input_component",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "all",
+    "condition": "!checkRemapValueIsScalar('input') (panel code); editor-observed: shown only when Input is a vector, and Input=Position with Output=Size shows neither component combo, so a scalar Output hides it as well [I]",
+    "options": [
+     {
+      "label": "All",
+      "value": "all"
+     },
+     {
+      "label": "X",
+      "value": "x"
+     },
+     {
+      "label": "Y",
+      "value": "y"
+     },
+     {
+      "label": "Z",
+      "value": "z"
+     },
+     {
+      "label": "Sum",
+      "value": "sum"
+     },
+     {
+      "label": "Average",
+      "value": "average"
+     },
+     {
+      "label": "Max",
+      "value": "max"
+     },
+     {
+      "label": "Min",
+      "value": "min"
+     }
+    ],
+    "source": {
+     "panel": "0x1401bffda / 0x1401c0032 (0x1401b93d0 modes 0/1)",
+     "add_default": "0x140153df0",
+     "editor_observed": "editor spot check (UIA, remap_probe.ps1: Input/Output = Position/Position, Position/Size, Velocity/Color, Color/Opacity): options All/X/Y/Z/Sum/Average/Max/Min, only with a vector Input; the scalar-output list (without All) the panel code builds at 0x1401b93d0 mode 0 was never shown"
+    }
+   },
+   "inputrangemin": {
+    "label": "Input range min",
+    "label_key": "ui_editor_properties_input_range_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "condition": "checkRemapValueIsScalar('input') (vec3 when !checkRemapValueIsScalar('input'))",
+    "vector_type": "vec3",
+    "source": {
+     "panel": "0x1401c0064 / 0x1401c014d",
+     "add_default": "0x140153df0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "inputrangemax": {
+    "label": "Input range max",
+    "label_key": "ui_editor_properties_input_range_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "condition": "checkRemapValueIsScalar('input') (vec3 otherwise)",
+    "vector_type": "vec3",
+    "source": {
+     "panel": "0x1401c0096 / 0x1401c0217",
+     "add_default": "0x140153df0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "outputcontrolpoint0": {
+    "label": "Output control point",
+    "label_key": "ui_editor_properties_output_control_point",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "condition": "checkRemapValueIsControlPoint('output')",
+    "integer": true,
+    "source": {
+     "panel": "0x1401c0299",
+     "add_default": "0x140153df0"
+    }
+   },
+   "outputcontrolpoint1": {
+    "label": "Output control point 2",
+    "label_key": "ui_editor_properties_output_control_point_second",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "condition": "checkRemapValueIsControlPoint2('output')",
+    "integer": true,
+    "source": {
+     "panel": "0x1401c02f8",
+     "add_default": "0x140153df0"
+    }
+   },
+   "outputcomponent": {
+    "label": "Output component",
+    "label_key": "ui_editor_properties_output_component",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "all",
+    "condition": "!checkRemapValueIsScalar('output')",
+    "options": [
+     {
+      "label": "All",
+      "value": "all"
+     },
+     {
+      "label": "X",
+      "value": "x"
+     },
+     {
+      "label": "Y",
+      "value": "y"
+     },
+     {
+      "label": "Z",
+      "value": "z"
+     }
+    ],
+    "source": {
+     "panel": "0x1401c0350 (0x1401b93d0 mode 2)",
+     "add_default": "0x140153df0",
+     "editor_observed": "editor spot check (UIA, remap_probe.ps1: Input/Output = Position/Position, Position/Size, Velocity/Color, Color/Opacity): options All/X/Y/Z, only with a vector Output"
+    }
+   },
+   "outputrangemin": {
+    "label": "Output range min",
+    "label_key": "ui_editor_properties_output_range_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "condition": "checkRemapValueIsScalar('output') (vec3 otherwise)",
+    "vector_type": "vec3",
+    "source": {
+     "panel": "0x1401c0382 / 0x1401c046e",
+     "add_default": "0x140153df0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "outputrangemax": {
+    "label": "Output range max",
+    "label_key": "ui_editor_properties_output_range_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "condition": "checkRemapValueIsScalar('output') (vec3 otherwise)",
+    "vector_type": "vec3",
+    "source": {
+     "panel": "0x1401c03b7 / 0x1401c0541",
+     "add_default": "0x140153df0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "initializer:inheritinitialvaluefromevent": {
+  "display_name": "Inherit initial value from event",
+  "panel": "0x1401c056d",
+  "filler": "0x1401542a0",
+  "fields": {
+   "input": {
+    "label": "Input",
+    "label_key": "ui_editor_properties_input",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "setcolor",
+    "options": [
+     {
+      "label": "Set color",
+      "value": "setcolor"
+     },
+     {
+      "label": "Multiply color",
+      "value": "multiplycolor"
+     },
+     {
+      "label": "Set opacity",
+      "value": "setopacity"
+     },
+     {
+      "label": "Multiply opacity",
+      "value": "multiplyopacity"
+     },
+     {
+      "label": "Set color and opacity",
+      "value": "setcoloropacity"
+     },
+     {
+      "label": "Multiply color and opacity",
+      "value": "multiplycoloropacity"
+     },
+     {
+      "label": "Set velocity",
+      "value": "setvelocity"
+     },
+     {
+      "label": "Add velocity",
+      "value": "addvelocity"
+     },
+     {
+      "label": "Set size",
+      "value": "setsize"
+     },
+     {
+      "label": "Multiply size",
+      "value": "multiplysize"
+     },
+     {
+      "label": "Set rotation",
+      "value": "setrotation"
+     },
+     {
+      "label": "Add rotation",
+      "value": "addrotation"
+     },
+     {
+      "label": "Set angular velocity",
+      "value": "setangularvelocity"
+     },
+     {
+      "label": "Add angular velocity",
+      "value": "addangularvelocity"
+     }
+    ],
+    "source": {
+     "panel": "0x1401c05e2",
+     "add_default": "0x1401542a0 via 0x140abacf0",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   }
+  }
+ },
+ "operator:movement": {
+  "display_name": "Movement",
+  "panel": "0x1401c05f0",
+  "filler": "0x140154660",
+  "fields": {
+   "gravity": {
+    "label": "Gravity",
+    "label_key": "ui_editor_properties_gravity",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c0680",
+     "add_default": "0x140154660",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "flags&0x1": {
+    "label": "Worldspace",
+    "label_key": "ui_editor_properties_worldspace",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401c06ed",
+     "add_default": "0x140154660"
+    }
+   },
+   "drag": {
+    "label": "Drag",
+    "label_key": "ui_editor_properties_drag",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c073e",
+     "add_default": "0x140154660",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:angularmovement": {
+  "display_name": "Angular movement",
+  "panel": "0x1401c074c",
+  "filler": "0x140154960",
+  "fields": {
+   "force": {
+    "label": "Force",
+    "label_key": "ui_editor_properties_force",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c07df",
+     "add_default": "0x140154960",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "drag": {
+    "label": "Drag",
+    "label_key": "ui_editor_properties_drag",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c083f (jmp to 0x1401c2518)",
+     "add_default": "0x140154960",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinstart": {
+    "label": "Blend-in start",
+    "label_key": "ui_editor_properties_blend_in_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b77b4)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinend": {
+    "label": "Blend-in end",
+    "label_key": "ui_editor_properties_blend_in_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b7800)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutstart": {
+    "label": "Blend-out start",
+    "label_key": "ui_editor_properties_blend_out_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b784c)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutend": {
+    "label": "Blend-out end",
+    "label_key": "ui_editor_properties_blend_out_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:alphafade": {
+  "display_name": "Alpha fade",
+  "panel": "0x1401c0848",
+  "filler": "0x140154b30",
+  "fields": {
+   "fadeintime": {
+    "label": "Fade-in time",
+    "label_key": "ui_editor_properties_fade_in_time",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.5,
+    "source": {
+     "panel": "0x1401c08b5",
+     "add_default": "0x140154b30",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "fadeouttime": {
+    "label": "Fade-out time",
+    "label_key": "ui_editor_properties_fade_out_time",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.5,
+    "source": {
+     "panel": "0x1401c0906",
+     "add_default": "0x140154b30",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:sizechange": {
+  "display_name": "Size change",
+  "panel": "0x1401c0910",
+  "filler": "0x140154cc0",
+  "fields": {
+   "startvalue": {
+    "label": "Start value",
+    "label_key": "ui_editor_properties_start_value",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401c0abe",
+     "add_default": "0x140154cc0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "endvalue": {
+    "label": "End value",
+    "label_key": "ui_editor_properties_end_value",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c0b0f",
+     "add_default": "0x140154cc0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "starttime": {
+    "label": "Start time",
+    "label_key": "ui_editor_properties_start_time",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c0b60",
+     "add_default": "0x140154cc0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "endtime": {
+    "label": "End time",
+    "label_key": "ui_editor_properties_end_time",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401c0bb4",
+     "add_default": "0x140154cc0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:alphachange": {
+  "display_name": "Alpha change",
+  "panel": "0x1401c0a4d",
+  "filler": "0x140154cc0",
+  "fields": {
+   "startvalue": {
+    "label": "Start value",
+    "label_key": "ui_editor_properties_start_value",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401c0abe",
+     "add_default": "0x140154cc0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "endvalue": {
+    "label": "End value",
+    "label_key": "ui_editor_properties_end_value",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c0b0f",
+     "add_default": "0x140154cc0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "starttime": {
+    "label": "Start time",
+    "label_key": "ui_editor_properties_start_time",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c0b60",
+     "add_default": "0x140154cc0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "endtime": {
+    "label": "End time",
+    "label_key": "ui_editor_properties_end_time",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401c0bb4",
+     "add_default": "0x140154cc0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:colorchange": {
+  "display_name": "Color change",
+  "panel": "0x1401c0939",
+  "filler": "0x140154f80",
+  "fields": {
+   "startvalue": {
+    "label": "Start value",
+    "label_key": "ui_editor_properties_start_value",
+    "type": "color",
+    "clamp": false,
+    "add_default": "1 1 1",
+    "normalized": true,
+    "source": {
+     "panel": "0x1401c09b9",
+     "add_default": "0x140154f80"
+    }
+   },
+   "endvalue": {
+    "label": "End value",
+    "label_key": "ui_editor_properties_end_value",
+    "type": "color",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "normalized": true,
+    "source": {
+     "panel": "0x1401c0a30",
+     "add_default": "0x140154f80"
+    }
+   },
+   "starttime": {
+    "label": "Start time",
+    "label_key": "ui_editor_properties_start_time",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c0b60",
+     "add_default": "0x140154f80",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "endtime": {
+    "label": "End time",
+    "label_key": "ui_editor_properties_end_time",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401c0bb4",
+     "add_default": "0x140154f80",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:oscillateposition": {
+  "display_name": "Oscillate position",
+  "panel": "0x1401c0bc2",
+  "filler": "0x1401552e0",
+  "fields": {
+   "mask": {
+    "label": "Mask",
+    "label_key": "ui_editor_properties_mask",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "1 1 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c0c58",
+     "add_default": "0x1401552e0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "frequencymin": {
+    "label": "Frequency min",
+    "label_key": "ui_editor_properties_frequency_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401c0cc1",
+     "add_default": "0x1401552e0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "frequencymax": {
+    "label": "Frequency max",
+    "label_key": "ui_editor_properties_frequency_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 5,
+    "source": {
+     "panel": "0x1401c0d12",
+     "add_default": "0x1401552e0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "scalemin": {
+    "label": "Scale min",
+    "label_key": "ui_editor_properties_scale_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c0d66",
+     "add_default": "0x1401552e0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "scalemax": {
+    "label": "Scale max",
+    "label_key": "ui_editor_properties_scale_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 10,
+    "add_default_3d": 0.5,
+    "source": {
+     "panel": "0x1401c0db7",
+     "add_default": "0x1401552e0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "phasemin": {
+    "label": "Phase min",
+    "label_key": "ui_editor_properties_phase_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c0e08",
+     "add_default": "0x1401552e0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "phasemax": {
+    "label": "Phase max",
+    "label_key": "ui_editor_properties_phase_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 6.28319,
+    "source": {
+     "panel": "0x1401c0e56 (jmp to 0x1401c2518)",
+     "add_default": "0x1401552e0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinstart": {
+    "label": "Blend-in start",
+    "label_key": "ui_editor_properties_blend_in_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b77b4)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinend": {
+    "label": "Blend-in end",
+    "label_key": "ui_editor_properties_blend_in_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b7800)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutstart": {
+    "label": "Blend-out start",
+    "label_key": "ui_editor_properties_blend_out_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b784c)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutend": {
+    "label": "Blend-out end",
+    "label_key": "ui_editor_properties_blend_out_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:oscillatealpha": {
+  "display_name": "Oscillate alpha",
+  "panel": "0x1401c0e5f",
+  "filler": "0x140155650",
+  "fields": {
+   "frequencymin": {
+    "label": "Frequency min",
+    "label_key": "ui_editor_properties_frequency_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401c0ecc",
+     "add_default": "0x140155650",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "frequencymax": {
+    "label": "Frequency max",
+    "label_key": "ui_editor_properties_frequency_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 10,
+    "source": {
+     "panel": "0x1401c0f1d",
+     "add_default": "0x140155650",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "scalemin": {
+    "label": "Scale min",
+    "label_key": "ui_editor_properties_scale_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c0f6e",
+     "add_default": "0x140155650",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "scalemax": {
+    "label": "Scale max",
+    "label_key": "ui_editor_properties_scale_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401c0fc2",
+     "add_default": "0x140155650",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "phasemin": {
+    "label": "Phase min",
+    "label_key": "ui_editor_properties_phase_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c1013",
+     "add_default": "0x140155650",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "phasemax": {
+    "label": "Phase max",
+    "label_key": "ui_editor_properties_phase_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 6.28319,
+    "source": {
+     "panel": "0x1401c0e56 (jmp to 0x1401c2518)",
+     "add_default": "0x140155650",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinstart": {
+    "label": "Blend-in start",
+    "label_key": "ui_editor_properties_blend_in_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b77b4)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinend": {
+    "label": "Blend-in end",
+    "label_key": "ui_editor_properties_blend_in_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b7800)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutstart": {
+    "label": "Blend-out start",
+    "label_key": "ui_editor_properties_blend_out_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b784c)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutend": {
+    "label": "Blend-out end",
+    "label_key": "ui_editor_properties_blend_out_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:oscillatesize": {
+  "display_name": "Oscillate size",
+  "panel": "0x1401c1021",
+  "filler": "0x140155950",
+  "fields": {
+   "frequencymin": {
+    "label": "Frequency min",
+    "label_key": "ui_editor_properties_frequency_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401c0ecc",
+     "add_default": "0x140155950",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "frequencymax": {
+    "label": "Frequency max",
+    "label_key": "ui_editor_properties_frequency_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 10,
+    "source": {
+     "panel": "0x1401c0f1d",
+     "add_default": "0x140155950",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "scalemin": {
+    "label": "Scale min",
+    "label_key": "ui_editor_properties_scale_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.8,
+    "source": {
+     "panel": "0x1401c0f6e",
+     "add_default": "0x140155950",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "scalemax": {
+    "label": "Scale max",
+    "label_key": "ui_editor_properties_scale_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1.2,
+    "source": {
+     "panel": "0x1401c0fc2",
+     "add_default": "0x140155950",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "phasemin": {
+    "label": "Phase min",
+    "label_key": "ui_editor_properties_phase_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c1013",
+     "add_default": "0x140155950",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "phasemax": {
+    "label": "Phase max",
+    "label_key": "ui_editor_properties_phase_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 6.28319,
+    "source": {
+     "panel": "0x1401c0e56 (jmp to 0x1401c2518)",
+     "add_default": "0x140155950",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinstart": {
+    "label": "Blend-in start",
+    "label_key": "ui_editor_properties_blend_in_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b77b4)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinend": {
+    "label": "Blend-in end",
+    "label_key": "ui_editor_properties_blend_in_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b7800)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutstart": {
+    "label": "Blend-out start",
+    "label_key": "ui_editor_properties_blend_out_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b784c)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutend": {
+    "label": "Blend-out end",
+    "label_key": "ui_editor_properties_blend_out_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:controlpointattract": {
+  "display_name": "ui_editor_particle_element_controlpointattract",
+  "panel": "0x1401c104a",
+  "filler": "0x140155c50",
+  "fields": {
+   "origin": {
+    "label": "Offset",
+    "label_key": "ui_editor_properties_offset",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "note": "the panel edits key 'origin'; the filler writes 'offset' (both '0 0 0')",
+    "source": {
+     "panel": "0x1401c10e0",
+     "add_default": "0x140155c50",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "scale": {
+    "label": "Scale",
+    "label_key": "ui_editor_properties_scale",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 512,
+    "add_default_3d": 20,
+    "source": {
+     "panel": "0x1401c1149",
+     "add_default": "0x140155c50",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "threshold": {
+    "label": "Distance",
+    "label_key": "ui_editor_properties_distance",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 512,
+    "add_default_3d": 5,
+    "source": {
+     "panel": "0x1401c119a",
+     "add_default": "0x140155c50",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "controlpoint": {
+    "label": "Control point",
+    "label_key": "ui_editor_properties_control_point",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "integer": true,
+    "source": {
+     "panel": "0x1401c11ed",
+     "add_default": "0x140155c50",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "flags&0x2": {
+    "label": "Reduce velocity near center",
+    "label_key": "ui_editor_properties_reduce_velocity_near_center",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": true,
+    "bit": 2,
+    "source": {
+     "panel": "0x1401c1245",
+     "add_default": "0x140155c50"
+    }
+   },
+   "flags&0x1": {
+    "label": "Delete particles in center",
+    "label_key": "ui_editor_properties_delete_particles_in_center",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401c129d",
+     "add_default": "0x140155c50"
+    }
+   },
+   "deletethreshold": {
+    "label": "Deletion threshold",
+    "label_key": "ui_editor_properties_deletion_threshold",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 15,
+    "add_default_3d": 0.5,
+    "condition": "checkBit(findProperty('flags').value, 1)",
+    "source": {
+     "panel": "0x1401c12f1",
+     "add_default": "0x140155c50"
+    }
+   },
+   "blendinstart": {
+    "label": "Blend-in start",
+    "label_key": "ui_editor_properties_blend_in_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b77b4)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinend": {
+    "label": "Blend-in end",
+    "label_key": "ui_editor_properties_blend_in_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b7800)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutstart": {
+    "label": "Blend-out start",
+    "label_key": "ui_editor_properties_blend_out_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b784c)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutend": {
+    "label": "Blend-out end",
+    "label_key": "ui_editor_properties_blend_out_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:maintaindistancetocontrolpoint": {
+  "display_name": "Maintain distance to control point",
+  "panel": "0x1401c131d",
+  "filler": "0x1401560f0",
+  "fields": {
+   "controlpoint": {
+    "label": "Control point",
+    "label_key": "ui_editor_properties_control_point",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "integer": true,
+    "source": {
+     "panel": "0x1401c1389",
+     "add_default": "0x1401560f0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "distance": {
+    "label": "Distance",
+    "label_key": "ui_editor_properties_distance",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 200,
+    "add_default_3d": 1,
+    "source": {
+     "panel": "0x1401c13da",
+     "add_default": "0x1401560f0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "variablestrength": {
+    "label": "Variable strength",
+    "label_key": "ui_editor_properties_variable_strength",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "note": "read by the panel as a float; the filler writes an int 0",
+    "source": {
+     "panel": "0x1401c1425 (jmp to 0x1401c2518)",
+     "add_default": "0x1401560f0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinstart": {
+    "label": "Blend-in start",
+    "label_key": "ui_editor_properties_blend_in_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b77b4)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinend": {
+    "label": "Blend-in end",
+    "label_key": "ui_editor_properties_blend_in_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b7800)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutstart": {
+    "label": "Blend-out start",
+    "label_key": "ui_editor_properties_blend_out_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b784c)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutend": {
+    "label": "Blend-out end",
+    "label_key": "ui_editor_properties_blend_out_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:maintaindistancebetweencontrolpoints": {
+  "display_name": "Maintain distance between control points",
+  "panel": "0x1401c142a",
+  "filler": "0x140156450",
+  "fields": {
+   "controlpointstart": {
+    "label": "Control point start",
+    "label_key": "ui_editor_properties_control_point_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "integer": true,
+    "source": {
+     "panel": "0x1401c149a",
+     "add_default": "0x140156450",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "controlpointend": {
+    "label": "Control point end",
+    "label_key": "ui_editor_properties_control_point_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "integer": true,
+    "source": {
+     "panel": "0x1401c14ea",
+     "add_default": "0x140156450",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinstart": {
+    "label": "Blend-in start",
+    "label_key": "ui_editor_properties_blend_in_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b77b4)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinend": {
+    "label": "Blend-in end",
+    "label_key": "ui_editor_properties_blend_in_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b7800)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutstart": {
+    "label": "Blend-out start",
+    "label_key": "ui_editor_properties_blend_out_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b784c)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutend": {
+    "label": "Blend-out end",
+    "label_key": "ui_editor_properties_blend_out_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:reducemovementnearcontrolpoint": {
+  "display_name": "Reduce movement near control point",
+  "panel": "0x1401c1507",
+  "filler": "0x1401566c0",
+  "fields": {
+   "controlpoint": {
+    "label": "Control point",
+    "label_key": "ui_editor_properties_control_point",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "integer": true,
+    "source": {
+     "panel": "0x1401c1573",
+     "add_default": "0x1401566c0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "distanceinner": {
+    "label": "Distance inner",
+    "label_key": "ui_editor_properties_distance_inner",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 100,
+    "add_default_3d": 0.5,
+    "source": {
+     "panel": "0x1401c15c4",
+     "add_default": "0x1401566c0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "distanceouter": {
+    "label": "Distance outer",
+    "label_key": "ui_editor_properties_distance_outer",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 350,
+    "add_default_3d": 1,
+    "source": {
+     "panel": "0x1401c1615",
+     "add_default": "0x1401566c0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "reductioninner": {
+    "label": "Reduction inner",
+    "label_key": "ui_editor_properties_reduction_inner",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 100,
+    "source": {
+     "panel": "0x1401c1669",
+     "add_default": "0x1401566c0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "reductionouter": {
+    "label": "Reduction outer",
+    "label_key": "ui_editor_properties_reduction_outer",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c16b4 (jmp to 0x1401c2518)",
+     "add_default": "0x1401566c0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinstart": {
+    "label": "Blend-in start",
+    "label_key": "ui_editor_properties_blend_in_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b77b4)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinend": {
+    "label": "Blend-in end",
+    "label_key": "ui_editor_properties_blend_in_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b7800)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutstart": {
+    "label": "Blend-out start",
+    "label_key": "ui_editor_properties_blend_out_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b784c)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutend": {
+    "label": "Blend-out end",
+    "label_key": "ui_editor_properties_blend_out_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:turbulence": {
+  "display_name": "Turbulence",
+  "panel": "0x1401c16b9",
+  "filler": "0x140156a00",
+  "fields": {
+   "timescale": {
+    "label": "Noise speed",
+    "label_key": "ui_editor_properties_noise_speed",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 20,
+    "add_default_3d": 1,
+    "source": {
+     "panel": "0x1401c172a",
+     "add_default": "0x140156a00",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "scale": {
+    "label": "Noise scale",
+    "label_key": "ui_editor_properties_noise_scale",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.01,
+    "add_default_3d": 0.5,
+    "source": {
+     "panel": "0x1401c177b",
+     "add_default": "0x140156a00",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "mask": {
+    "label": "Mask",
+    "label_key": "ui_editor_properties_mask",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "1 1 0",
+    "add_default_3d": "1 1 1",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c17ed",
+     "add_default": "0x140156a00",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "speedmin": {
+    "label": "Speed min",
+    "label_key": "ui_editor_properties_speed_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 500,
+    "add_default_3d": 1,
+    "source": {
+     "panel": "0x1401c1854",
+     "add_default": "0x140156a00",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "speedmax": {
+    "label": "Speed max",
+    "label_key": "ui_editor_properties_speed_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1000,
+    "add_default_3d": 5,
+    "source": {
+     "panel": "0x1401c18a5",
+     "add_default": "0x140156a00",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "phasemin": {
+    "label": "Phase min",
+    "label_key": "ui_editor_properties_phase_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c18f6",
+     "add_default": "0x140156a00",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "phasemax": {
+    "label": "Phase max",
+    "label_key": "ui_editor_properties_phase_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c194a",
+     "add_default": "0x140156a00",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinstart": {
+    "label": "Blend-in start",
+    "label_key": "ui_editor_properties_blend_in_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b77b4)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinend": {
+    "label": "Blend-in end",
+    "label_key": "ui_editor_properties_blend_in_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b7800)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutstart": {
+    "label": "Blend-out start",
+    "label_key": "ui_editor_properties_blend_out_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b784c)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutend": {
+    "label": "Blend-out end",
+    "label_key": "ui_editor_properties_blend_out_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "audioprocessingmode": {
+    "label": "Mode",
+    "label_key": "ui_editor_properties_mode",
+    "type": "combo",
+    "clamp": false,
+    "add_default": 0,
+    "options": [
+     {
+      "label": "None",
+      "value": 0
+     },
+     {
+      "label": "Left",
+      "value": 1
+     },
+     {
+      "label": "Right",
+      "value": 2
+     },
+     {
+      "label": "Center",
+      "value": 3
+     }
+    ],
+    "group": "Audio response",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7a23)",
+     "add_default": "0x14014fcc0",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "audioprocessingexponent": {
+    "label": "Exponent",
+    "label_key": "ui_editor_properties_exponent",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7a78)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingbounds": {
+    "label": "Bounds",
+    "label_key": "ui_editor_properties_bounds",
+    "type": "vec2",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0.8 1.0",
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "components": [
+     "X",
+     "Y"
+    ],
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7b01)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingfrequencystart": {
+    "label": "Frequency min",
+    "label_key": "ui_editor_properties_frequency_min",
+    "type": "sliderint",
+    "min": 0,
+    "max": 15,
+    "step": 1,
+    "clamp": false,
+    "add_default": 0,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7d8e)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingfrequencyend": {
+    "label": "Frequency max",
+    "label_key": "ui_editor_properties_frequency_max",
+    "type": "sliderint",
+    "min": 0,
+    "max": 15,
+    "step": 1,
+    "clamp": false,
+    "add_default": 1,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7e1b)",
+     "add_default": "0x14014fcc0"
+    }
+   }
+  }
+ },
+ "operator:vortex": {
+  "display_name": "Vortex (legacy; not in the add dialog)",
+  "panel": "0x1401c1976",
+  "filler": "0x140156dc0",
+  "fields": {
+   "offset": {
+    "label": "Offset",
+    "label_key": "ui_editor_properties_offset",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c1a0c",
+     "add_default": "0x140156dc0"
+    }
+   },
+   "axis": {
+    "label": "Axis",
+    "label_key": "ui_editor_properties_axis",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 1",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c1a9c",
+     "add_default": "0x140156dc0"
+    }
+   },
+   "distanceinner": {
+    "label": "Distance inner",
+    "label_key": "ui_editor_properties_distance_inner",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 500,
+    "add_default_3d": 1,
+    "source": {
+     "panel": "0x1401c1b03",
+     "add_default": "0x140156dc0"
+    }
+   },
+   "distanceouter": {
+    "label": "Distance outer",
+    "label_key": "ui_editor_properties_distance_outer",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 650,
+    "add_default_3d": 2,
+    "source": {
+     "panel": "0x1401c1b57",
+     "add_default": "0x140156dc0"
+    }
+   },
+   "speedinner": {
+    "label": "Speed inner",
+    "label_key": "ui_editor_properties_speed_inner",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2500,
+    "add_default_3d": 1,
+    "source": {
+     "panel": "0x1401c1ba8",
+     "add_default": "0x140156dc0"
+    }
+   },
+   "speedouter": {
+    "label": "Speed outer",
+    "label_key": "ui_editor_properties_speed_outer",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c1bf9",
+     "add_default": "0x140156dc0"
+    }
+   },
+   "flags&0x1": {
+    "label": "Infinite axis",
+    "label_key": "ui_editor_properties_infinite_axis",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401c1c54",
+     "add_default": "0x140156dc0"
+    }
+   },
+   "controlpoint": {
+    "label": "Control point",
+    "label_key": "ui_editor_properties_control_point",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "integer": true,
+    "source": {
+     "panel": "0x1401c1ca7",
+     "add_default": "0x140156dc0"
+    }
+   },
+   "audioprocessingmode": {
+    "label": "Mode",
+    "label_key": "ui_editor_properties_mode",
+    "type": "combo",
+    "clamp": false,
+    "add_default": 0,
+    "options": [
+     {
+      "label": "None",
+      "value": 0
+     },
+     {
+      "label": "Left",
+      "value": 1
+     },
+     {
+      "label": "Right",
+      "value": 2
+     },
+     {
+      "label": "Center",
+      "value": 3
+     }
+    ],
+    "group": "Audio response",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7a23)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingexponent": {
+    "label": "Exponent",
+    "label_key": "ui_editor_properties_exponent",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7a78)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingbounds": {
+    "label": "Bounds",
+    "label_key": "ui_editor_properties_bounds",
+    "type": "vec2",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0.8 1.0",
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "components": [
+     "X",
+     "Y"
+    ],
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7b01)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingfrequencystart": {
+    "label": "Frequency min",
+    "label_key": "ui_editor_properties_frequency_min",
+    "type": "sliderint",
+    "min": 0,
+    "max": 15,
+    "step": 1,
+    "clamp": false,
+    "add_default": 0,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7d8e)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingfrequencyend": {
+    "label": "Frequency max",
+    "label_key": "ui_editor_properties_frequency_max",
+    "type": "sliderint",
+    "min": 0,
+    "max": 15,
+    "step": 1,
+    "clamp": false,
+    "add_default": 1,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7e1b)",
+     "add_default": "0x14014fcc0"
+    }
+   }
+  }
+ },
+ "operator:vortex_v2": {
+  "display_name": "Vortex",
+  "panel": "0x1401c1cc4",
+  "filler": "0x1401571c0",
+  "fields": {
+   "axis": {
+    "label": "Axis",
+    "label_key": "ui_editor_properties_axis",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 1",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c1d54",
+     "add_default": "0x1401571c0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "flags&0x4": {
+    "label": "Ring shape",
+    "label_key": "ui_editor_properties_ring_shape",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 4,
+    "source": {
+     "panel": "0x1401c1dc1",
+     "add_default": "0x1401571c0"
+    }
+   },
+   "distanceinner": {
+    "label": "Distance inner",
+    "label_key": "ui_editor_properties_distance_inner",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 500,
+    "add_default_3d": 1,
+    "condition": "!checkFlags(4)",
+    "source": {
+     "panel": "0x1401c1e12",
+     "add_default": "0x1401571c0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "distanceouter": {
+    "label": "Distance outer",
+    "label_key": "ui_editor_properties_distance_outer",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 650,
+    "add_default_3d": 2,
+    "condition": "!checkFlags(4)",
+    "source": {
+     "panel": "0x1401c1e75",
+     "add_default": "0x1401571c0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "ringradius": {
+    "label": "Ring radius",
+    "label_key": "ui_editor_properties_ring_radius",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 300,
+    "add_default_3d": 1,
+    "condition": "checkFlags(4)",
+    "source": {
+     "panel": "0x1401c1ed5",
+     "add_default": "0x1401571c0"
+    }
+   },
+   "ringwidth": {
+    "label": "Ring width",
+    "label_key": "ui_editor_properties_ring_width",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 50,
+    "add_default_3d": 0.2,
+    "condition": "checkFlags(4)",
+    "source": {
+     "panel": "0x1401c1f35",
+     "add_default": "0x1401571c0"
+    }
+   },
+   "ringpulldistance": {
+    "label": "Ring pull distance",
+    "label_key": "ui_editor_properties_ring_pull_distance",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 50,
+    "add_default_3d": 0.25,
+    "condition": "checkFlags(4)",
+    "source": {
+     "panel": "0x1401c1f98",
+     "add_default": "0x1401571c0"
+    }
+   },
+   "ringpullforce": {
+    "label": "Ring pull force",
+    "label_key": "ui_editor_properties_ring_pull_force",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 10,
+    "add_default_3d": 0.05,
+    "condition": "checkFlags(4)",
+    "source": {
+     "panel": "0x1401c1ffb",
+     "add_default": "0x1401571c0"
+    }
+   },
+   "speedinner": {
+    "label": "Speed inner",
+    "label_key": "ui_editor_properties_speed_inner",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2500,
+    "add_default_3d": 1,
+    "source": {
+     "panel": "0x1401c205e",
+     "add_default": "0x1401571c0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "speedouter": {
+    "label": "Speed outer",
+    "label_key": "ui_editor_properties_speed_outer",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401c20b2",
+     "add_default": "0x1401571c0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "flags&0x1": {
+    "label": "Infinite axis",
+    "label_key": "ui_editor_properties_infinite_axis",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401c210d",
+     "add_default": "0x1401571c0"
+    }
+   },
+   "controlpoint": {
+    "label": "Control point",
+    "label_key": "ui_editor_properties_control_point",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "integer": true,
+    "source": {
+     "panel": "0x1401c2160",
+     "add_default": "0x1401571c0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "flags&0x2": {
+    "label": "Maintain distance to center",
+    "label_key": "ui_editor_properties_maintain_distance_to_center",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 2,
+    "source": {
+     "panel": "0x1401c21bb",
+     "add_default": "0x1401571c0"
+    }
+   },
+   "centerforce": {
+    "label": "Center force",
+    "label_key": "ui_editor_properties_center_force",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "condition": "checkFlags(2)",
+    "source": {
+     "panel": "0x1401c220d",
+     "add_default": "0x1401571c0"
+    }
+   },
+   "blendinstart": {
+    "label": "Blend-in start",
+    "label_key": "ui_editor_properties_blend_in_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b77b4)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinend": {
+    "label": "Blend-in end",
+    "label_key": "ui_editor_properties_blend_in_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b7800)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutstart": {
+    "label": "Blend-out start",
+    "label_key": "ui_editor_properties_blend_out_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b784c)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutend": {
+    "label": "Blend-out end",
+    "label_key": "ui_editor_properties_blend_out_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "audioprocessingmode": {
+    "label": "Mode",
+    "label_key": "ui_editor_properties_mode",
+    "type": "combo",
+    "clamp": false,
+    "add_default": 0,
+    "options": [
+     {
+      "label": "None",
+      "value": 0
+     },
+     {
+      "label": "Left",
+      "value": 1
+     },
+     {
+      "label": "Right",
+      "value": 2
+     },
+     {
+      "label": "Center",
+      "value": 3
+     }
+    ],
+    "group": "Audio response",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7a23)",
+     "add_default": "0x14014fcc0",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "audioprocessingexponent": {
+    "label": "Exponent",
+    "label_key": "ui_editor_properties_exponent",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7a78)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingbounds": {
+    "label": "Bounds",
+    "label_key": "ui_editor_properties_bounds",
+    "type": "vec2",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0.8 1.0",
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "components": [
+     "X",
+     "Y"
+    ],
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7b01)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingfrequencystart": {
+    "label": "Frequency min",
+    "label_key": "ui_editor_properties_frequency_min",
+    "type": "sliderint",
+    "min": 0,
+    "max": 15,
+    "step": 1,
+    "clamp": false,
+    "add_default": 0,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7d8e)",
+     "add_default": "0x14014fcc0"
+    }
+   },
+   "audioprocessingfrequencyend": {
+    "label": "Frequency max",
+    "label_key": "ui_editor_properties_frequency_max",
+    "type": "sliderint",
+    "min": 0,
+    "max": 15,
+    "step": 1,
+    "clamp": false,
+    "add_default": 1,
+    "condition": "findProperty('audioprocessingmode').value>0",
+    "source": {
+     "panel": "0x1401b78c0 (0x1401b7e1b)",
+     "add_default": "0x14014fcc0"
+    }
+   }
+  }
+ },
+ "operator:boids": {
+  "display_name": "Boids",
+  "panel": "0x1401c2248",
+  "filler": "0x140157620",
+  "fields": {
+   "neighborthreshold": {
+    "label": "Neighbor threshold",
+    "label_key": "ui_editor_properties_neighbor_threshold",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 50,
+    "add_default_3d": 0.2,
+    "source": {
+     "panel": "0x1401c22b5",
+     "add_default": "0x140157620",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "separationthreshold": {
+    "label": "Separation threshold",
+    "label_key": "ui_editor_properties_separation_threshold",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 20,
+    "add_default_3d": 0.02,
+    "source": {
+     "panel": "0x1401c2306",
+     "add_default": "0x140157620",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "separationfactor": {
+    "label": "Separation factor",
+    "label_key": "ui_editor_properties_separation_factor",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 15,
+    "source": {
+     "panel": "0x1401c2357",
+     "add_default": "0x140157620",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "cohesionfactor": {
+    "label": "Cohesion factor",
+    "label_key": "ui_editor_properties_cohesion_factor",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2,
+    "source": {
+     "panel": "0x1401c23ab",
+     "add_default": "0x140157620",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "alignmentfactor": {
+    "label": "Alignment factor",
+    "label_key": "ui_editor_properties_alignment_factor",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401c23fc",
+     "add_default": "0x140157620",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "flags&0x1": {
+    "label": "Clamp speed",
+    "label_key": "ui_editor_properties_clamp_speed",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": true,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401c2454",
+     "add_default": "0x140157620"
+    }
+   },
+   "maxspeed": {
+    "label": "Max speed",
+    "label_key": "ui_editor_properties_max_speed",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 500,
+    "add_default_3d": 1,
+    "source": {
+     "panel": "0x1401c24a7",
+     "add_default": "0x140157620",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:capvelocity": {
+  "display_name": "Cap velocity",
+  "panel": "0x1401c24b1",
+  "filler": "0x140157a30",
+  "fields": {
+   "maxspeed": {
+    "label": "Max speed",
+    "label_key": "ui_editor_properties_max_speed",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 100,
+    "add_default_3d": 1,
+    "source": {
+     "panel": "0x1401c251e",
+     "add_default": "0x140157a30",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinstart": {
+    "label": "Blend-in start",
+    "label_key": "ui_editor_properties_blend_in_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b77b4)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinend": {
+    "label": "Blend-in end",
+    "label_key": "ui_editor_properties_blend_in_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b7800)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutstart": {
+    "label": "Blend-out start",
+    "label_key": "ui_editor_properties_blend_out_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b784c)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutend": {
+    "label": "Blend-out end",
+    "label_key": "ui_editor_properties_blend_out_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:remapvalue": {
+  "display_name": "Remap value",
+  "panel": "0x1401c253b",
+  "filler": "0x140157b30",
+  "fields": {
+   "input": {
+    "label": "Input",
+    "label_key": "ui_editor_properties_input",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "lifetimefraction",
+    "options": [
+     {
+      "label": "Lifetime fraction",
+      "value": "lifetimefraction"
+     },
+     {
+      "label": "Maximum lifetime",
+      "value": "maxlifetime"
+     },
+     {
+      "label": "Size",
+      "value": "size"
+     },
+     {
+      "label": "Opacity",
+      "value": "opacity"
+     },
+     {
+      "label": "Speed",
+      "value": "speed"
+     },
+     {
+      "label": "Rotation",
+      "value": "rotation"
+     },
+     {
+      "label": "Angular speed",
+      "value": "angularspeed"
+     },
+     {
+      "label": "Distance to control point",
+      "value": "distancetocontrolpoint"
+     },
+     {
+      "label": "Position between two control points",
+      "value": "positionbetweentwocontrolpoints"
+     },
+     {
+      "label": "Runtime",
+      "value": "runtime"
+     },
+     {
+      "label": "Time of day",
+      "value": "timeofday"
+     },
+     {
+      "label": "Particle system time",
+      "value": "particlesystemtime"
+     },
+     {
+      "label": "Layer time",
+      "value": "layertime"
+     },
+     {
+      "label": "Color",
+      "value": "color"
+     },
+     {
+      "label": "Position",
+      "value": "position"
+     },
+     {
+      "label": "Velocity",
+      "value": "velocity"
+     },
+     {
+      "label": "Control point",
+      "value": "controlpoint"
+     },
+     {
+      "label": "Delta to control point",
+      "value": "deltatocontrolpoint"
+     },
+     {
+      "label": "Direction to control point",
+      "value": "directiontocontrolpoint"
+     },
+     {
+      "label": "Layer origin",
+      "value": "layerorigin"
+     }
+    ],
+    "source": {
+     "panel": "0x1401c25b0",
+     "add_default": "0x140157b30 via 0x140abac30 (value table: remap values, operations 0x140abacd0, event verbs 0x140abacf0, transforms 0x140abad60, components 0x140abada0)",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "flags&0x1": {
+    "label": "Clamp input value",
+    "label_key": "ui_editor_properties_clamp_input_value",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401c2608",
+     "add_default": "not written by the filler: absent = 0"
+    }
+   },
+   "output": {
+    "label": "Output",
+    "label_key": "ui_editor_properties_output",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "size",
+    "options": [
+     {
+      "label": "Maximum lifetime",
+      "value": "maxlifetime"
+     },
+     {
+      "label": "Size",
+      "value": "size"
+     },
+     {
+      "label": "Opacity",
+      "value": "opacity"
+     },
+     {
+      "label": "Speed",
+      "value": "speed"
+     },
+     {
+      "label": "Rotation",
+      "value": "rotation"
+     },
+     {
+      "label": "Angular speed",
+      "value": "angularspeed"
+     },
+     {
+      "label": "Distance to control point",
+      "value": "distancetocontrolpoint"
+     },
+     {
+      "label": "Position between two control points",
+      "value": "positionbetweentwocontrolpoints"
+     },
+     {
+      "label": "Color",
+      "value": "color"
+     },
+     {
+      "label": "Position",
+      "value": "position"
+     },
+     {
+      "label": "Velocity",
+      "value": "velocity"
+     },
+     {
+      "label": "Control point",
+      "value": "controlpoint"
+     },
+     {
+      "label": "Delta to control point",
+      "value": "deltatocontrolpoint"
+     },
+     {
+      "label": "Direction to control point",
+      "value": "directiontocontrolpoint"
+     }
+    ],
+    "source": {
+     "panel": "0x1401c2688",
+     "add_default": "0x140157b30",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "flags&0x2": {
+    "label": "Clamp output value",
+    "label_key": "ui_editor_properties_clamp_output_value",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 2,
+    "source": {
+     "panel": "0x1401c26e0",
+     "add_default": "not written by the filler: absent = 0"
+    }
+   },
+   "operation": {
+    "label": "Operation",
+    "label_key": "ui_editor_properties_operation",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "multiply",
+    "options": [
+     {
+      "label": "Assign",
+      "value": "remap"
+     },
+     {
+      "label": "Multiply",
+      "value": "multiply"
+     },
+     {
+      "label": "Add",
+      "value": "add"
+     },
+     {
+      "label": "Subtract",
+      "value": "subtract"
+     }
+    ],
+    "source": {
+     "panel": "0x1401c272e",
+     "add_default": "0x140157b30",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "transformfunction": {
+    "label": "Transform function",
+    "label_key": "ui_editor_properties_transform_function",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "none",
+    "options": [
+     {
+      "label": "None",
+      "value": "none"
+     },
+     {
+      "label": "Sine wave",
+      "value": "sine"
+     },
+     {
+      "label": "Square wave",
+      "value": "square"
+     },
+     {
+      "label": "Saw wave",
+      "value": "saw"
+     },
+     {
+      "label": "Triangle wave",
+      "value": "triangle"
+     },
+     {
+      "label": "Simplex noise",
+      "value": "simplexnoise"
+     },
+     {
+      "label": "Organic FBM noise",
+      "value": "fbmnoise"
+     }
+    ],
+    "source": {
+     "panel": "0x1401c276f",
+     "add_default": "0x140157b30",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "transforminputscale": {
+    "label": "Transform input scale",
+    "label_key": "ui_editor_properties_transform_input_scale",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 2,
+    "condition": "!checkValue('transformfunction', 'none')",
+    "source": {
+     "panel": "0x1401c27c7",
+     "add_default": "0x140157b30"
+    }
+   },
+   "transformoctaves": {
+    "label": "Transform octaves",
+    "label_key": "ui_editor_properties_transform_octaves",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 3,
+    "condition": "checkValue('transformfunction', 'fbmnoise')",
+    "integer": true,
+    "source": {
+     "panel": "0x1401c282e",
+     "add_default": "0x140157b30"
+    }
+   },
+   "inputcontrolpoint0": {
+    "label": "Input control point",
+    "label_key": "ui_editor_properties_input_control_point",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "condition": "checkRemapValueIsControlPoint('input')",
+    "integer": true,
+    "source": {
+     "panel": "0x1401c2e53",
+     "add_default": "0x140157b30"
+    }
+   },
+   "inputcontrolpoint1": {
+    "label": "Input control point 2",
+    "label_key": "ui_editor_properties_input_control_point_second",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "condition": "checkRemapValueIsControlPoint2('input')",
+    "integer": true,
+    "source": {
+     "panel": "0x1401c2eb2",
+     "add_default": "0x140157b30"
+    }
+   },
+   "inputcomponent": {
+    "label": "Input component",
+    "label_key": "ui_editor_properties_input_component",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "all",
+    "condition": "!checkRemapValueIsScalar('input') (panel code); editor-observed: shown only when Input is a vector, and Input=Position with Output=Size shows neither component combo, so a scalar Output hides it as well [I]",
+    "options": [
+     {
+      "label": "All",
+      "value": "all"
+     },
+     {
+      "label": "X",
+      "value": "x"
+     },
+     {
+      "label": "Y",
+      "value": "y"
+     },
+     {
+      "label": "Z",
+      "value": "z"
+     },
+     {
+      "label": "Sum",
+      "value": "sum"
+     },
+     {
+      "label": "Average",
+      "value": "average"
+     },
+     {
+      "label": "Max",
+      "value": "max"
+     },
+     {
+      "label": "Min",
+      "value": "min"
+     }
+    ],
+    "source": {
+     "panel": "0x1401c2f07 / 0x1401c2f5f (0x1401b93d0 modes 0/1)",
+     "add_default": "0x140157b30",
+     "editor_observed": "editor spot check (UIA, remap_probe.ps1: Input/Output = Position/Position, Position/Size, Velocity/Color, Color/Opacity): options All/X/Y/Z/Sum/Average/Max/Min, only with a vector Input; the scalar-output list (without All) the panel code builds at 0x1401b93d0 mode 0 was never shown"
+    }
+   },
+   "inputrangemin": {
+    "label": "Input range min",
+    "label_key": "ui_editor_properties_input_range_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "condition": "checkRemapValueIsScalar('input') (vec3 when !checkRemapValueIsScalar('input'))",
+    "vector_type": "vec3",
+    "source": {
+     "panel": "0x1401c2f94 / 0x1401c3086",
+     "add_default": "0x140157b30",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "inputrangemax": {
+    "label": "Input range max",
+    "label_key": "ui_editor_properties_input_range_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "condition": "checkRemapValueIsScalar('input') (vec3 otherwise)",
+    "vector_type": "vec3",
+    "source": {
+     "panel": "0x1401c2fc6 / 0x1401c3150",
+     "add_default": "0x140157b30",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "outputcontrolpoint0": {
+    "label": "Output control point",
+    "label_key": "ui_editor_properties_output_control_point",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "condition": "checkRemapValueIsControlPoint('output')",
+    "integer": true,
+    "source": {
+     "panel": "0x1401c31d2",
+     "add_default": "0x140157b30"
+    }
+   },
+   "outputcontrolpoint1": {
+    "label": "Output control point 2",
+    "label_key": "ui_editor_properties_output_control_point_second",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "condition": "checkRemapValueIsControlPoint2('output')",
+    "integer": true,
+    "source": {
+     "panel": "0x1401c3231",
+     "add_default": "0x140157b30"
+    }
+   },
+   "outputcomponent": {
+    "label": "Output component",
+    "label_key": "ui_editor_properties_output_component",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "all",
+    "condition": "!checkRemapValueIsScalar('output')",
+    "options": [
+     {
+      "label": "All",
+      "value": "all"
+     },
+     {
+      "label": "X",
+      "value": "x"
+     },
+     {
+      "label": "Y",
+      "value": "y"
+     },
+     {
+      "label": "Z",
+      "value": "z"
+     }
+    ],
+    "source": {
+     "panel": "0x1401c3289 (0x1401b93d0 mode 2)",
+     "add_default": "0x140157b30",
+     "editor_observed": "editor spot check (UIA, remap_probe.ps1: Input/Output = Position/Position, Position/Size, Velocity/Color, Color/Opacity): options All/X/Y/Z, only with a vector Output"
+    }
+   },
+   "outputrangemin": {
+    "label": "Output range min",
+    "label_key": "ui_editor_properties_output_range_min",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "condition": "checkRemapValueIsScalar('output') (vec3 otherwise)",
+    "vector_type": "vec3",
+    "source": {
+     "panel": "0x1401c32bb / 0x1401c33a4",
+     "add_default": "0x140157b30",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "outputrangemax": {
+    "label": "Output range max",
+    "label_key": "ui_editor_properties_output_range_max",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "condition": "checkRemapValueIsScalar('output') (vec3 otherwise)",
+    "vector_type": "vec3",
+    "source": {
+     "panel": "0x1401c32ed / 0x1401c346e",
+     "add_default": "0x140157b30",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinstart": {
+    "label": "Blend-in start",
+    "label_key": "ui_editor_properties_blend_in_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b77b4)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinend": {
+    "label": "Blend-in end",
+    "label_key": "ui_editor_properties_blend_in_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b7800)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutstart": {
+    "label": "Blend-out start",
+    "label_key": "ui_editor_properties_blend_out_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b784c)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutend": {
+    "label": "Blend-out end",
+    "label_key": "ui_editor_properties_blend_out_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:inheritvaluefromevent": {
+  "display_name": "Inherit value from event",
+  "panel": "0x1401c34b9",
+  "filler": "0x140157fe0",
+  "fields": {
+   "input": {
+    "label": "Input",
+    "label_key": "ui_editor_properties_input",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "setcoloropacity",
+    "options": [
+     {
+      "label": "Set color",
+      "value": "setcolor"
+     },
+     {
+      "label": "Multiply color",
+      "value": "multiplycolor"
+     },
+     {
+      "label": "Set opacity",
+      "value": "setopacity"
+     },
+     {
+      "label": "Multiply opacity",
+      "value": "multiplyopacity"
+     },
+     {
+      "label": "Set color and opacity",
+      "value": "setcoloropacity"
+     },
+     {
+      "label": "Multiply color and opacity",
+      "value": "multiplycoloropacity"
+     },
+     {
+      "label": "Set velocity",
+      "value": "setvelocity"
+     },
+     {
+      "label": "Add velocity",
+      "value": "addvelocity"
+     },
+     {
+      "label": "Set size",
+      "value": "setsize"
+     },
+     {
+      "label": "Multiply size",
+      "value": "multiplysize"
+     },
+     {
+      "label": "Set rotation",
+      "value": "setrotation"
+     },
+     {
+      "label": "Add rotation",
+      "value": "addrotation"
+     },
+     {
+      "label": "Set angular velocity",
+      "value": "setangularvelocity"
+     },
+     {
+      "label": "Add angular velocity",
+      "value": "addangularvelocity"
+     }
+    ],
+    "source": {
+     "panel": "0x1401c352e",
+     "add_default": "0x140157fe0 via 0x140abad10",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "blendinstart": {
+    "label": "Blend-in start",
+    "label_key": "ui_editor_properties_blend_in_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b77b4)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendinend": {
+    "label": "Blend-in end",
+    "label_key": "ui_editor_properties_blend_in_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b7800)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutstart": {
+    "label": "Blend-out start",
+    "label_key": "ui_editor_properties_blend_out_start",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0 (0x1401b784c)",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "blendoutend": {
+    "label": "Blend-out end",
+    "label_key": "ui_editor_properties_blend_out_end",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "0x1401b76a0",
+     "add_default": "0x1401543a0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:collisionplane": {
+  "display_name": "Collision plane",
+  "panel": "0x1401c354b",
+  "filler": "0x140158470 (+0x1401580e0)",
+  "fields": {
+   "plane": {
+    "label": "Plane",
+    "label_key": "ui_editor_properties_plane",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 1 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c35d8",
+     "add_default": "0x140158470",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "distance": {
+    "label": "Distance",
+    "label_key": "ui_editor_properties_distance",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": -150,
+    "add_default_3d": 0,
+    "source": {
+     "panel": "0x1401c363b",
+     "add_default": "0x140158470",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "collisionbehavior": {
+    "label": "Collision behavior",
+    "label_key": "ui_editor_properties_collision_behavior",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "bounce",
+    "options": [
+     {
+      "label": "Bounce",
+      "value": "bounce"
+     },
+     {
+      "label": "Slide",
+      "value": "slide"
+     },
+     {
+      "label": "Stop",
+      "value": "stop"
+     },
+     {
+      "label": "Delete",
+      "value": "delete"
+     }
+    ],
+    "source": {
+     "panel": "0x1401b8ca0 (0x1401b9270)",
+     "add_default": "0x1401580e0",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "bouncefactor": {
+    "label": "Bounce factor",
+    "label_key": "ui_editor_properties_bounce_factor",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.5,
+    "condition": "findProperty('collisionbehavior').value=='bounce'",
+    "source": {
+     "panel": "0x1401b8ca0 (0x1401b92cf)",
+     "add_default": "0x1401580e0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "flags&0x1": {
+    "label": "Lock to control point",
+    "label_key": "ui_editor_properties_lock_to_control_point",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401c369e",
+     "add_default": "0x1401580e0"
+    }
+   },
+   "controlpoint": {
+    "label": "Control point",
+    "label_key": "ui_editor_properties_control_point",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "condition": "checkFlags(1)",
+    "integer": true,
+    "source": {
+     "panel": "0x1401c36f1",
+     "add_default": "0x1401580e0"
+    }
+   },
+   "flags&0x2": {
+    "label": "Stop rotation on collision",
+    "label_key": "ui_editor_properties_stop_rotation_on_collision",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 2,
+    "source": {
+     "panel": "0x1401c3bcf (shared tail)",
+     "add_default": "0x1401580e0"
+    }
+   }
+  }
+ },
+ "operator:collisionsphere": {
+  "display_name": "Collision sphere",
+  "panel": "0x1401c3712",
+  "filler": "0x140158670 (+0x1401580e0)",
+  "fields": {
+   "origin": {
+    "label": "Origin",
+    "label_key": "ui_editor_properties_origin",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 -200 0",
+    "add_default_3d": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c379f",
+     "add_default": "0x140158670",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "radius": {
+    "label": "Radius",
+    "label_key": "ui_editor_properties_radius",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 50,
+    "add_default_3d": 1,
+    "source": {
+     "panel": "0x1401c37fc (jmp to 0x1401c3635)",
+     "add_default": "0x140158670",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "collisionbehavior": {
+    "label": "Collision behavior",
+    "label_key": "ui_editor_properties_collision_behavior",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "bounce",
+    "options": [
+     {
+      "label": "Bounce",
+      "value": "bounce"
+     },
+     {
+      "label": "Slide",
+      "value": "slide"
+     },
+     {
+      "label": "Stop",
+      "value": "stop"
+     },
+     {
+      "label": "Delete",
+      "value": "delete"
+     }
+    ],
+    "source": {
+     "panel": "0x1401b8ca0 (0x1401b9270)",
+     "add_default": "0x1401580e0",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "bouncefactor": {
+    "label": "Bounce factor",
+    "label_key": "ui_editor_properties_bounce_factor",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.5,
+    "condition": "findProperty('collisionbehavior').value=='bounce'",
+    "source": {
+     "panel": "0x1401b8ca0 (0x1401b92cf)",
+     "add_default": "0x1401580e0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "flags&0x1": {
+    "label": "Lock to control point",
+    "label_key": "ui_editor_properties_lock_to_control_point",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401c369e (shared)",
+     "add_default": "0x1401580e0"
+    }
+   },
+   "controlpoint": {
+    "label": "Control point",
+    "label_key": "ui_editor_properties_control_point",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "condition": "checkFlags(1)",
+    "integer": true,
+    "source": {
+     "panel": "0x1401c36f1 (shared)",
+     "add_default": "0x1401580e0"
+    }
+   },
+   "flags&0x2": {
+    "label": "Stop rotation on collision",
+    "label_key": "ui_editor_properties_stop_rotation_on_collision",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 2,
+    "source": {
+     "panel": "0x1401c3bcf (shared tail)",
+     "add_default": "0x1401580e0"
+    }
+   }
+  }
+ },
+ "operator:collisionbox": {
+  "display_name": "(none: the editor shows the raw key ui_editor_particle_element_operator_collisionbox)",
+  "panel": "0x1401c3801",
+  "filler": "0x140158870 (empty) + 0x1401580e0",
+  "fields": {
+   "collisionbehavior": {
+    "label": "Collision behavior",
+    "label_key": "ui_editor_properties_collision_behavior",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "bounce",
+    "options": [
+     {
+      "label": "Bounce",
+      "value": "bounce"
+     },
+     {
+      "label": "Slide",
+      "value": "slide"
+     },
+     {
+      "label": "Stop",
+      "value": "stop"
+     },
+     {
+      "label": "Delete",
+      "value": "delete"
+     }
+    ],
+    "source": {
+     "panel": "0x1401b8ca0 (0x1401b9270)",
+     "add_default": "0x1401580e0"
+    }
+   },
+   "bouncefactor": {
+    "label": "Bounce factor",
+    "label_key": "ui_editor_properties_bounce_factor",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.5,
+    "condition": "findProperty('collisionbehavior').value=='bounce'",
+    "source": {
+     "panel": "0x1401b8ca0 (0x1401b92cf)",
+     "add_default": "0x1401580e0"
+    }
+   }
+  },
+  "deprecated": true,
+  "note": "No display name in the editor's locale, so it is deprecated (not offered in the add dialog); its VM entry does nothing (wallpaper64.exe 0x140240279, we-values-audit notes \u00a79.8). Editor-observed on a legacy project: Bounce, factor 0.5."
+ },
+ "operator:collisionbounds": {
+  "display_name": "Collision bounds",
+  "panel": "0x1401c3831",
+  "filler": "0x140158870 (empty) + 0x1401580e0",
+  "fields": {
+   "collisionbehavior": {
+    "label": "Collision behavior",
+    "label_key": "ui_editor_properties_collision_behavior",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "bounce",
+    "options": [
+     {
+      "label": "Bounce",
+      "value": "bounce"
+     },
+     {
+      "label": "Slide",
+      "value": "slide"
+     },
+     {
+      "label": "Stop",
+      "value": "stop"
+     },
+     {
+      "label": "Delete",
+      "value": "delete"
+     }
+    ],
+    "source": {
+     "panel": "0x1401b8ca0 (0x1401b9270)",
+     "add_default": "0x1401580e0",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "bouncefactor": {
+    "label": "Bounce factor",
+    "label_key": "ui_editor_properties_bounce_factor",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.5,
+    "condition": "findProperty('collisionbehavior').value=='bounce'",
+    "source": {
+     "panel": "0x1401b8ca0 (0x1401b92cf)",
+     "add_default": "0x1401580e0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:collisionmodel": {
+  "display_name": "Collision model",
+  "panel": "0x1401c3bd9",
+  "filler": "0x140158870 (empty) + 0x1401580e0",
+  "fields": {
+   "collisionbehavior": {
+    "label": "Collision behavior",
+    "label_key": "ui_editor_properties_collision_behavior",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "bounce",
+    "options": [
+     {
+      "label": "Bounce",
+      "value": "bounce"
+     },
+     {
+      "label": "Slide",
+      "value": "slide"
+     },
+     {
+      "label": "Stop",
+      "value": "stop"
+     },
+     {
+      "label": "Delete",
+      "value": "delete"
+     }
+    ],
+    "source": {
+     "panel": "0x1401b8ca0 (0x1401b9270)",
+     "add_default": "0x1401580e0",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "bouncefactor": {
+    "label": "Bounce factor",
+    "label_key": "ui_editor_properties_bounce_factor",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.5,
+    "condition": "findProperty('collisionbehavior').value=='bounce'",
+    "source": {
+     "panel": "0x1401b8ca0 (0x1401b92cf)",
+     "add_default": "0x1401580e0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   }
+  }
+ },
+ "operator:collisionquad": {
+  "display_name": "ui_editor_particle_element_collisionquad",
+  "panel": "0x1401c3865",
+  "filler": "0x140158880 (+0x1401580e0)",
+  "fields": {
+   "origin": {
+    "label": "Origin",
+    "label_key": "ui_editor_properties_origin",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 -150 0",
+    "add_default_3d": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c38f5",
+     "add_default": "0x140158880",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "plane": {
+    "label": "Plane",
+    "label_key": "ui_editor_properties_plane",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 1 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c397c",
+     "add_default": "0x140158880",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "forward": {
+    "label": "Forward",
+    "label_key": "ui_editor_properties_forward",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 1",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c3a01",
+     "add_default": "0x140158880",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "size": {
+    "label": "Size",
+    "label_key": "ui_editor_properties_size",
+    "type": "vec2",
+    "step": "any",
+    "clamp": false,
+    "add_default": "200 200",
+    "add_default_3d": "1 1",
+    "components": [
+     "Width",
+     "Depth"
+    ],
+    "source": {
+     "panel": "0x1401c3a89",
+     "add_default": "0x140158880",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "collisionbehavior": {
+    "label": "Collision behavior",
+    "label_key": "ui_editor_properties_collision_behavior",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "bounce",
+    "options": [
+     {
+      "label": "Bounce",
+      "value": "bounce"
+     },
+     {
+      "label": "Slide",
+      "value": "slide"
+     },
+     {
+      "label": "Stop",
+      "value": "stop"
+     },
+     {
+      "label": "Delete",
+      "value": "delete"
+     }
+    ],
+    "source": {
+     "panel": "0x1401b8ca0 (0x1401b9270)",
+     "add_default": "0x1401580e0",
+     "editor_observed": "match (label, order, add_default, options)"
+    }
+   },
+   "bouncefactor": {
+    "label": "Bounce factor",
+    "label_key": "ui_editor_properties_bounce_factor",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0.5,
+    "condition": "findProperty('collisionbehavior').value=='bounce'",
+    "source": {
+     "panel": "0x1401b8ca0 (0x1401b92cf)",
+     "add_default": "0x1401580e0",
+     "editor_observed": "match (label, order, add_default)"
+    }
+   },
+   "flags&0x1": {
+    "label": "Lock to control point",
+    "label_key": "ui_editor_properties_lock_to_control_point",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401c3b15",
+     "add_default": "0x1401580e0"
+    }
+   },
+   "controlpoint": {
+    "label": "Control point",
+    "label_key": "ui_editor_properties_control_point",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "condition": "checkFlags(1)",
+    "integer": true,
+    "source": {
+     "panel": "0x1401c3b65",
+     "add_default": "0x1401580e0"
+    }
+   },
+   "flags&0x2": {
+    "label": "Stop rotation on collision",
+    "label_key": "ui_editor_properties_stop_rotation_on_collision",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 2,
+    "source": {
+     "panel": "0x1401c3bcf (shared tail)",
+     "add_default": "0x1401580e0"
+    }
+   }
+  }
+ },
+ "children": {
+  "display_name": "Child (children[] entry)",
+  "panel": "0x1401c3ff0",
+  "filler": "0x140159b70",
+  "note": "The panel also has an 'Edit' button (0x1401c409c) that opens the child system.",
+  "fields": {
+   "type": {
+    "label": "Type",
+    "label_key": "ui_editor_properties_type",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "static",
+    "options": [
+     {
+      "label": "Static",
+      "value": "static"
+     },
+     {
+      "label": "Event follow",
+      "value": "eventfollow"
+     },
+     {
+      "label": "Event spawn",
+      "value": "eventspawn"
+     },
+     {
+      "label": "Event death",
+      "value": "eventdeath"
+     }
+    ],
+    "source": {
+     "panel": "0x1401c41b5",
+     "add_default": "0x140159b70"
+    }
+   },
+   "origin": {
+    "label": "Offset",
+    "label_key": "ui_editor_properties_offset",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c4239",
+     "add_default": "0x140159b70"
+    }
+   },
+   "angles": {
+    "label": "Angles",
+    "label_key": "ui_editor_properties_angles",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c42c1",
+     "add_default": "0x140159b70"
+    }
+   },
+   "scale": {
+    "label": "Scale",
+    "label_key": "ui_editor_properties_scale",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "1 1 1",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c4346",
+     "add_default": "0x140159b70"
+    }
+   },
+   "maxcount": {
+    "label": "Max count",
+    "label_key": "ui_editor_properties_max_count",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 10,
+    "condition": "none observed: the editor shows it with Type=Static too (legacy_panels.json 'Child (static)'); the panel's pList[1].value!=='static' doesn't hide it",
+    "integer": true,
+    "source": {
+     "panel": "0x1401c43a9",
+     "add_default": "0x140159b70 (0x140159e73)",
+     "editor_observed": "match (label, add_default); visible with Type=Static"
+    }
+   },
+   "probability": {
+    "label": "Probability",
+    "label_key": "ui_editor_properties_probability",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "condition": "none observed: the editor shows it with Type=Static too (legacy_panels.json 'Child (static)'); the panel's pList[1].value!=='static' doesn't hide it",
+    "source": {
+     "panel": "0x1401c440c",
+     "add_default": "0x140159b70",
+     "editor_observed": "match (label, add_default); visible with Type=Static"
+    }
+   },
+   "flags&0x1": {
+    "label": "Set control points to particle positions",
+    "label_key": "ui_editor_properties_set_control_points",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401c4476",
+     "add_default": "0x140159b70"
+    }
+   },
+   "flags&0x2": {
+    "label": "Restart with periodic emission",
+    "label_key": "ui_editor_properties_restart_with_periodic_emission",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 2,
+    "source": {
+     "panel": "0x1401c44d1",
+     "add_default": "0x140159b70"
+    }
+   },
+   "controlpointstartindex": {
+    "label": "Control point start index",
+    "label_key": "ui_editor_properties_set_control_point_start_index",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "condition": "checkBit(pList[7].value, 1)",
+    "integer": true,
+    "source": {
+     "panel": "0x1401c4524",
+     "add_default": "0x140159b70"
+    }
+   }
+  }
+ },
+ "controlpoint": {
+  "display_name": "Control point (controlpoint[] entry)",
+  "panel": "0x1401c3c09",
+  "filler": "0x140159800",
+  "fields": {
+   "offset": {
+    "label": "Offset",
+    "label_key": "ui_editor_properties_offset",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c3c99",
+     "add_default": "0x140159800"
+    }
+   },
+   "angles": {
+    "label": "Angles",
+    "label_key": "ui_editor_properties_angles",
+    "type": "vec3",
+    "step": "any",
+    "clamp": false,
+    "add_default": "0 0 0",
+    "components": [
+     "X",
+     "Y",
+     "Z"
+    ],
+    "source": {
+     "panel": "0x1401c3d20",
+     "add_default": "editor-observed"
+    }
+   },
+   "flags&0x1": {
+    "label": "Lock to pointer",
+    "label_key": "ui_editor_properties_lock_to_pointer",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401c3d8b",
+     "add_default": "0x140159800"
+    }
+   },
+   "flags&0x2": {
+    "label": "Worldspace",
+    "label_key": "ui_editor_properties_worldspace",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 2,
+    "source": {
+     "panel": "0x1401c3de6",
+     "add_default": "0x140159800"
+    }
+   },
+   "flags&0x10": {
+    "label": "Hide gizmo in editor",
+    "label_key": "ui_editor_properties_hide_gizmo_in_editor",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 16,
+    "note": "editor-only: the runtime never tests 0x10",
+    "source": {
+     "panel": "0x1401c3e3e",
+     "add_default": "0x140159800"
+    }
+   },
+   "flags&0x4": {
+    "label": "Copy from parent",
+    "label_key": "ui_editor_properties_copy_from_parent",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 4,
+    "source": {
+     "panel": "0x1401c3e96",
+     "add_default": "0x140159800"
+    }
+   },
+   "flags&0x8": {
+    "label": "Raw value",
+    "label_key": "ui_editor_properties_raw_value",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "condition": "checkFlags(4)",
+    "bit": 8,
+    "source": {
+     "panel": "0x1401c3f61",
+     "add_default": "0x140159800"
+    }
+   },
+   "parentcontrolpoint": {
+    "label": "Parent control point index",
+    "label_key": "ui_editor_properties_parent_control_point_index",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "condition": "checkFlags(4)",
+    "integer": true,
+    "source": {
+     "panel": "0x1401c3fcc",
+     "add_default": "0x140159800"
+    }
+   }
+  }
+ },
+ "_system": {
+  "display_name": "System panel (particle json root)",
+  "panel": "0x1401b68e0",
+  "filler": "particles/example.json template (the new-system template, not a filler)",
+  "note": "Material panel (editor-observed): overbright slider 0-5 (default 1), blending Normal/Translucent/Additive/Alpha to coverage (Additive from particle/halo.json), depth test/write Enabled/Disabled, culling Normal/No cull.",
+  "fields": {
+   "maxcount": {
+    "label": "Max count",
+    "label_key": "ui_editor_properties_max_count",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 500,
+    "integer": true,
+    "source": {
+     "panel": "0x1401b6c61",
+     "add_default": "editor-observed (example.json template)"
+    }
+   },
+   "starttime": {
+    "label": "Start time",
+    "label_key": "ui_editor_properties_start_time",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 0,
+    "source": {
+     "panel": "0x1401b6c94",
+     "add_default": "editor-observed"
+    }
+   },
+   "flags&0x1": {
+    "label": "Worldspace",
+    "label_key": "ui_editor_properties_worldspace",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 1,
+    "source": {
+     "panel": "0x1401b6cc7",
+     "add_default": "example.json"
+    }
+   },
+   "flags&0x4": {
+    "label": "Perspective rendering",
+    "label_key": "ui_editor_properties_perspective",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 4,
+    "source": {
+     "panel": "0x1401b6d11",
+     "add_default": "example.json"
+    }
+   },
+   "flags&0x8": {
+    "label": "Disable color overrides",
+    "label_key": "ui_editor_properties_disable_color_overrides",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 8,
+    "source": {
+     "panel": "0x1401b6d44",
+     "add_default": "example.json"
+    }
+   },
+   "flags&0x20": {
+    "label": "Disable count overrides",
+    "label_key": "ui_editor_properties_disable_count_overrides",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 32,
+    "source": {
+     "panel": "0x1401b6d77",
+     "add_default": "example.json"
+    }
+   },
+   "flags&0x40": {
+    "label": "Disable lifetime overrides",
+    "label_key": "ui_editor_properties_disable_lifetime_overrides",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 64,
+    "source": {
+     "panel": "0x1401b6daa",
+     "add_default": "example.json"
+    }
+   },
+   "flags&0x80": {
+    "label": "Disable size overrides",
+    "label_key": "ui_editor_properties_disable_size_overrides",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 128,
+    "source": {
+     "panel": "0x1401b6ddd",
+     "add_default": "example.json"
+    }
+   },
+   "flags&0x10": {
+    "label": "Disable speed overrides",
+    "label_key": "ui_editor_properties_disable_speed_overrides",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "bit": 16,
+    "source": {
+     "panel": "0x1401b6e10",
+     "add_default": "example.json"
+    }
+   },
+   "animationmode": {
+    "label": "Animation mode",
+    "label_key": "ui_editor_properties_animation_mode",
+    "type": "combo",
+    "clamp": false,
+    "add_default": "sequence",
+    "options": [
+     {
+      "label": "Sequence",
+      "value": "sequence"
+     },
+     {
+      "label": "Random frame",
+      "value": "randomframe"
+     }
+    ],
+    "source": {
+     "panel": "0x1401b7001",
+     "add_default": "editor-observed"
+    }
+   },
+   "flags&0x2": {
+    "label": "No frame blending",
+    "label_key": "ui_editor_properties_no_frame_blending",
+    "type": "checkboxbit",
+    "clamp": false,
+    "add_default": false,
+    "condition": "pList[6].value==='sequence'",
+    "bit": 2,
+    "source": {
+     "panel": "0x1401b703d",
+     "add_default": "example.json"
+    }
+   },
+   "sequencemultiplier": {
+    "label": "Sequence multiplier",
+    "label_key": "ui_editor_properties_sequence_multiplier",
+    "type": "number",
+    "step": "any",
+    "clamp": false,
+    "add_default": 1,
+    "condition": "pList[6].value==='sequence'",
+    "source": {
+     "panel": "0x1401b707f",
+     "add_default": "the panel shows the parsed system value (object +0x3bc, 0x1401b7051): absent = the runtime default 1"
+    }
+   }
+  }
+ },
+ "instanceoverride": {
+  "display_name": "Particle Instance (the particle layer's panel; scene.json object instanceoverride)",
+  "panel": "editor-observed (UIA, legacy_panels.json 'Particle Instance (layer) sliders')",
+  "filler": "none: an absent key is 1",
+  "note": "Sliders with a free number box, like the component sliders; a Color picker (colorn) and the 'Collision model' drop slot follow. The runtime clamps none of them (we-values-audit notes \u00a76).",
+  "fields": {
+   "alpha": {
+    "label": "Opacity",
+    "type": "slider",
+    "min": 0.01,
+    "max": 1,
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "layer panel 'Particle Instance'",
+     "add_default": "editor-observed (legacy_panels.json)"
+    }
+   },
+   "rate": {
+    "label": "Playback rate",
+    "type": "slider",
+    "min": 0.01,
+    "max": 5,
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "layer panel 'Particle Instance'",
+     "add_default": "editor-observed (legacy_panels.json)"
+    }
+   },
+   "speed": {
+    "label": "Speed",
+    "type": "slider",
+    "min": 0,
+    "max": 5,
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "layer panel 'Particle Instance'",
+     "add_default": "editor-observed (legacy_panels.json)"
+    }
+   },
+   "size": {
+    "label": "Size",
+    "type": "slider",
+    "min": 0.01,
+    "max": 5,
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "layer panel 'Particle Instance'",
+     "add_default": "editor-observed (legacy_panels.json)"
+    }
+   },
+   "count": {
+    "label": "Count",
+    "type": "slider",
+    "min": 0.01,
+    "max": 2,
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "layer panel 'Particle Instance'",
+     "add_default": "editor-observed (legacy_panels.json)"
+    }
+   },
+   "lifetime": {
+    "label": "Lifetime",
+    "type": "slider",
+    "min": 0.01,
+    "max": 2,
+    "clamp": false,
+    "add_default": 1,
+    "source": {
+     "panel": "layer panel 'Particle Instance'",
+     "add_default": "editor-observed (legacy_panels.json)"
+    }
+   }
+  }
+ }
+}

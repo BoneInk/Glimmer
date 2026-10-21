@@ -1,0 +1,9 @@
+{
+	"version": 1,
+	"name": "Sprite frame",
+	"passes": [
+		{
+			"material": "materials/effects/spriteframe.json"
+		}
+	]
+}

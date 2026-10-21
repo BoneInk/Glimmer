@@ -1,0 +1,9 @@
+{
+	"version": 1,
+	"name": "Layer matrix probe",
+	"passes": [
+		{
+			"material": "materials/effects/layermatrix.json"
+		}
+	]
+}

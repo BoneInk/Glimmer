@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy Policy · Open Wallpaper Engine</title>
+<meta name="description" content="The Privacy Policy for Open Wallpaper Engine.">
+<link rel="icon" href="icon.png" media="(prefers-color-scheme: light)">
+<link rel="icon" href="icon-dark.png" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<nav class="nav" aria-label="Main">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <img class="icon-light" src="icon.png" alt=""><img class="icon-dark" src="icon-dark.png" alt="">
+      Open Wallpaper Engine
+    </a>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="terms.html">Terms of Use</a></li>
+      <li><a href="privacy.html">Privacy Policy</a></li>
+    </ul>
+    <button class="theme" id="theme" type="button" aria-label="Switch between light and dark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg>
+    </button>
+  </div>
+</nav>
+
+<main id="top" class="wrap legal">
+<h1 id="open-wallpaper-engine-privacy-policy">Open Wallpaper Engine — Privacy Policy</h1>
+<p><strong>Version 1.1 · Effective date: 2026-10-06</strong></p>
+<hr>
+<div class="legal-summary"><p><strong>In short</strong></p>
+<p>Open Wallpaper Engine ("OWE") runs entirely on your Mac. We have no servers, no accounts, no analytics, no crash reporting, no advertising and no tracking. We do not collect, receive, sell or share any personal data. The only things the app sends over the internet go to Valve (Steam), to GitHub (for app updates), to the hosts of the optional plugins you choose to install, and to whatever websites a web wallpaper you install chooses to load. Those services have their own privacy policies.</p>
+<p>This summary is for convenience only. The full text below is what applies.</p></div>
+<hr>
+<h2 id="1-who-is-responsible">1. Who is responsible</h2>
+<p>Open Wallpaper Engine is a free, open-source macOS application released and maintained by <strong>Deepratna Awale</strong>, an individual ("we", "us"). It is based on the open-source Open Wallpaper Engine by Haren Chen and MrWindDog.</p>
+<ul><li>Source code: <a href="https://github.com/deepratna-awale/open-wallpaper-engine-mac">https://github.com/deepratna-awale/open-wallpaper-engine-mac</a></li><li>Website: <a href="https://openwallpaperengine.app/">https://openwallpaperengine.app/</a></li><li>Contact: open an issue at <a href="https://github.com/deepratna-awale/open-wallpaper-engine-mac/issues">https://github.com/deepratna-awale/open-wallpaper-engine-mac/issues</a></li></ul>
+<p>OWE is not affiliated with, endorsed by or connected to Wallpaper Engine, its developer (Kristjan Skutta / Wallpaper Engine Team), Valve Corporation or Steam.</p>
+<h2 id="2-what-we-do-not-collect">2. What we do not collect</h2>
+<p>We want to be direct about this, because it is the most important part of this policy:</p>
+<ul><li>We operate <strong>no servers</strong> of our own. The app never contacts us.</li><li>There are <strong>no accounts</strong> with us. You never register or sign in with us.</li><li>There is <strong>no analytics, telemetry, usage tracking or crash reporting</strong>.</li><li>There is <strong>no advertising</strong> and no advertising identifiers.</li><li>We <strong>do not sell, rent, share or disclose</strong> personal data to anyone, because we never receive it.</li><li>We do not use cookies, fingerprinting or similar technologies.</li></ul>
+<p>Because nothing reaches us, we cannot see how you use the app, what wallpapers you have, or who you are.</p>
+<h2 id="3-what-stays-on-your-mac">3. What stays on your Mac</h2>
+<p>OWE stores the following <strong>only on your Mac</strong>, under your control. None of it is sent to us.</p>
+<div class="table-wrap"><table><thead><tr><th>Data</th><th>Where it lives</th></tr></thead><tbody><tr><td>App settings and preferences (including your acceptance of these documents, recorded as a version and date)</td><td>macOS user defaults for the app</td></tr><tr><td>Your wallpaper library (imported and downloaded wallpapers)</td><td>A storage folder you choose. The default is <code>~/Documents/Open Wallpaper Engine</code></td></tr><tr><td>Caches (for example, decoded images and translated shaders that speed up loading)</td><td>The app's cache folders on your Mac</td></tr><tr><td>A local copy of your own Wallpaper Engine assets, downloaded through your Steam account</td><td>Your storage folder</td></tr><tr><td>Your Steam Web API key (if you enter one) and your Steam account name (to reuse SteamCMD's saved login)</td><td>The macOS Keychain (see section 6)</td></tr></tbody></table></div>
+<p>You can view, move or delete any of this at any time. Section 7 lists the locations.</p>
+<h2 id="4-third-parties-the-app-contacts">4. Third parties the app contacts</h2>
+<p>OWE itself has no backend, but some features need the internet. When they do, the app connects directly from your Mac to the services below. We are not a party to those connections and do not receive their contents. Each of these services processes your data under <strong>its own</strong> privacy policy, which we encourage you to read.</p>
+<h3 id="4-1-valve-steam">4.1 Valve (Steam)</h3>
+<p>Used only for Steam Workshop features and for downloading your own copy of Wallpaper Engine's assets. These features are optional and require your own Steam account that owns Wallpaper Engine.</p>
+<ul><li><strong><code>api.steampowered.com</code></strong> — Workshop search, item details, collections and the list of your own Workshop subscriptions. If you enter a Steam Web API key, the app sends that key in a request header so Valve can authorise the request. Your IP address and the search terms or item IDs you ask for are necessarily part of these requests.</li><li><strong><code>steamcommunity.com</code></strong> — Workshop pages and related community content.</li><li><strong>SteamCMD</strong> — Valve's official command-line tool. OWE downloads it at runtime from Valve's content servers (<code>steamcdn-a.akamaihd.net</code>); it is not bundled with the app. SteamCMD then makes its own connections to Valve to log in and to download Workshop items and Wallpaper Engine's assets (Steam app 431960).</li></ul>
+<p>Your use of these services is subject to Valve's Steam Subscriber Agreement (<a href="https://store.steampowered.com/subscriber_agreement/">https://store.steampowered.com/subscriber_agreement/</a>) and Valve's Privacy Policy (<a href="https://store.steampowered.com/privacy_agreement/">https://store.steampowered.com/privacy_agreement/</a>).</p>
+<h3 id="4-2-github-app-updates">4.2 GitHub (app updates)</h3>
+<p>OWE uses the open-source Sparkle framework to check for new versions.</p>
+<ul><li>It fetches an update feed from <code>https://openwallpaperengine.app/appcast.xml</code> (hosted by GitHub Pages) and downloads updates from GitHub Releases. The old feed address on <code>github.io</code> redirects there.</li><li>Like any web request, these connections expose your IP address to GitHub, and Sparkle includes its standard request information, such as the app's name and version and your macOS version, so that a compatible update can be offered. We have not enabled Sparkle's optional "system profiling", so no hardware details are sent.</li><li>We do not receive or log these requests; they go to GitHub's servers.</li></ul>
+<p>You can turn off automatic update checks in the app's Settings. GitHub's Privacy Statement applies: <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement</a>.</p>
+<h3 id="4-3-web-wallpapers-and-other-third-party-content">4.3 Web wallpapers and other third-party content</h3>
+<p>"Web" wallpapers are HTML pages made by their creators. When you run one, it may load content from the internet exactly as a web page in a browser would — for example, a YouTube or Vimeo embed, fonts, images or scripts. Those requests go to the sites the wallpaper's author chose, are governed by those sites' policies, and are outside our control. Only install wallpapers from creators you trust (see also the Terms of Use).</p>
+<h3 id="4-4-optional-plugins-and-send-over-wi-fi">4.4 Optional plugins and Send over Wi-Fi</h3>
+<ul><li><strong>Chromium web engine</strong> (Settings › Plugins): downloaded only when you install it, from the Chromium Embedded Framework's official builds (<code>cef-builds.spotifycdn.com</code>), and checked against the SHA-256 the app pins.</li><li><strong>Depth Map Generation</strong> (Settings › Plugins): downloaded only when you install it, from Apple's Hugging Face repository (<code>huggingface.co</code>), and checked against the SHA-256 the app pins. The model runs only on your Mac.</li><li><strong>MCP Server</strong> (Settings › Plugins): while installed, the app opens a local control connection (a socket file in its support folder) that only your macOS user account can use, so AI assistants you run on your Mac can control the app. It never listens on the network; removing the plugin closes it.</li><li><strong>Send over Wi-Fi</strong> (Android export): while you share, the Mac serves only the packages you selected, to devices on your local network, until 15 minutes pass without a request. Nothing goes over the internet.</li></ul>
+<h3 id="4-5-links">4.5 Links</h3>
+<p>Links in the app (to GitHub, Steam and so on) open in your default web browser. From that point on, your browser and the destination site apply.</p>
+<h2 id="5-macos-permissions-and-why-we-ask">5. macOS permissions and why we ask</h2>
+<p>OWE may ask for the following macOS permissions. Each is optional; the app works without it, minus the related feature. You can grant or revoke them at any time in <strong>System Settings → Privacy &amp; Security</strong>.</p>
+<div class="table-wrap"><table><thead><tr><th>Permission</th><th>Why</th><th>What happens to the data</th></tr></thead><tbody><tr><td><strong>System Audio Recording</strong> (Screen &amp; System Audio Recording before macOS 14.2)</td><td>Some wallpapers react to the audio playing on your Mac. macOS grants access to system audio through this permission.</td><td>Audio is analysed on your Mac in real time to drive the wallpaper's visuals. It is never recorded, saved or sent anywhere. Screen frames are not captured or used.</td></tr><tr><td><strong>Microphone</strong></td><td>Only when you choose a recording device (a microphone or a loopback device) in Settings › Optimizations › Audio, so audio-reactive wallpapers hear it instead of the audio your Mac plays.</td><td>Audio is analysed on your Mac in real time to drive the wallpaper's visuals. It is never recorded, saved or sent anywhere.</td></tr><tr><td><strong>Photos</strong></td><td>Only when you turn on "Also Save to Photos Album" for iPhone &amp; iPad exports.</td><td>The app finds or creates the album you chose and adds your exported Live Photos to it. Nothing else is read, stored or transmitted.</td></tr><tr><td><strong>Local Network</strong></td><td>Send over Wi-Fi advertises the share's name on your local network.</td><td>Only the packages you selected are served, to devices on your local network. Nothing goes over the internet.</td></tr><tr><td><strong>Window information</strong> (no prompt)</td><td>To pause wallpapers when a window covers a display, saving power.</td><td>The app only checks window positions and sizes on your Mac. Nothing is stored or transmitted.</td></tr><tr><td><strong>Now Playing (media information)</strong> (no prompt)</td><td>Some wallpapers can display the current track title, artist and artwork.</td><td>Read from macOS's media information on your Mac and shown in the wallpaper. Nothing is stored or transmitted.</td></tr></tbody></table></div>
+<h2 id="6-keychain-and-credentials">6. Keychain and credentials</h2>
+<ul><li>If you enter a <strong>Steam Web API key</strong>, it is stored in the macOS Keychain on your Mac and used only in requests to <code>api.steampowered.com</code>. You can remove it from the app's Settings or with the Keychain Access app.</li><li>Your <strong>Steam account name</strong> is stored in the Keychain so the app can reuse SteamCMD's saved login without asking again.</li><li>Your <strong>Steam password and Steam Guard codes are never stored or logged by OWE.</strong> When you sign in through the app, they are passed only to SteamCMD, Valve's official tool, through its standard input. SteamCMD then keeps its own login token in its own folder, as it does when you use it directly. If you prefer, you can sign in with SteamCMD yourself in Terminal and the app will reuse that login.</li></ul>
+<h2 id="7-retention-and-deletion">7. Retention and deletion</h2>
+<p>We retain nothing, because we hold nothing. Your local data stays on your Mac until you delete it.</p>
+<p>To remove everything OWE has stored, delete the app and these locations (paths may vary if you chose a different storage folder):</p>
+<ul><li><strong>Wallpaper library and Wallpaper Engine assets:</strong> the storage folder you chose (default <code>~/Documents/Open Wallpaper Engine</code>)</li><li><strong>Settings:</strong> the app's user defaults (<code>~/Library/Preferences/</code>, the entry named after the app's bundle identifier)</li><li><strong>Caches:</strong> the app's folder under <code>~/Library/Caches/</code></li><li><strong>Other app support files, including SteamCMD and its login token:</strong> the app's folder under <code>~/Library/Application Support/</code></li><li><strong>Keychain entries:</strong> the Steam Web API key and Steam account name, removable in the Keychain Access app</li></ul>
+<p>To delete data held by Valve or GitHub, use their tools and privacy policies, since that data is theirs, not ours.</p>
+<h2 id="8-children">8. Children</h2>
+<p>OWE is not directed at children under 13, or under 16 where a higher age applies (for example in parts of the European Economic Area). We do not knowingly collect personal data from anyone, including children. Steam Workshop features require a Steam account, which is subject to Valve's own age requirements.</p>
+<h2 id="9-your-rights-and-international-users">9. Your rights and international users</h2>
+<h3 id="9-1-our-position-under-data-protection-law">9.1 Our position under data protection law</h3>
+<p>Because OWE processes data only on your own device, and we never receive, access or store any personal data, we do not act as a "controller" or "processor" of your personal data for the purposes of the EU General Data Protection Regulation (GDPR), the UK GDPR, or similar laws, and we do not "collect", "sell" or "share" personal information within the meaning of the California Consumer Privacy Act as amended by the California Privacy Rights Act (CCPA/CPRA).</p>
+<p>Where the app connects to Valve or GitHub, those companies decide how they process the resulting data, and they, not we, are the controller or business for that processing. Please direct rights requests about that data to them.</p>
+<h3 id="9-2-your-rights">9.2 Your rights</h3>
+<p>Rights of access, rectification, erasure, restriction, portability, objection and the right not to be discriminated against for exercising them (under GDPR, UK GDPR, CCPA/CPRA or similar laws) exist to protect you against organisations that hold your data. We hold none, so there is nothing for us to give you, correct or delete: your data is already in your hands and you can delete it as described in section 7. If you believe we have somehow received personal data about you, contact us (section 1) and we will look into it promptly.</p>
+<p>You also have the right to lodge a complaint with a data protection supervisory authority in your country.</p>
+<h3 id="9-3-international-transfers">9.3 International transfers</h3>
+<p>We make no international transfers of personal data, since we make no transfers at all. Connections you make to Valve and GitHub may reach servers in other countries; their policies describe this.</p>
+<h2 id="10-security">10. Security</h2>
+<ul><li>Credentials are kept in the macOS Keychain, which encrypts them at rest and restricts access to the app.</li><li>Passwords and Steam Guard codes are handled in memory only, for the duration of the sign-in, and passed only to Valve's SteamCMD.</li><li>Update downloads are signed and verified before installation, so a tampered update will not install.</li><li>All connections to Valve, GitHub and the plugin hosts use HTTPS. Send over Wi-Fi uses plain HTTP on your local network only, behind a random token.</li></ul>
+<p>No software is perfectly secure. Because OWE is open source, you can inspect exactly what it does. Please report security problems privately through the repository's Security tab ("Report a vulnerability"), as described in SECURITY.md.</p>
+<h2 id="11-changes-to-this-policy">11. Changes to this policy</h2>
+<p>We may update this policy when the app changes or the law requires it. The version number and effective date at the top will change. If a change is material, the app will ask you to review and accept the new version before continuing to use it. Earlier versions are available in the repository's history.</p>
+<h2 id="12-contact">12. Contact</h2>
+<p>Questions or concerns: <a href="https://github.com/deepratna-awale/open-wallpaper-engine-mac/issues">https://github.com/deepratna-awale/open-wallpaper-engine-mac/issues</a></p>
+<hr>
+<p><em>Wallpaper Engine is a product of Kristjan Skutta / Wallpaper Engine Team. Steam and the Steam logo are trademarks of Valve Corporation. GitHub is a trademark of GitHub, Inc. These names are used only to identify the services described above and imply no affiliation or endorsement.</em></p>
+<p><strong>Canada.</strong> The publisher is based in Canada (St. John's, Newfoundland and Labrador). Because the publisher does not collect, use or disclose personal information through the app, the Personal Information Protection and Electronic Documents Act (PIPEDA) is not engaged by the app's operation; questions or concerns can still be raised through the contact below, and you may contact the Office of the Privacy Commissioner of Canada.</p>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Free and open source under the <a href="https://github.com/deepratna-awale/open-wallpaper-engine-mac/blob/main/LICENSE">GPL-3.0 licence</a> ·
+      <a href="https://github.com/deepratna-awale/open-wallpaper-engine-mac">Source</a> ·
+      <a href="https://github.com/deepratna-awale/open-wallpaper-engine-mac/releases">All releases</a> ·
+      <a href="https://github.com/deepratna-awale/open-wallpaper-engine-mac/blob/main/ATTRIBUTION.txt">Attribution</a> ·
+      <a href="terms.html">Terms of Use</a> ·
+      <a href="privacy.html">Privacy Policy</a></p>
+    <p>Open Wallpaper Engine is not affiliated with Wallpaper Engine or Valve. Wallpapers belong to their authors.</p>
+  </div>
+</footer>
+
+<script>
+// Light/dark toggle. Follows the system until the viewer picks one; the pick is remembered per browser.
+(() => {
+  const root = document.documentElement;
+  let saved = null;
+  try { saved = localStorage.getItem("theme"); } catch (_) {}
+  if (saved === "light" || saved === "dark") root.dataset.theme = saved;
+  document.getElementById("theme").addEventListener("click", () => {
+    const current = root.dataset.theme ||
+      (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const next = current === "dark" ? "light" : "dark";
+    root.dataset.theme = next;
+    try { localStorage.setItem("theme", next); } catch (_) {}
+  });
+})();
+</script>
+</body>
+</html>
+

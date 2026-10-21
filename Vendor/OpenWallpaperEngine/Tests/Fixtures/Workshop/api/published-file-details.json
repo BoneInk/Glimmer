@@ -1,0 +1,14 @@
+{
+  "response": {
+    "result": 1,
+    "resultcount": 3,
+    "publishedfiledetails": [
+      { "publishedfileid": "3000000011", "result": 1, "title": "Quiet Lake", "preview_url": "https://example.invalid/lake.jpg",
+        "file_size": 1000, "creator": "76561190000000001", "tags": [ { "tag": "Scene" }, { "tag": "Everyone" } ] },
+      { "publishedfileid": "3000000012", "result": 1, "title": "Night Drive", "preview_url": "https://example.invalid/drive.jpg",
+        "file_size": 2000, "tags": [ { "tag": "Video" }, { "tag": "Mature" } ] },
+      { "publishedfileid": "3000000013", "result": 1, "title": "Desk Toy", "preview_url": "https://example.invalid/toy.jpg",
+        "file_size": 3000, "tags": [ { "tag": "Application" }, { "tag": "Everyone" } ] }
+    ]
+  }
+}

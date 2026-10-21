@@ -1,0 +1,88 @@
+{
+	"editor" : 
+	{
+		"animationmapping" : 
+		{
+			"Rig|walk" : 41,
+			"Rig|wave" : 42
+		},
+		"attachments" : 
+		[
+			{
+				"bone" : "arm",
+				"id" : 27,
+				"name" : "hand_tip",
+				"transform" : "1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"
+			}
+		],
+		"clips" : 
+		[
+			{
+				"animation" : "Rig|walk",
+				"end" : 30,
+				"frameoffset" : 0,
+				"id" : 26,
+				"matchloop" : true,
+				"motionflags" : 43008,
+				"name" : "Rig|walk (Clip 0)",
+				"rootmotion" : "root",
+				"start" : 0
+			}
+		],
+		"constraints" : 
+		[
+			{
+				"bone" : "arm",
+				"config" : 
+				{
+					"a" : "1 0 0",
+					"gd" : "0 -1 0",
+					"ge" : true,
+					"ik" : false,
+					"ikce" : false,
+					"ikcp" : false,
+					"ikcpn" : 1,
+					"ikd" : 2,
+					"ikfe" : false,
+					"ikg" : true,
+					"ikm" : "",
+					"ikr" : true,
+					"ikrd" : 25,
+					"ikrmax" : 3.1415927,
+					"ikrmin" : 0,
+					"ikse" : true,
+					"la" : true,
+					"lamax" : "0 0 1.5707963267948966",
+					"lamin" : "0 0 -1.5707963267948966",
+					"layout" : "simple",
+					"lt" : false,
+					"ltmax" : 100,
+					"m" : 20,
+					"preset" : "gravityrotation",
+					"presetresponsiveness" : 67,
+					"r" : true,
+					"rax" : true,
+					"ray" : true,
+					"raz" : true,
+					"re" : true,
+					"rf" : 20,
+					"ri" : 30,
+					"rs" : 200,
+					"s" : 0,
+					"se" : false,
+					"t" : false,
+					"tax" : true,
+					"tay" : true,
+					"taz" : true,
+					"tf" : 20,
+					"ti" : 30,
+					"tm" : 200,
+					"ts" : 200
+				}
+			}
+		]
+	},
+	"normals" : true,
+	"skinning" : true,
+	"tangentspace" : true
+}

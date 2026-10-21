@@ -1,0 +1,15 @@
+{
+	"children" : [
+		{ "name" : "particles/glow.json", "origin" : "0 100 0", "scale" : "2 2 1", "angles" : "0 0 0.5" },
+		{ "name" : "particles/trail.json", "type" : "eventfollow", "maxcount" : 4, "probability" : 0.5 },
+		{ "name" : "particles/spark.json", "type" : "eventspawn", "flags" : 1, "controlpointstartindex" : 2 },
+		{ "name" : "particles/burst.json", "type" : "eventdeath", "maxcount" : 3 }
+	],
+	"emitter" : [ { "name" : "sphererandom", "rate" : 2 } ],
+	"initializer" : [
+		{ "name" : "lifetimerandom", "min" : 1, "max" : 1 },
+		{ "name" : "velocityrandom", "min" : "0 400 0", "max" : "0 400 0" }
+	],
+	"material" : "materials/dot.json",
+	"maxcount" : 8
+}

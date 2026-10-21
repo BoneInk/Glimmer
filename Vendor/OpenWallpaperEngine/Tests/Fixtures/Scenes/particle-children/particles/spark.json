@@ -1,0 +1,6 @@
+{
+	"emitter" : [ { "name" : "sphererandom", "rate" : 0, "instantaneous" : 3, "distancemax" : 4, "speedmin" : 50, "speedmax" : 50 } ],
+	"initializer" : [ { "name" : "lifetimerandom", "min" : 0.3, "max" : 0.3 } ],
+	"material" : "materials/dot.json",
+	"maxcount" : 3
+}

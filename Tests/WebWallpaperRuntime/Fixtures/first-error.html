@@ -1,0 +1,6 @@
+<!doctype html><html><body><div id="result">pending</div><script>
+window.wallpaperPropertyListener={applyUserProperties: async properties=>{
+ if(properties.text && properties.text.value==='THROW')throw new Error('FIRST_SCALAR_FAILURE');
+ if(properties.text)document.getElementById('result').textContent=properties.text.value;
+}};
+</script></body></html>

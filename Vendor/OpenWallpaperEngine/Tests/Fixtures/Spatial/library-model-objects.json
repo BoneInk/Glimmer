@@ -1,0 +1,202 @@
+[
+ {
+  "item": "3159348391",
+  "object": {
+   "animationlayers": [
+    {
+     "additive": false,
+     "animation": 272,
+     "blend": 1.0,
+     "blendin": false,
+     "blendout": false,
+     "blendtime": 0.5,
+     "id": 322,
+     "name": "Closed",
+     "rate": 1.0,
+     "visible": true
+    },
+    {
+     "additive": false,
+     "animation": 273,
+     "blend": {
+      "animation": {
+       "c0": [
+        {
+         "back": {
+          "enabled": true,
+          "x": -1,
+          "y": 0
+         },
+         "frame": 0,
+         "front": {
+          "enabled": true,
+          "x": 1,
+          "y": 0
+         },
+         "lockangle": true,
+         "locklength": true,
+         "value": 0
+        },
+        {
+         "back": {
+          "enabled": true,
+          "x": -1,
+          "y": 0
+         },
+         "frame": 30,
+         "front": {
+          "enabled": true,
+          "x": 1,
+          "y": 0
+         },
+         "lockangle": true,
+         "locklength": true,
+         "value": 0
+        },
+        {
+         "back": {
+          "enabled": true,
+          "x": -1,
+          "y": 0
+         },
+         "frame": 35,
+         "front": {
+          "enabled": true,
+          "x": 1,
+          "y": 0
+         },
+         "lockangle": true,
+         "locklength": true,
+         "value": 1
+        },
+        {
+         "back": {
+          "enabled": true,
+          "x": -1,
+          "y": 0
+         },
+         "frame": 112,
+         "front": {
+          "enabled": true,
+          "x": 1,
+          "y": 0
+         },
+         "lockangle": true,
+         "locklength": true,
+         "value": 1
+        },
+        {
+         "back": {
+          "enabled": true,
+          "x": -1,
+          "y": 0
+         },
+         "frame": 116,
+         "front": {
+          "enabled": true,
+          "x": 1,
+          "y": 0
+         },
+         "lockangle": true,
+         "locklength": true,
+         "value": 0
+        }
+       ],
+       "options": {
+        "fps": 30,
+        "length": 132,
+        "mode": "single",
+        "name": "go",
+        "wraploop": null
+       }
+      },
+      "value": 0.0
+     },
+     "blendin": false,
+     "blendout": false,
+     "blendtime": 0.5,
+     "id": 325,
+     "name": "Open",
+     "rate": 1.0,
+     "visible": true
+    }
+   ],
+   "disablepropagation": false,
+   "id": 79,
+   "model": "models/dojyo/dojyo.mdl",
+   "name": "dojyo",
+   "origin": "0.00000 0.00000 1.22519",
+   "scale": "0.00200 0.00200 0.00200",
+   "solid": true
+  }
+ },
+ {
+  "item": "3233200129",
+  "object": {
+   "animationlayers": [
+    {
+     "additive": false,
+     "animation": 14,
+     "blend": 1.0,
+     "id": 23,
+     "name": "mixamo.com",
+     "rate": 1.27,
+     "visible": true
+    }
+   ],
+   "id": 15,
+   "model": "models/sas@Shuffling/sas@Shuffling.mdl",
+   "name": "sas@Shuffling",
+   "scale": "0.03906 0.03906 0.03906"
+  }
+ },
+ {
+  "item": "3657770939",
+  "object": {
+   "angles": "0.00000 -0.61087 0.00000",
+   "castshadow": false,
+   "dependencies": [
+    16
+   ],
+   "disablepropagation": false,
+   "id": 17,
+   "model": "models/skybox_mesh/skybox_mesh.mdl",
+   "name": "BG_SKYB0X",
+   "origin": "0.00000 -32.00000 0.00000",
+   "scale": "5120.00000 5120.00000 5120.00000",
+   "solid": false
+  }
+ },
+ {
+  "item": "3384390033",
+  "object": {
+   "disablepropagation": false,
+   "id": 299,
+   "model": "models/引力透镜B/引力透镜B.mdl",
+   "name": "引力透镜_B",
+   "origin": "1920.00000 1000.00000 -640.00000",
+   "perspective": true,
+   "scale": "2.50000 2.50000 16.00000",
+   "solid": true,
+   "visible": {
+    "user": "gravitational",
+    "value": true
+   }
+  }
+ },
+ {
+  "item": "2350874185",
+  "object": {
+   "angles": "0.00000 0.00000 0.00000",
+   "id": 7,
+   "locktransforms": false,
+   "model": "models/dome/dome.mdl",
+   "name": "Dome",
+   "origin": "0.00000 -2.00000 0.00000",
+   "parallaxDepth": "1.00000 1.00000",
+   "perspective": false,
+   "reflected": true,
+   "scale": "1.00000 1.00000 1.00000"
+  }
+ }
+]

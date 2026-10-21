@@ -1,0 +1,8 @@
+# The test model's materials: Wall draws wall.png beside the model; Floor names a texture that isn't there.
+newmtl Wall
+Kd 1.0 1.0 1.0
+map_Kd wall.png
+
+newmtl Floor
+Kd 0.5 0.5 0.5
+map_Kd missing.png

@@ -1,0 +1,48 @@
+name: Wallpaper doesn't render
+description: A wallpaper is blank, looks wrong, or behaves differently from Wallpaper Engine.
+labels: [rendering]
+body:
+  - type: markdown
+    attributes:
+      value: "Application wallpapers (`type: application`) aren't supported. Scenes need the Wallpaper Engine assets (Settings → Assets)."
+  - type: input
+    id: wallpaper
+    attributes:
+      label: Wallpaper ID or link
+      placeholder: https://steamcommunity.com/sharedfiles/filedetails/?id=...
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Wallpaper type
+      options: [Scene, Video, Web]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What's wrong
+      description: What you see versus what Wallpaper Engine shows (the Workshop preview is fine as a reference). Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: "Run `/usr/bin/log show --last 10m --predicate 'process == \"Open Wallpaper Engine\"'` after loading the wallpaper and paste the errors."
+      render: text
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and Mac
+      placeholder: macOS 26.1, M2 MacBook Air
+    validations:
+      required: true
+  - type: input
+    id: owe
+    attributes:
+      label: Open Wallpaper Engine version
+      placeholder: 1.0.0-beta.3
+    validations:
+      required: true

@@ -1,0 +1,93 @@
+{
+ "camera": {
+  "center": "0 0.5 0",
+  "eye": "3 2 3",
+  "up": "0 1 0"
+ },
+ "general": {
+  "ambientcolor": "0.30000 0.30000 0.30000",
+  "bloom": false,
+  "bloomhdrfeather": 0.1,
+  "bloomhdriterations": 8,
+  "bloomhdrscatter": 1.619,
+  "bloomhdrstrength": 2.0,
+  "bloomhdrthreshold": 1.0,
+  "bloomstrength": 2.0,
+  "bloomthreshold": 0.64999998,
+  "bloomtint": "1.00000 1.00000 1.00000",
+  "camerafade": true,
+  "cameraparallax": false,
+  "cameraparallaxamount": 0.5,
+  "cameraparallaxdelay": 0.1,
+  "cameraparallaxmouseinfluence": 0.5,
+  "camerapreview": true,
+  "camerashake": false,
+  "camerashakeamplitude": 0.5,
+  "camerashakeroughness": 1.0,
+  "camerashakespeed": 3.0,
+  "clearcolor": "0.70000 0.70000 0.70000",
+  "clearenabled": true,
+  "farz": 10000.0,
+  "fov": 50.0,
+  "gravitydirection": "0.00000 -1.00000 0.00000",
+  "gravitystrength": 1.0,
+  "hdr": false,
+  "nearz": 0.1,
+  "orthogonalprojection": null,
+  "skylightcolor": "0.30000 0.30000 0.30000",
+  "transparentsorting": true,
+  "winddirection": "0.70700 0.70700 0.00000",
+  "windenabled": false,
+  "windstrength": 1.0,
+  "zoom": 1.0
+ },
+ "objects": [
+  {
+   "disablepropagation": false,
+   "id": 17,
+   "model": "models/rootmotion_box/rootmotion_box.mdl",
+   "name": "rootmotion_box",
+   "scale": "0.01 0.01 0.01",
+   "solid": true
+  },
+  {
+   "alpha": {
+    "user": "clockopacity",
+    "value": 1.0
+   },
+   "anchor": "none",
+   "angles": "0 45 0",
+   "backgroundbrightness": 1.0,
+   "backgroundcolor": "0.00000 0.00000 0.00000",
+   "blockalign": false,
+   "castshadow": false,
+   "color": {
+    "user": "clockcolor",
+    "value": "1.00000 1.00000 1.00000"
+   },
+   "depthtest": "disabled",
+   "font": "systemfont_consolas",
+   "horizontalalign": "center",
+   "id": 500,
+   "limitrows": false,
+   "limituseellipsis": false,
+   "limitwidth": false,
+   "locktransforms": true,
+   "maxrows": 1,
+   "maxwidth": 500.0,
+   "name": "probe text",
+   "opaquebackground": false,
+   "origin": "-1.5 0.6 -1.5",
+   "padding": 32,
+   "parallaxDepth": "0.00000 0.00000",
+   "pointsize": 33.0,
+   "scale": "0.004 0.004 0.004",
+   "size": "375.00000 161.00000",
+   "text": "DEPTH TEST",
+   "verticalalign": "center",
+   "visible": true,
+   "depthwrite": "disabled"
+  }
+ ],
+ "version": 5
+}

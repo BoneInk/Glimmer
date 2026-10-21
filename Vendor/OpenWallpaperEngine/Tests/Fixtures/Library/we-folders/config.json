@@ -1,0 +1,43 @@
+{
+	"?installdirectory" : "C:/Program Files (x86)/Steam/steamapps/common/wallpaper_engine",
+	"steamuser" :
+	{
+		"general" :
+		{
+			"browser" :
+			{
+				"explore" : { "favorites" : [], "liked" : [], "disliked" : [], "custom" : [] },
+				"folders" :
+				[
+					{
+						"type" : "folder",
+						"title" : "Games",
+						"folderColor" : "browseFolderColorRed",
+						"folderIcon" : "fas fa-gamepad-modern",
+						"items" : { "1000000001" : 1, "1000000002" : 1 },
+						"subfolders" :
+						[
+							{
+								"type" : "folder",
+								"title" : "Retro",
+								"folderIcon" : "fas fa-rocket",
+								"folderIconOpen" : "fas fa-rocket-launch",
+								"items" : { "C:/Users/someone/Documents/My Wallpapers/pixel-town/project.json" : 1 },
+								"subfolders" : []
+							}
+						]
+					},
+					{
+						"type" : "folder",
+						"title" : "Calm",
+						"folderColor" : "browseFolderColorUnknown",
+						"items" : { "C:\\Program Files (x86)\\Steam\\steamapps\\common\\wallpaper_engine\\projects\\myprojects\\not-installed\\scene.json" : 1, "https://example.com/" : 1 },
+						"subfolders" : []
+					},
+					{ "type" : "folder", "title" : "", "items" : { "1000000009" : 1 }, "subfolders" : [] }
+				],
+				"resultsperpage" : 100
+			}
+		}
+	}
+}

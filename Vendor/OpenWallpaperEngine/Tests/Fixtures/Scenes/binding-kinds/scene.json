@@ -1,0 +1,57 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : {
+		"bloom" : false,
+		"clearcolor" : "0 0 0",
+		"orthogonalprojection" : { "width" : 256, "height" : 64 }
+	},
+	"objects" : [
+		{
+			"id" : 1,
+			"name" : "Moved and faded",
+			"image" : "models/util/solidlayer.json",
+			"origin" : { "user" : "place", "value" : "32 32 0" },
+			"size" : "64 64",
+			"color" : "0 0 1",
+			"alpha" : { "user" : "fade", "value" : 1 },
+			"effects" : [
+				{ "id" : 2, "file" : "effects/redset/effect.json", "name" : "Red set",
+				  "visible" : { "user" : "showeffect", "value" : true },
+				  "passes" : [ { "id" : 3, "constantshadervalues" : { "red" : { "user" : "red", "value" : 1 } } } ] }
+			]
+		},
+		{
+			"id" : 4,
+			"name" : "Coloured, shown by a combo",
+			"image" : "models/util/solidlayer.json",
+			"origin" : "96 32 0",
+			"size" : "64 64",
+			"color" : { "user" : "ink", "value" : "0 1 0" },
+			"visible" : { "user" : { "name" : "layer", "condition" : "2" }, "value" : false }
+		},
+		{
+			"id" : 5,
+			"name" : "Sized, with a bound combo",
+			"image" : "models/util/solidlayer.json",
+			"origin" : "160 32 0",
+			"size" : { "user" : "big", "value" : "32 32" },
+			"color" : "1 1 1",
+			"effects" : [
+				{ "id" : 6, "file" : "effects/greenset/effect.json", "name" : "Green set",
+				  "passes" : [ { "id" : 7, "combos" : { "GREENSET" : { "user" : "greenmode", "value" : 0 } },
+				                 "constantshadervalues" : { "green" : 0.5 } } ] }
+			]
+		},
+		{
+			"id" : 8,
+			"name" : "Caption",
+			"origin" : "224 32 0",
+			"size" : "64 64",
+			"text" : { "user" : "caption", "value" : "hi" },
+			"font" : "systemfont_arial",
+			"pointsize" : 20,
+			"color" : "1 1 1"
+		}
+	],
+	"version" : 1
+}

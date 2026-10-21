@@ -1,0 +1,32 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : {
+		"clearcolor" : "0 0 0",
+		"orthogonalprojection" : { "width" : 128, "height" : 64 }
+	},
+	"objects" : [
+		{
+			"id" : 1,
+			"name" : "Aligned",
+			"image" : "models/util/solidlayer.json",
+			"size" : "8 8",
+			"color" : "1 0 0",
+			"origin" : {
+				"script" : "'use strict';\n\nexport function init(value) {\n\tthisLayer.alignment = 'left';\n\treturn value;\n}\n",
+				"value" : "16 32 0"
+			}
+		},
+		{
+			"id" : 2,
+			"name" : "Near",
+			"image" : "models/util/solidlayer.json",
+			"size" : "8 8",
+			"color" : "0 1 0",
+			"origin" : {
+				"script" : "'use strict';\n\nexport function init(value) {\n\tthisLayer.perspective = true;\n\treturn value;\n}\n",
+				"value" : "96 32 15"
+			}
+		}
+	],
+	"version" : 1
+}

@@ -1,0 +1,39 @@
+{
+  "title": "Glimmer · 自造 Scene 图像测试",
+  "type": "scene",
+  "file": "scene.json",
+  "description": "Original synthetic geometric fixture; no workshop or proprietary assets.",
+  "general": {
+    "properties": {
+      "showgeometry": {
+        "type": "bool",
+        "text": "显示几何图层",
+        "value": true,
+        "order": 0
+      },
+      "geometryopacity": {
+        "type": "slider",
+        "text": "图层透明度",
+        "value": 1,
+        "min": 0,
+        "max": 1,
+        "fraction": true,
+        "precision": 2,
+        "step": 0.05,
+        "order": 1
+      },
+      "geometrycolor": {
+        "type": "color",
+        "text": "图层颜色",
+        "value": "1 0.45 0.12",
+        "order": 2
+      },
+      "fixturedescription": {
+        "type": "textinput",
+        "text": "素材说明（只读）",
+        "value": "自造测试图形 · 不包含第三方壁纸",
+        "order": 3
+      }
+    }
+  }
+}

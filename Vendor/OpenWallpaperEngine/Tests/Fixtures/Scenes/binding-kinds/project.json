@@ -1,0 +1,21 @@
+{
+	"file" : "scene.json",
+	"preview" : "preview.jpg",
+	"title" : "Fixture: one user-property binding of each kind",
+	"type" : "scene",
+	"general" : {
+		"properties" : {
+			"place" : { "order" : 1, "text" : "Place", "type" : "textinput", "value" : "32 32 0" },
+			"fade" : { "order" : 2, "text" : "Fade", "type" : "slider", "min" : 0, "max" : 1, "value" : 1 },
+			"showeffect" : { "order" : 3, "text" : "Effect", "type" : "bool", "value" : true },
+			"red" : { "order" : 4, "text" : "Red", "type" : "slider", "min" : 0, "max" : 1, "value" : 1 },
+			"ink" : { "order" : 5, "text" : "Ink", "type" : "color", "value" : "0 1 0" },
+			"layer" : { "order" : 6, "text" : "Layer", "type" : "combo", "value" : "1",
+				"options" : [ { "label" : "One", "value" : "1" }, { "label" : "Two", "value" : "2" } ] },
+			"big" : { "order" : 7, "text" : "Size", "type" : "textinput", "value" : "32 32" },
+			"greenmode" : { "order" : 8, "text" : "Green", "type" : "combo", "value" : 0,
+				"options" : [ { "label" : "Off", "value" : 0 }, { "label" : "On", "value" : 1 } ] },
+			"caption" : { "order" : 9, "text" : "Caption", "type" : "textinput", "value" : "hi" }
+		}
+	}
+}

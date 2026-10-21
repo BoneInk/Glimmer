@@ -1,0 +1,577 @@
+name: Release
+
+# Builds a Developer ID signed, hardened-runtime, notarized and stapled app and publishes it
+# as a draft GitHub release (zip + DMG + the zip's Sparkle signature). Publishing the draft runs
+# appcast.yml, which adds the update to site/appcast.xml. Secrets and the release procedure:
+# docs/releasing.md.
+#
+# Required repository secrets:
+#   BUILD_CERTIFICATE_BASE64  Developer ID Application .p12 (cert + private key), base64
+#   P12_PASSWORD              password used when exporting that .p12
+#   KEYCHAIN_PASSWORD         any throwaway string; secures the temporary keychain
+#   DEVELOPMENT_TEAM          10-character Apple Team ID that owns the certificate
+#   USER_PAT                  token used to publish the release
+#   SPARKLE_PRIVATE_KEY       Sparkle EdDSA private key (generate_keys -x), signs the update zip
+#   SPARKLE_PUBLIC_ED_KEY     its public key, built into the app as SUPublicEDKey
+# Notarization, either (preferred) an App Store Connect API key:
+#   ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8_BASE64
+# or an Apple ID fallback:
+#   APPLE_ID, APPLE_APP_PASSWORD
+#
+# Tags: vX.Y.Z, or vX.Y.Z-(alpha|beta|rc).N for a pre-release (a draft marked pre-release,
+# offered only on the beta update channel). Trigger by pushing a tag
+# (git tag v1.0.0 && git push origin v1.0.0) or manually.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to publish (e.g. v1.0.0 or v1.1.0-beta.1)"
+        required: true
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      SCHEME: "OpenWallpaperEngine"
+      PROJECT: "OpenWallpaperEngine.xcodeproj"
+      APP_NAME: "Open Wallpaper Engine"
+
+    steps:
+      - name: Check secrets
+        # Fail before any work, naming every missing secret (values are never printed).
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+          USER_PAT: ${{ secrets.USER_PAT }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
+        run: |
+          set -euo pipefail
+          echo "KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db" >> "$GITHUB_ENV"
+          missing=()
+          for name in BUILD_CERTIFICATE_BASE64 P12_PASSWORD KEYCHAIN_PASSWORD DEVELOPMENT_TEAM USER_PAT \
+                      SPARKLE_PRIVATE_KEY SPARKLE_PUBLIC_ED_KEY; do
+            [ -n "${!name:-}" ] || missing+=("$name")
+          done
+          if [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_KEY_P8_BASE64" ]; then
+            echo "Notarizing with the App Store Connect API key."
+          elif [ -n "$APPLE_ID" ] && [ -n "$APPLE_APP_PASSWORD" ]; then
+            echo "Notarizing with the Apple ID fallback."
+          else
+            missing+=("ASC_KEY_ID + ASC_ISSUER_ID + ASC_KEY_P8_BASE64 (or APPLE_ID + APPLE_APP_PASSWORD)")
+          fi
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing repository secrets (see docs/releasing.md):"
+            printf '  - %s\n' "${missing[@]}"
+            exit 1
+          fi
+
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref_name }}
+
+      - name: Resolve version
+        # vX.Y.Z -> version X.Y.Z; vX.Y.Z-beta.N also -> label X.Y.Z-beta.N, prerelease, channel beta.
+        id: version
+        env:
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          parsed=$(Scripts/release/release-version.sh "$TAG") \
+            || { echo "::error::tag '$TAG' is not vX.Y.Z or vX.Y.Z-(alpha|beta|rc).N"; exit 1; }
+          echo "$parsed"
+          echo "$parsed" >> "$GITHUB_OUTPUT"
+          echo "build=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Check the Sparkle key pair
+        # The app must carry the public key of the private key that signs its updates; a mismatch
+        # would ship an app that rejects every update. Neither key is printed.
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
+        run: |
+          set -euo pipefail
+          derived=$(printf '%s' "$SPARKLE_PRIVATE_KEY" | xcrun swift Scripts/release/sparkle-public-key.swift) \
+            || { echo "::error::SPARKLE_PRIVATE_KEY is not a Sparkle EdDSA private key (generate_keys -x)"; exit 1; }
+          expected=$(printf '%s' "$SPARKLE_PUBLIC_ED_KEY" | tr -d '[:space:]')
+          [ "$derived" = "$expected" ] \
+            || { echo "::error::SPARKLE_PUBLIC_ED_KEY is not the public key of SPARKLE_PRIVATE_KEY"; exit 1; }
+          echo "The Sparkle keys match."
+
+      - name: Use the supported Xcode
+        # The same Xcode as CI (26.3, macOS 26 SDK), so a release builds what CI tested.
+        run: |
+          X=/Applications/Xcode_26.3.app
+          [[ -d $X ]] || X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | head -1)
+          [[ -n "$X" && -d "$X" ]] || { echo "::error::no Xcode 26 on the runner"; exit 1; }
+          sudo xcode-select -s "$X"
+          xcodebuild -version
+
+      - name: Import signing certificate
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+        run: |
+          set -euo pipefail
+          CERT_PATH="$RUNNER_TEMP/certificate.p12"
+          printf '%s' "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERT_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$P12_PASSWORD" -A \
+            -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          rm -f "$CERT_PATH"
+          # Let codesign use the key without an interactive prompt.
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH" >/dev/null
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain
+
+          # The exact identity, so neither archive nor export can pick another certificate.
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
+            | grep -o "\"Developer ID Application: .*($DEVELOPMENT_TEAM)\"" | head -n1 | tr -d '"' || true)
+          [ -n "$IDENTITY" ] || {
+            echo "::error::the .p12 holds no 'Developer ID Application' identity for team DEVELOPMENT_TEAM"
+            security find-identity -v -p codesigning "$KEYCHAIN_PATH" | sed -E 's/[0-9A-F]{40}/<sha1>/'
+            exit 1; }
+          echo "SIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+          echo "Signing as: $IDENTITY"
+
+      - name: Archive
+        env:
+          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+          SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
+        run: |
+          set -euo pipefail
+          # CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO keeps get-task-allow out; notarization rejects it.
+          xcodebuild archive \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination "generic/platform=macOS" \
+            -archivePath "$RUNNER_TEMP/app.xcarchive" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="$SIGN_IDENTITY" \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            ENABLE_HARDENED_RUNTIME=YES \
+            CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
+            OTHER_CODE_SIGN_FLAGS="--timestamp --keychain $KEYCHAIN_PATH" \
+            MARKETING_VERSION="${{ steps.version.outputs.version }}" \
+            CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build }}" \
+            OWE_VERSION_LABEL="${{ steps.version.outputs.label }}" \
+            SPARKLE_PUBLIC_ED_KEY="$(printf '%s' "$SPARKLE_PUBLIC_ED_KEY" | tr -d '[:space:]')"
+
+      - name: Export signed app
+        env:
+          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+        run: |
+          set -euo pipefail
+          PLIST="$RUNNER_TEMP/ExportOptions.plist"
+          /usr/libexec/PlistBuddy -c "Add :method string developer-id" \
+            -c "Add :signingStyle string manual" \
+            -c "Add :signingCertificate string Developer ID Application" \
+            -c "Add :teamID string $DEVELOPMENT_TEAM" \
+            -c "Add :destination string export" "$PLIST"
+
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/app.xcarchive" \
+            -exportOptionsPlist "$PLIST" \
+            -exportPath "$RUNNER_TEMP/export"
+
+      - name: Verify bundle before notarizing
+        # Shaders compile with glslang/SPIRV-Cross linked into the app, and the WE assets are
+        # bundled: the app must need nothing from Homebrew or a Wallpaper Engine install.
+        env:
+          SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/export/$APP_NAME.app"
+          BINARY="$APP/Contents/MacOS/$APP_NAME"
+          # The code: the OpenWallpaperEngine framework, which the app's and the editor's small
+          # executables both run.
+          FRAMEWORK_BINARY="$APP/Contents/Frameworks/OpenWallpaperEngine.framework/Versions/A/OpenWallpaperEngine"
+          test -f "$FRAMEWORK_BINARY" || { echo "::error::OpenWallpaperEngine.framework is missing"; exit 1; }
+
+          test ! -e "$APP/Contents/Resources/shader-tools" \
+            || { echo "::error::stale shader-tools in the bundle"; exit 1; }
+          # Wallpaper Engine's files come from the user's own copy, never from the app.
+          test ! -e "$APP/Contents/Resources/we-assets" \
+            || { echo "::error::Wallpaper Engine assets in the bundle"; exit 1; }
+
+          codesign --verify --deep --strict --verbose=2 "$APP"
+
+          # Every Mach-O in the bundle (the app, Sparkle.framework and its Autoupdate, Updater.app
+          # and XPC services): Developer ID, hardened runtime, secure timestamp. Xcode's
+          # developer-id export re-signs Sparkle's nested code; this proves it did.
+          fail=0
+          while IFS= read -r -d '' f; do
+            file -b "$f" | grep -q 'Mach-O' || continue
+            info=$(codesign -dv --verbose=4 "$f" 2>&1)
+            grep -q "Authority=Developer ID Application" <<<"$info" || { echo "::error::not Developer ID signed: $f"; fail=1; }
+            grep -Eq "flags=.*runtime" <<<"$info" || { echo "::error::hardened runtime off: $f"; fail=1; }
+            grep -q "^Timestamp=" <<<"$info" || { echo "::error::no secure timestamp: $f"; fail=1; }
+          done < <(find "$APP/Contents" -type f -print0)
+          [ "$fail" = 0 ]
+
+          ENTS=$(codesign -d --entitlements - --xml "$APP" 2>/dev/null | plutil -p - || true)
+          echo "$ENTS"
+          if grep -q "get-task-allow" <<<"$ENTS"; then
+            echo "::error::get-task-allow is set; notarization rejects it"; exit 1
+          fi
+          # Library validation stays on in the app; only the Chromium helper may load CEF's build.
+          if grep -q "disable-library-validation" <<<"$ENTS"; then
+            echo "::error::the app disables library validation"; exit 1
+          fi
+          CHROMIUM_HELPER="$APP/Contents/XPCServices/owe-chromium-helper.xpc"
+          codesign --verify --strict --verbose=2 "$CHROMIUM_HELPER"
+          for helper_app in "$APP/Contents/Helpers/"*.app; do
+            codesign --verify --strict --verbose=2 "$helper_app"
+          done
+          HELPER_ENTS=$(codesign -d --entitlements - --xml "$CHROMIUM_HELPER" 2>/dev/null | plutil -p - || true)
+          echo "$HELPER_ENTS"
+          if grep -q "get-task-allow" <<<"$HELPER_ENTS"; then
+            echo "::error::get-task-allow is set on the Chromium helper"; exit 1
+          fi
+
+          # The Wallpaper Editor's own app (target WallpaperEditor): <app id>.editor, the app's
+          # version, team and entitlements (library validation on), nothing linked but the app's
+          # framework, and no copy of the code. The Mach-O loop above checked its Developer ID,
+          # hardened runtime and timestamp; notarization covers it inside the app.
+          EDITOR="$APP/Contents/Helpers/Wallpaper Editor.app"
+          EDITOR_BINARY="$EDITOR/Contents/MacOS/Wallpaper Editor"
+          test -f "$EDITOR_BINARY" || { echo "::error::the Wallpaper Editor app is missing"; exit 1; }
+          codesign --verify --strict --verbose=2 "$EDITOR"
+          editor_plist() { /usr/libexec/PlistBuddy -c "Print :$1" "$EDITOR/Contents/Info.plist"; }
+          app_plist() { /usr/libexec/PlistBuddy -c "Print :$1" "$APP/Contents/Info.plist"; }
+          test "$(editor_plist CFBundleIdentifier)" = "$(app_plist CFBundleIdentifier).editor" \
+            || { echo "::error::the Wallpaper Editor's bundle id is not <app id>.editor"; exit 1; }
+          test "$(editor_plist CFBundleShortVersionString)" = "$(app_plist CFBundleShortVersionString)" \
+            || { echo "::error::the Wallpaper Editor's version is not the app's"; exit 1; }
+          test "$(editor_plist LSUIElement)" = "false" \
+            || { echo "::error::the Wallpaper Editor must have its own Dock tile"; exit 1; }
+          team() { codesign -dv --verbose=4 "$1" 2>&1 | sed -n 's/^TeamIdentifier=//p'; }
+          test -n "$(team "$APP")" && test "$(team "$EDITOR")" = "$(team "$APP")" \
+            || { echo "::error::the Wallpaper Editor isn't signed by the app's team"; exit 1; }
+          EDITOR_ENTS=$(codesign -d --entitlements - --xml "$EDITOR" 2>/dev/null | plutil -p - || true)
+          echo "$EDITOR_ENTS"
+          if grep -Eq "get-task-allow|disable-library-validation" <<<"$EDITOR_ENTS"; then
+            echo "::error::the Wallpaper Editor's entitlements allow debugging or disable library validation"; exit 1
+          fi
+          grep -q "com.apple.security.cs.allow-jit" <<<"$EDITOR_ENTS" \
+            || { echo "::error::the Wallpaper Editor lacks the app's entitlements (allow-jit)"; exit 1; }
+          if otool -L "$EDITOR_BINARY" | grep -v ':$' | awk '{print $1}' \
+               | grep -Ev '^(/usr/lib/|/System/Library/|@rpath/OpenWallpaperEngine\.framework/Versions/A/OpenWallpaperEngine$)'; then
+            echo "::error::the Wallpaper Editor links a library besides the system's and the app's framework"; exit 1
+          fi
+          EDITOR_KB=$(du -sk "$EDITOR" | cut -f1)
+          echo "Wallpaper Editor.app: ${EDITOR_KB} KB"
+          test "$EDITOR_KB" -lt 20480 || { echo "::error::the Wallpaper Editor app is ${EDITOR_KB} KB; it carries code of its own"; exit 1; }
+
+          # The MCP Server plugin's owe-mcp (target OWEMCPServer), which the plugin copies out of
+          # the app when installed: signed by the app's team with the hardened runtime (the Mach-O
+          # loop above also checked Developer ID and the timestamp), no entitlements that weaken
+          # it, linking only system libraries, and small.
+          MCP="$APP/Contents/Helpers/owe-mcp"
+          test -x "$MCP" || { echo "::error::owe-mcp is missing from Contents/Helpers"; exit 1; }
+          codesign --verify --strict --verbose=2 "$MCP"
+          MCP_INFO=$(codesign -dv --verbose=4 "$MCP" 2>&1)
+          grep -Eq "flags=.*runtime" <<<"$MCP_INFO" || { echo "::error::owe-mcp lacks the hardened runtime"; exit 1; }
+          grep -q "Authority=Developer ID Application" <<<"$MCP_INFO" || { echo "::error::owe-mcp isn't Developer ID signed"; exit 1; }
+          test "$(team "$MCP")" = "$(team "$APP")" || { echo "::error::owe-mcp isn't signed by the app's team"; exit 1; }
+          MCP_ENTS=$(codesign -d --entitlements - --xml "$MCP" 2>/dev/null | plutil -p - 2>/dev/null || true)
+          if grep -Eq "get-task-allow|disable-library-validation|allow-jit|allow-unsigned" <<<"$MCP_ENTS"; then
+            echo "::error::owe-mcp's entitlements weaken the hardened runtime"; exit 1
+          fi
+          if otool -L "$MCP" | grep -v ':$' | awk '{print $1}' | grep -Ev '^(/usr/lib/|/System/Library/)'; then
+            echo "::error::owe-mcp links a library besides the system's"; exit 1
+          fi
+          MCP_KB=$(du -k "$MCP" | cut -f1)
+          echo "owe-mcp: ${MCP_KB} KB"
+          test "$MCP_KB" -lt 10240 || { echo "::error::owe-mcp is ${MCP_KB} KB; it should link only what it needs"; exit 1; }
+
+          # The live screen saver: its extension (sandboxed, the app's team and App Group) and its
+          # broker, a launch agent SMAppService registers from Contents/Library/LaunchAgents.
+          APPEX="$APP/Contents/PlugIns/OpenWallpaperEngineSaverExtension.appex"
+          BROKER="$APP/Contents/Helpers/owe-saver-broker"
+          AGENT="$APP/Contents/Library/LaunchAgents/app.openwallpaperengine.saver-broker.plist"
+          test -d "$APPEX" || { echo "::error::the screen saver extension is missing"; exit 1; }
+          test -x "$BROKER" || { echo "::error::owe-saver-broker is missing"; exit 1; }
+          test -f "$AGENT" || { echo "::error::the broker's launch agent plist is missing"; exit 1; }
+          codesign --verify --strict --verbose=2 "$APPEX"
+          codesign --verify --strict --verbose=2 "$BROKER"
+          test "$(team "$APPEX")" = "$(team "$APP")" && test "$(team "$BROKER")" = "$(team "$APP")" \
+            || { echo "::error::the screen saver extension or broker isn't signed by the app's team"; exit 1; }
+          APPEX_ENTS=$(codesign -d --entitlements - --xml "$APPEX" 2>/dev/null | plutil -p - || true)
+          echo "$APPEX_ENTS"
+          grep -q "com.apple.security.app-sandbox" <<<"$APPEX_ENTS" || { echo "::error::the screen saver extension isn't sandboxed"; exit 1; }
+          grep -q "$(team "$APP").app.openwallpaperengine" <<<"$APPEX_ENTS" \
+            || { echo "::error::the screen saver extension lacks the app's App Group"; exit 1; }
+          test "$(/usr/libexec/PlistBuddy -c "Print :BundleProgram" "$AGENT")" = "Contents/Helpers/owe-saver-broker" \
+            || { echo "::error::the broker's launch agent doesn't point at Contents/Helpers/owe-saver-broker"; exit 1; }
+
+          INFO="$APP/Contents/Info.plist"
+          plist() { /usr/libexec/PlistBuddy -c "Print :$1" "$INFO"; }
+          echo "version $(plist CFBundleShortVersionString) ($(plist CFBundleVersion)), label $(plist OWEVersionLabel)"
+          test "$(plist CFBundleShortVersionString)" = "${{ steps.version.outputs.version }}" \
+            || { echo "::error::version is not the tag's"; exit 1; }
+          test "$(plist OWEVersionLabel)" = "${{ steps.version.outputs.label }}" \
+            || { echo "::error::OWEVersionLabel is not the tag's"; exit 1; }
+          # Sparkle: the public key the updates are signed for, and the GitHub Pages feed.
+          test "$(plist SUPublicEDKey)" = "$(printf '%s' "$SPARKLE_PUBLIC_ED_KEY" | tr -d '[:space:]')" \
+            || { echo "::error::SUPublicEDKey is not SPARKLE_PUBLIC_ED_KEY"; exit 1; }
+          test "$(plist SUFeedURL)" = "https://openwallpaperengine.app/appcast.xml" \
+            || { echo "::error::unexpected SUFeedURL"; exit 1; }
+          # The bundle ids: reverse DNS of openwallpaperengine.app (docs/releasing.md, Bundle ids).
+          bundle_id() { /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$1/Contents/Info.plist"; }
+          test "$(plist CFBundleIdentifier)" = "app.openwallpaperengine" \
+            || { echo "::error::the app's bundle id is not app.openwallpaperengine"; exit 1; }
+          test "$(bundle_id "$APP/Contents/Helpers/Wallpaper Editor.app")" = "app.openwallpaperengine.editor" \
+            || { echo "::error::the Wallpaper Editor's bundle id is not app.openwallpaperengine.editor"; exit 1; }
+          test "$(bundle_id "$APP/Contents/Resources/Open Wallpaper Engine.saver")" = "app.openwallpaperengine.saver" \
+            || { echo "::error::the screen saver's bundle id is not app.openwallpaperengine.saver"; exit 1; }
+          test "$(bundle_id "$APP/Contents/XPCServices/owe-chromium-helper.xpc")" = "app.openwallpaperengine.chromium.helper" \
+            || { echo "::error::the Chromium helper's bundle id is not app.openwallpaperengine.chromium.helper"; exit 1; }
+
+          # The app and its framework link only system libraries, the framework and the embedded
+          # Sparkle.framework (which the app links so that it embeds it): nothing from Homebrew or
+          # elsewhere. (A universal binary lists each architecture under a "<path> (architecture …):"
+          # line; the framework lists its own install name.)
+          if otool -L "$BINARY" | grep -v ':$' | awk '{print $1}' \
+               | grep -Ev '^(/usr/lib/|/System/Library/|@rpath/Sparkle\.framework/Versions/B/Sparkle$|@rpath/OpenWallpaperEngine\.framework/Versions/A/OpenWallpaperEngine$)'; then
+            echo "::error::the app links a non-system library"; exit 1
+          fi
+          if otool -L "$FRAMEWORK_BINARY" | grep -v ':$' | awk '{print $1}' \
+               | grep -Ev '^(/usr/lib/|/System/Library/|@rpath/Sparkle\.framework/Versions/B/Sparkle$|@rpath/OpenWallpaperEngine\.framework/Versions/A/OpenWallpaperEngine$)'; then
+            echo "::error::the framework links a non-system library"; exit 1
+          fi
+          # No executables besides the app's own, the Chromium helper, the bundled screen saver (copied to
+          # ~/Library/Screen Savers by the installer), the screen saver extension and its broker (the live
+          # screen saver's launch agent) and Sparkle's (nowPlayingAdapter.pl runs as an
+          # argument to /usr/bin/perl and is a plain resource). Sparkle's are each verified; the
+          # XPC services are unused (the app isn't sandboxed) but ship signed inside the framework.
+          SPARKLE="$APP/Contents/Frameworks/Sparkle.framework/Versions/B"
+          sparkle_executables=(
+            "$SPARKLE/Sparkle"
+            "$SPARKLE/Autoupdate"
+            "$SPARKLE/Updater.app/Contents/MacOS/Updater"
+            "$SPARKLE/XPCServices/Downloader.xpc/Contents/MacOS/Downloader"
+            "$SPARKLE/XPCServices/Installer.xpc/Contents/MacOS/Installer"
+            "$APP/Contents/XPCServices/owe-chromium-helper.xpc/Contents/MacOS/owe-chromium-helper"
+            "$APP/Contents/Helpers/OWE Chromium Helper.app/Contents/MacOS/OWE Chromium Helper"
+            "$APP/Contents/Helpers/OWE Chromium Helper (Renderer).app/Contents/MacOS/OWE Chromium Helper (Renderer)"
+            "$APP/Contents/Helpers/OWE Chromium Helper (GPU).app/Contents/MacOS/OWE Chromium Helper (GPU)"
+            "$APP/Contents/Helpers/OWE Chromium Helper (Plugin).app/Contents/MacOS/OWE Chromium Helper (Plugin)"
+            "$APP/Contents/Helpers/Wallpaper Editor.app/Contents/MacOS/Wallpaper Editor"
+            "$APP/Contents/Helpers/owe-mcp"
+            "$APP/Contents/Resources/Open Wallpaper Engine.saver/Contents/MacOS/Open Wallpaper Engine"
+            "$APP/Contents/PlugIns/OpenWallpaperEngineSaverExtension.appex/Contents/MacOS/OpenWallpaperEngineSaverExtension"
+            "$APP/Contents/Helpers/owe-saver-broker"
+            "$FRAMEWORK_BINARY"
+          )
+          for helper in "${sparkle_executables[@]}"; do
+            test -f "$helper" || { echo "::error::missing Sparkle executable: $helper"; exit 1; }
+          done
+          for code in "$SPARKLE/Updater.app" "$SPARKLE/Autoupdate" "$SPARKLE/XPCServices/Downloader.xpc" \
+                      "$SPARKLE/XPCServices/Installer.xpc" "$APP/Contents/Frameworks/Sparkle.framework" \
+                      "$APP/Contents/Frameworks/OpenWallpaperEngine.framework" \
+                      "$APP/Contents/Resources/Open Wallpaper Engine.saver" \
+                      "$APP/Contents/PlugIns/OpenWallpaperEngineSaverExtension.appex" \
+                      "$APP/Contents/Helpers/owe-saver-broker"; do
+            [ -e "$code" ] || continue
+            codesign --verify --strict --verbose=2 "$code"
+          done
+          extra=$(find "$APP/Contents" -type f -perm -u+x ! -path "$BINARY" -print | while IFS= read -r f; do
+            known=0
+            for helper in "${sparkle_executables[@]}"; do [ "$f" = "$helper" ] && known=1; done
+            [ "$known" = 1 ] || echo "$f"
+          done)
+          test -z "$extra" || { echo "::error::unexpected executables: $extra"; exit 1; }
+
+      - name: Set up notarization credentials
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+        run: |
+          set -euo pipefail
+          # Writes a notarize helper that the zip and DMG steps share.
+          if [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_KEY_P8_BASE64" ]; then
+            KEY="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+            printf '%s' "$ASC_KEY_P8_BASE64" | base64 --decode -o "$KEY"
+            chmod 600 "$KEY"
+            echo "NOTARY_MODE=api" >> "$GITHUB_ENV"
+            echo "NOTARY_KEY=$KEY" >> "$GITHUB_ENV"
+          else
+            echo "NOTARY_MODE=appleid" >> "$GITHUB_ENV"
+          fi
+          cat > "$RUNNER_TEMP/notarize.sh" <<'SH'
+          #!/bin/bash
+          # notarize.sh <file>: submit, wait, print the log on anything but Accepted.
+          set -euo pipefail
+          if [ "$NOTARY_MODE" = api ]; then
+            auth=(--key "$NOTARY_KEY" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID")
+          else
+            auth=(--apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$DEVELOPMENT_TEAM")
+          fi
+          out=$(xcrun notarytool submit "$1" "${auth[@]}" --wait --timeout 45m --output-format json) || true
+          echo "$out"
+          id=$(plutil -extract id raw - <<<"$out" 2>/dev/null || true)
+          status=$(plutil -extract status raw - <<<"$out" 2>/dev/null || true)
+          if [ "$status" != "Accepted" ]; then
+            echo "::error::notarization of $(basename "$1") ended with status '${status:-unknown}'"
+            [ -n "$id" ] && xcrun notarytool log "$id" "${auth[@]}" || true
+            exit 1
+          fi
+          SH
+          chmod +x "$RUNNER_TEMP/notarize.sh"
+
+      - name: Notarize and staple the app
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/export/$APP_NAME.app"
+          ZIP="$RUNNER_TEMP/notarize.zip"
+          ditto -c -k --keepParent "$APP" "$ZIP"
+          "$RUNNER_TEMP/notarize.sh" "$ZIP"
+          rm -f "$ZIP"
+          # Staple the app itself, then repackage; a zip cannot hold the ticket.
+          xcrun stapler staple "$APP"
+
+      - name: Package zip and DMG
+        id: package
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/export/$APP_NAME.app"
+          BASE="$RUNNER_TEMP/OpenWallpaperEngine-${{ steps.version.outputs.label }}"
+
+          ditto -c -k --keepParent "$APP" "$BASE.zip"
+
+          # DMG: the stapled app plus an /Applications link, signed, notarized and stapled.
+          STAGE="$RUNNER_TEMP/dmg"
+          mkdir -p "$STAGE"
+          ditto "$APP" "$STAGE/$APP_NAME.app"
+          ln -s /Applications "$STAGE/Applications"
+          hdiutil create -volname "$APP_NAME" -srcfolder "$STAGE" -fs HFS+ -format UDZO -ov "$BASE.dmg"
+          codesign --sign "$SIGN_IDENTITY" --timestamp --keychain "$KEYCHAIN_PATH" "$BASE.dmg"
+          "$RUNNER_TEMP/notarize.sh" "$BASE.dmg"
+          xcrun stapler staple "$BASE.dmg"
+
+          (cd "$RUNNER_TEMP" && shasum -a 256 "$(basename "$BASE.zip")" "$(basename "$BASE.dmg")") \
+            | tee "$BASE.sha256"
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+
+      - name: Verify what ships
+        run: |
+          set -euo pipefail
+          BASE="${{ steps.package.outputs.base }}"
+          CHECK="$RUNNER_TEMP/check"
+          rm -rf "$CHECK" && mkdir -p "$CHECK"
+          # Check the app as a user gets it: unzipped from the release zip.
+          ditto -x -k "$BASE.zip" "$CHECK"
+          APP="$CHECK/$APP_NAME.app"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          spctl -a -t exec -vv "$APP"
+          xcrun stapler validate "$APP"
+
+          codesign --verify --strict --verbose=2 "$BASE.dmg"
+          spctl -a -t open --context context:primary-signature -vv "$BASE.dmg"
+          xcrun stapler validate "$BASE.dmg"
+
+      - name: Sign the update for Sparkle
+        # The zip's EdDSA signature and length, uploaded as <zip>.sparkle.json. appcast.yml checks
+        # generate_appcast's signature against it when the release is published. The private key
+        # goes to sign_update on stdin only.
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          BASE="${{ steps.package.outputs.base }}"
+          BIN=$(Scripts/release/fetch-sparkle-tools.sh "$RUNNER_TEMP/sparkle")
+          signature=$(printf '%s' "$SPARKLE_PRIVATE_KEY" | "$BIN/sign_update" --ed-key-file - -p "$BASE.zip")
+          printf '%s' "$SPARKLE_PRIVATE_KEY" | "$BIN/sign_update" --ed-key-file - --verify "$BASE.zip" "$signature"
+          length=$(stat -f %z "$BASE.zip")
+          TAG="${{ steps.version.outputs.tag }}" LABEL="${{ steps.version.outputs.label }}" \
+          VERSION="${{ steps.version.outputs.version }}" BUILD="${{ steps.version.outputs.build }}" \
+          PRERELEASE="${{ steps.version.outputs.prerelease }}" CHANNEL="${{ steps.version.outputs.channel }}" \
+          ZIP="$(basename "$BASE.zip")" LENGTH="$length" SIGNATURE="$signature" \
+          python3 - > "$BASE.sparkle.json" <<'PY'
+          import json, os
+          e = os.environ
+          print(json.dumps({"tag": e["TAG"], "label": e["LABEL"], "version": e["VERSION"], "build": int(e["BUILD"]),
+                            "prerelease": e["PRERELEASE"] == "true", "channel": e["CHANNEL"], "zip": e["ZIP"],
+                            "length": int(e["LENGTH"]), "edSignature": e["SIGNATURE"]}, indent=2))
+          PY
+          cat "$BASE.sparkle.json"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: OpenWallpaperEngine-${{ steps.version.outputs.label }}
+          path: |
+            ${{ steps.package.outputs.base }}.zip
+            ${{ steps.package.outputs.base }}.dmg
+            ${{ steps.package.outputs.base }}.sha256
+            ${{ steps.package.outputs.base }}.sparkle.json
+          if-no-files-found: error
+
+      - name: Publish release
+        # A draft until you publish it; publishing runs appcast.yml. Pre-releases stay marked so
+        # GitHub's "latest" and the stable update channel skip them. A re-run replaces the files
+        # of the existing release.
+        env:
+          GH_TOKEN: ${{ secrets.USER_PAT }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ steps.version.outputs.tag }}
+          TITLE: Open Wallpaper Engine ${{ steps.version.outputs.title }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+          BASE: ${{ steps.package.outputs.base }}
+        run: |
+          set -euo pipefail
+          files=("$BASE.zip" "$BASE.dmg" "$BASE.sha256" "$BASE.sparkle.json")
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${files[@]}" --repo "$REPO" --clobber
+          else
+            flags=(--draft --generate-notes --verify-tag)
+            [ "$PRERELEASE" = true ] && flags+=(--prerelease)
+            gh release create "$TAG" "${files[@]}" --repo "$REPO" --title "$TITLE" "${flags[@]}"
+          fi
+
+      - name: Clean up keychain and keys
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/app-signing.keychain-db" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP"/AuthKey_*.p8 "$RUNNER_TEMP/certificate.p12"

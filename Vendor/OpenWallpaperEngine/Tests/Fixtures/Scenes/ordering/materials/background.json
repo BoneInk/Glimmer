@@ -1,0 +1,9 @@
+{
+	"passes" : [
+		{
+			"blending" : "translucent",
+			"shader" : "genericimage2",
+			"textures" : [ "background" ]
+		}
+	]
+}

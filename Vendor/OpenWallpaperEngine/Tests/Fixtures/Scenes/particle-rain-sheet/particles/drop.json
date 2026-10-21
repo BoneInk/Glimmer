@@ -1,0 +1,12 @@
+{
+	"animationmode" : "once",
+	"emitter" : [ { "distancemax" : 0, "name" : "sphererandom", "rate" : 100 } ],
+	"initializer" : [
+		{ "max" : 1000, "min" : 1000, "name" : "lifetimerandom" },
+		{ "max" : 200, "min" : 200, "name" : "sizerandom" },
+		{ "max" : "255 0 0", "min" : "255 0 0", "name" : "colorrandom" }
+	],
+	"material" : "materials/drop.json",
+	"maxcount" : 1,
+	"renderer" : [ { "name" : "sprite" } ]
+}

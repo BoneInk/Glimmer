@@ -1,0 +1,11 @@
+{
+ "passes": [
+  {
+   "combos": {},
+   "shader": "probe_missing",
+   "textures": [
+    "util/white"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,11 @@
+{
+  "passes": [
+    {
+      "shader": "genericimage2",
+      "blending": "translucent",
+      "textures": [
+        "scene_fixture_background"
+      ]
+    }
+  ]
+}

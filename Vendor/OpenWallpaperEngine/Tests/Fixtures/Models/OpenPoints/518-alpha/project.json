@@ -1,0 +1,16 @@
+{
+ "file": "scene.json",
+ "general": {
+  "properties": {
+   "schemecolor": {
+    "order": 0,
+    "text": "ui_browse_properties_scheme_color",
+    "type": "color",
+    "value": "0 0 0"
+   }
+  }
+ },
+ "title": "mo2_518e_alpha_0p5",
+ "type": "scene",
+ "version": 0
+}

@@ -1,0 +1,9 @@
+{
+	"version": 1,
+	"name": "Position",
+	"passes": [
+		{
+			"material": "materials/effects/position.json"
+		}
+	]
+}

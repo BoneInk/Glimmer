@@ -1,0 +1,9 @@
+{
+	"version": 1,
+	"name": "Half cover",
+	"passes": [
+		{
+			"material": "materials/effects/halfcover.json"
+		}
+	]
+}

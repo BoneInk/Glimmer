@@ -1,0 +1,9 @@
+{
+  "name": "eslint-scope",
+  "version": "8.4.0",
+  "metadata": "https://registry.npmjs.org/eslint-scope/8.4.0",
+  "tarball": "https://registry.npmjs.org/eslint-scope/-/eslint-scope-8.4.0.tgz",
+  "integrity_verified": "sha512-sNXOfKCn74rt8RICKMvJS7XKV/Xk9kA7DyJr8mJik3S7Cwgy3qlkkmyS2uQB3jiJg6VNdZd/pDBJu0nvG2NlTg==",
+  "gitHead": "ab3d59382b03d03a4e57def3742f94da16d88738",
+  "purpose": "Original AST module lowering uses scope/reference analysis; no Node runtime dependency"
+}

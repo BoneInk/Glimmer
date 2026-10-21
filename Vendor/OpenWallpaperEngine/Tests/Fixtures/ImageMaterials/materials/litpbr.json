@@ -1,0 +1,1 @@
+{"passes":[{"blending":"translucent","combos":{"LIGHTING":1},"constantshadervalues":{"metallic":0.3,"roughness":0.4,"speculartint":"1 0.9 0.8"},"shader":"genericimage4","textures":["layer","lit_normal","lit_mask"]}]}

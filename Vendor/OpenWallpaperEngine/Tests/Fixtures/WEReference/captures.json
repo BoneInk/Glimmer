@@ -1,0 +1,387 @@
+{
+  "taskbarHeight": 48,
+  "grid": {
+    "columns": 8,
+    "rows": 6
+  },
+  "items": [
+    {
+      "id": "2963872291",
+      "title": "Pixelart Alice City",
+      "focus": "Whole frame: regression check for the zero-size solid fix. The music widget with no media shows WE's grey note placeholder (bottom right) and must match; the city follows `engine.timeOfDay`.",
+      "masks": [
+        {
+          "rect": [0, 0, 520, 170],
+          "reason": "clock/date text: scripts read JavaScriptCore's Date, which keeps the host's time"
+        }
+      ],
+      "captures": [
+        {
+          "folder": "default",
+          "localTime": "15:15"
+        }
+      ]
+    },
+    {
+      "id": "3270035750",
+      "title": "One piece girls",
+      "focus": "Tube-light bands: the three vertical coloured gradients behind the figures. The figures bob (Nami about ±12 px in WE's clip), so their phase differs. texres_*: WE's `resolution` full, half and quarter (which WE reads as auto: full on this 1920×1080 scene); texres_half's still2 lacks the side figures (a transition frame).",
+      "regions": [
+        {
+          "name": "pink band, bottom",
+          "rect": [0, 900, 640, 130]
+        },
+        {
+          "name": "blue band, bottom",
+          "rect": [640, 900, 640, 130]
+        },
+        {
+          "name": "red band, bottom",
+          "rect": [1280, 900, 640, 130]
+        }
+      ],
+      "captures": [
+        {
+          "folder": "default",
+          "localTime": "15:15"
+        },
+        {
+          "folder": "texres_full",
+          "textureResolution": "full"
+        },
+        {
+          "folder": "texres_half",
+          "textureResolution": "half",
+          "unreliable": ["still2.png"]
+        },
+        {
+          "folder": "texres_quarter",
+          "textureResolution": "quarter"
+        }
+      ]
+    },
+    {
+      "id": "3352730400",
+      "title": "Hinata Uzumaki",
+      "focus": "The cookie spot's volumetric cone per setting: WE draws it with low, medium and high alike and not when disabled.",
+      "masks": [
+        {
+          "rect": [0, 380, 720, 400],
+          "reason": "clock/date text: scripts read JavaScriptCore's Date, which keeps the host's time; the media widget below it"
+        }
+      ],
+      "regions": [
+        {
+          "name": "wedge",
+          "rect": [300, 0, 400, 400]
+        }
+      ],
+      "captures": [
+        {
+          "folder": "vol_disabled",
+          "volumetrics": "disabled",
+          "localTime": "15:16"
+        },
+        {
+          "folder": "vol_low",
+          "volumetrics": "low",
+          "baseline": "vol_disabled",
+          "localTime": "15:17"
+        },
+        {
+          "folder": "vol_medium",
+          "volumetrics": "medium",
+          "baseline": "vol_disabled",
+          "localTime": "15:17"
+        },
+        {
+          "folder": "vol_high",
+          "volumetrics": "high",
+          "baseline": "vol_disabled",
+          "localTime": "15:18"
+        }
+      ]
+    },
+    {
+      "id": "2764281221",
+      "title": "2B Nier Automata",
+      "focus": "Rotated layers (the flares) and the whole frame.",
+      "masks": [
+        {
+          "rect": [1580, 40, 340, 180],
+          "reason": "clock/date text: scripts read JavaScriptCore's Date, which keeps the host's time"
+        }
+      ],
+      "captures": [
+        {
+          "folder": "default",
+          "localTime": "15:18"
+        }
+      ]
+    },
+    {
+      "id": "3245833232",
+      "title": "Kamado Tanjirou",
+      "focus": "Particle rain and the magenta energy. WE's still2 is a flat grey (178) frame: the clip has several, a capture artefact.",
+      "masks": [
+        {
+          "rect": [880, 150, 720, 240],
+          "reason": "clock/date text: scripts read JavaScriptCore's Date, which keeps the host's time"
+        }
+      ],
+      "captures": [
+        {
+          "folder": "default",
+          "unreliable": ["still2.png"],
+          "localTime": "15:20"
+        }
+      ]
+    },
+    {
+      "id": "3802047741",
+      "title": "Sakura Haruno by NaughtyfeetAI",
+      "focus": "Mouse parallax: the cursor at the left edge, the centre and the right edge of the middle row, 3 s apart.",
+      "captures": [
+        {
+          "folder": "default",
+          "stills": [
+            {
+              "file": "mouse_left.png",
+              "time": 13,
+              "cursor": [0, 540]
+            },
+            {
+              "file": "mouse_center.png",
+              "time": 16,
+              "cursor": [959, 540]
+            },
+            {
+              "file": "mouse_right.png",
+              "time": 19,
+              "cursor": [1919, 540]
+            }
+          ],
+          "localTime": "15:20"
+        }
+      ],
+      "parallax": {
+        "from": "mouse_left.png",
+        "to": [
+          "mouse_center.png",
+          "mouse_right.png"
+        ],
+        "rect": [300, 200, 1300, 600]
+      }
+    },
+    {
+      "id": "2515150033",
+      "title": "Knight (Puppet Warp PBR Demo)",
+      "focus": "The knight's lighting: two point lights (one script-flickered orange) on the lit background and the puppet. The puppet is area 7.",
+      "regions": [
+        {
+          "name": "castle left of the knight",
+          "rect": [0, 150, 250, 450]
+        },
+        {
+          "name": "sky, top left",
+          "rect": [0, 0, 250, 120]
+        },
+        {
+          "name": "ground, bottom left",
+          "rect": [0, 880, 400, 150]
+        }
+      ],
+      "captures": [
+        {
+          "folder": "default",
+          "localTime": "15:20"
+        }
+      ]
+    },
+    {
+      "id": "2321732083",
+      "title": "Cyberpunk Samurai",
+      "focus": "Puppet (area 7), rain and haze; the backlit sky and bloom (strength 1.97, threshold 0.85).",
+      "regions": [
+        {
+          "name": "backlight right of the figure",
+          "rect": [860, 100, 100, 300]
+        },
+        {
+          "name": "dark corner, top left",
+          "rect": [0, 0, 300, 300]
+        },
+        {
+          "name": "street, lower right",
+          "rect": [1400, 500, 300, 300]
+        }
+      ],
+      "captures": [
+        {
+          "folder": "default",
+          "localTime": "15:21"
+        }
+      ]
+    },
+    {
+      "id": "3455121165",
+      "title": "Solar system",
+      "focus": "3D (area 6): models, the scene camera and 2D text in a perspective scene. Shadows and volumetrics high against off.",
+      "captures": [
+        {
+          "folder": "shadowsOff_volOff",
+          "shadows": "disabled",
+          "volumetrics": "disabled",
+          "localTime": "15:21"
+        },
+        {
+          "folder": "shadowsHigh_volHigh",
+          "shadows": "high",
+          "volumetrics": "high",
+          "baseline": "shadowsOff_volOff",
+          "localTime": "15:22"
+        },
+        {
+          "folder": "shadowsOff_t10",
+          "shadows": "disabled",
+          "volumetrics": "high"
+        },
+        {
+          "folder": "shadowsHigh_t10",
+          "shadows": "high",
+          "volumetrics": "high",
+          "baseline": "shadowsOff_t10"
+        }
+      ]
+    },
+    {
+      "id": "3159348391",
+      "title": "PaRappa the Rapper",
+      "focus": "3D (area 6). The camera animates, so the two settings' frames aren't comparable with each other.",
+      "captures": [
+        {
+          "folder": "shadowsOff_volOff",
+          "shadows": "disabled",
+          "volumetrics": "disabled",
+          "localTime": "15:22:52"
+        },
+        {
+          "folder": "shadowsHigh_volHigh",
+          "shadows": "high",
+          "volumetrics": "high",
+          "localTime": "15:23:24"
+        },
+        {
+          "folder": "shadowsOff_t10",
+          "shadows": "disabled",
+          "volumetrics": "high"
+        },
+        {
+          "folder": "shadowsHigh_t10",
+          "shadows": "high",
+          "volumetrics": "high",
+          "baseline": "shadowsOff_t10"
+        }
+      ]
+    },
+    {
+      "id": "3378346807",
+      "title": "3D Snowflakes",
+      "focus": "3D (area 6); the background is the scene's clear colour (user property `backgroundcolor`). High adds a light shaft, glowing flakes and cast shadows.",
+      "masks": [
+        {
+          "rect": [0, 0, 420, 150],
+          "reason": "clock/date text: scripts read JavaScriptCore's Date, which keeps the host's time"
+        }
+      ],
+      "captures": [
+        {
+          "folder": "shadowsOff_volOff",
+          "shadows": "disabled",
+          "volumetrics": "disabled",
+          "localTime": "15:23:55"
+        },
+        {
+          "folder": "shadowsHigh_volHigh",
+          "shadows": "high",
+          "volumetrics": "high",
+          "baseline": "shadowsOff_volOff",
+          "localTime": "15:24:26"
+        },
+        {
+          "folder": "shadowsOff_t10",
+          "shadows": "disabled",
+          "volumetrics": "high"
+        },
+        {
+          "folder": "shadowsHigh_t10",
+          "shadows": "high",
+          "volumetrics": "high",
+          "baseline": "shadowsOff_t10"
+        }
+      ]
+    },
+    {
+      "id": "3734636606",
+      "title": "More Physics",
+      "focus": "3D physics scene (area 6).",
+      "captures": [
+        {
+          "folder": "default",
+          "localTime": "15:34"
+        },
+        {
+          "folder": "shadowsOff_t10",
+          "shadows": "disabled",
+          "volumetrics": "high"
+        },
+        {
+          "folder": "shadowsHigh_t10",
+          "shadows": "high",
+          "volumetrics": "high",
+          "baseline": "shadowsOff_t10"
+        }
+      ]
+    },
+    {
+      "id": "3657770939",
+      "title": "WE_Phys α_01",
+      "focus": "3D physics scene (area 6).",
+      "captures": [
+        {
+          "folder": "default",
+          "localTime": "15:34"
+        },
+        {
+          "folder": "shadowsOff_t10",
+          "shadows": "disabled",
+          "volumetrics": "high"
+        },
+        {
+          "folder": "shadowsHigh_t10",
+          "shadows": "high",
+          "volumetrics": "high",
+          "baseline": "shadowsOff_t10"
+        }
+      ]
+    },
+    {
+      "id": "2350874185",
+      "title": "Razer",
+      "focus": "3D (area 6): the dome's models under a shadowed light, shadows high against off.",
+      "captures": [
+        {
+          "folder": "shadowsOff_t10",
+          "shadows": "disabled",
+          "volumetrics": "high"
+        },
+        {
+          "folder": "shadowsHigh_t10",
+          "shadows": "high",
+          "volumetrics": "high",
+          "baseline": "shadowsOff_t10"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+# Local build outputs, dependencies and rollback copies
+/.build/
+/.swiftpm/
+/.tools/
+/build/
+/build-*/
+/dist/
+/Temp/
+/*.app/
+*.dmg
+DerivedData/
+xcuserdata/
+*.xcuserstate
+
+# .NET outputs (keep packages.lock.json and vendored binary dependencies)
+**/bin/
+**/obj/
+
+# Local investigations, screenshots, account diagnostics and work coordination
+/evidence/
+/delivery-status.json
+/feature-plan.json
+/integration-contract.json
+/parallel-scopes.json
+/scripts/route.py
+
+# Local configuration and signing material
+.env
+.env.*
+!.env.example
+*.p12
+*.pfx
+*.mobileprovision
+*.provisionprofile
+
+# Editor and OS caches
+.DS_Store
+._*
+.idea/
+.vscode/
+__pycache__/
+*.py[cod]
+*.swp
+*.swo

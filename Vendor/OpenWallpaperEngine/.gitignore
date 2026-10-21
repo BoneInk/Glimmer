@@ -1,0 +1,25 @@
+# Xcode
+
+## User settings
+xcuserdata/
+
+## Build products
+build/
+DerivedData/
+
+## Stray compiler/profiler output
+*.profraw
+*.spv
+
+## OS junk
+.DS_Store
+Thumbs.db
+
+## Playwright MCP
+.playwright-mcp/
+
+__pycache__/
+
+## Swift package builds
+.build/
+.swiftpm/

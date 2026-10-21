@@ -1,0 +1,12 @@
+{
+	"emitter" : [ { "name" : "sphererandom", "rate" : 30 } ],
+	"initializer" : [
+		{ "name" : "lifetimerandom", "min" : 0.5, "max" : 0.5 },
+		{ "name" : "inheritinitialvaluefromevent", "input" : "multiplysize" },
+		{ "name" : "inheritinitialvaluefromevent" }
+	],
+	"operator" : [ { "name" : "inheritvaluefromevent" } ],
+	"material" : "materials/dot.json",
+	"maxcount" : 20,
+	"flags" : 1
+}

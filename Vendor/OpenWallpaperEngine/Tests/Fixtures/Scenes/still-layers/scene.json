@@ -1,0 +1,42 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : {
+		"clearcolor" : "0 0 0",
+		"orthogonalprojection" : { "width" : 128, "height" : 64 }
+	},
+	"objects" : [
+		{
+			"id" : 1,
+			"name" : "Background",
+			"image" : "models/util/solidlayer.json",
+			"size" : "8 8",
+			"color" : "0 0 1",
+			"origin" : "16 32 0"
+		},
+		{
+			"id" : 2,
+			"name" : "Hand",
+			"image" : "models/util/solidlayer.json",
+			"size" : "8 8",
+			"color" : "1 0 0",
+			"origin" : "48 32 0",
+			"angles" : {
+				"script" : "export function update(value) {\n\tconst now = new Date();\n\tvalue.z = now.getSeconds() * 0;\n\treturn value;\n}\n",
+				"value" : "0 0 0"
+			}
+		},
+		{
+			"id" : 3,
+			"name" : "Label",
+			"origin" : "96 32 0",
+			"size" : "60 40",
+			"text" : { "value" : "WWWW" },
+			"font" : "systemfont_arial",
+			"pointsize" : 5,
+			"color" : "1 1 1",
+			"horizontalalign" : "center",
+			"verticalalign" : "center"
+		}
+	],
+	"version" : 1
+}

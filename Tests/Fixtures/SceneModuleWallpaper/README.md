@@ -1,0 +1,1 @@
+Original MIT fixture. Local ES modules drive actual layer motion/color through WEMath, WEVector and WEColor. Tests exercise immutable owned import, live bindings, true callback publication and deletion. No Workshop assets or proprietary engine implementation.

@@ -1,0 +1,43 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : {
+		"clearcolor" : "0 0 0",
+		"orthogonalprojection" : { "width" : 1920, "height" : 1080 }
+	},
+	"objects" : [
+		{
+			"id" : 1,
+			"name" : "Bare",
+			"origin" : "960 540 0",
+			"size" : "600 200",
+			"text" : { "value" : "Text Layer" },
+			"limitwidth" : true,
+			"limitrows" : true
+		},
+		{
+			"id" : 2,
+			"name" : "Authored",
+			"origin" : "960 300 0",
+			"size" : "600 200",
+			"text" : { "value" : "12:00" },
+			"pointsize" : 20,
+			"padding" : 8,
+			"limitwidth" : true,
+			"maxwidth" : 301.5,
+			"limitrows" : true,
+			"maxrows" : 2
+		},
+		{
+			"id" : 3,
+			"name" : "Effects",
+			"origin" : "960 800 0",
+			"size" : "600 200",
+			"text" : { "value" : "Shadowed" },
+			"msdf" : true,
+			"outline" : true,
+			"outlinethickness" : 1.33,
+			"dropshadow" : true
+		}
+	],
+	"version" : 1
+}

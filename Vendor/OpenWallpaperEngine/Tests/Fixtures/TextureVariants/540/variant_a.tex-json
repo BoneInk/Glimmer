@@ -1,0 +1,36 @@
+{
+	"bleedtransparentcolors" : true,
+	"clampuvs" : true,
+	"format" : "rgba8888",
+	"halfmip" : true,
+	"nonpoweroftwo" : true,
+	"variants" : 
+	[
+		{
+			"name" : "shapes",
+			"options" : 
+			[
+				{
+					"blend" : "replace",
+					"file" : "materials/variant_b.png",
+					"name" : "variant_b",
+					"variantcondition" : 
+					{
+						"condition" : "1",
+						"name" : "shapesel"
+					}
+				},
+				{
+					"blend" : "alphablend",
+					"file" : "materials/variant_c.png",
+					"name" : "variant_c",
+					"variantcondition" : 
+					{
+						"condition" : "2",
+						"name" : "shapesel"
+					}
+				}
+			]
+		}
+	]
+}

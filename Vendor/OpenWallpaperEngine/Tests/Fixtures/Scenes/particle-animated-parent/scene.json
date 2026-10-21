@@ -1,0 +1,242 @@
+{
+	"camera": {
+		"center": "0 0 -1",
+		"eye": "0 0 0",
+		"up": "0 1 0"
+	},
+	"general": {
+		"orthogonalprojection": {
+			"width": 1920,
+			"height": 1080
+		}
+	},
+	"objects": [
+		{
+			"id": 1,
+			"name": "Pivot",
+			"origin": {
+				"value": "400 540 0",
+				"animation": {
+					"c0": [
+						{
+							"frame": 0,
+							"value": 400,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 120,
+							"value": 1400,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"c1": [
+						{
+							"frame": 0,
+							"value": 540,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 120,
+							"value": 540,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"c2": [
+						{
+							"frame": 0,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 120,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"options": {
+						"fps": 60,
+						"length": 120,
+						"mode": "single"
+					}
+				}
+			},
+			"angles": {
+				"value": "0 0 0",
+				"animation": {
+					"c0": [
+						{
+							"frame": 0,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 120,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"c1": [
+						{
+							"frame": 0,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 120,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"c2": [
+						{
+							"frame": 0,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 120,
+							"value": 1.5707963,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"options": {
+						"fps": 60,
+						"length": 120,
+						"mode": "single"
+					}
+				}
+			}
+		},
+		{
+			"id": 2,
+			"name": "Local sparks",
+			"parent": 1,
+			"particle": "particles/local.json",
+			"origin": "100 0 0"
+		},
+		{
+			"id": 3,
+			"name": "World sparks",
+			"parent": 1,
+			"particle": "particles/world.json",
+			"origin": "100 0 0"
+		},
+		{
+			"id": 4,
+			"name": "Marker",
+			"parent": 2,
+			"image": "models/util/solidlayer.json",
+			"origin": "0 50 0",
+			"size": "10 10"
+		}
+	],
+	"version": 1
+}

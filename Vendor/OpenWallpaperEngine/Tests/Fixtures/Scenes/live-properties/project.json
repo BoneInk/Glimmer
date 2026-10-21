@@ -1,0 +1,15 @@
+{
+	"file" : "scene.json",
+	"preview" : "preview.jpg",
+	"title" : "Fixture: user properties applied live",
+	"type" : "scene",
+	"general" : {
+		"properties" : {
+			"showeffect" : { "order" : 1, "text" : "Effect", "type" : "bool", "value" : true },
+			"red" : { "order" : 2, "text" : "Red", "type" : "slider", "min" : 0, "max" : 1, "value" : 1 },
+			"layer" : { "order" : 3, "text" : "Layer", "type" : "combo", "value" : "1",
+				"options" : [ { "label" : "One", "value" : "1" }, { "label" : "Two", "value" : "2" } ] },
+			"note" : { "order" : 4, "text" : "A note, with no value" }
+		}
+	}
+}

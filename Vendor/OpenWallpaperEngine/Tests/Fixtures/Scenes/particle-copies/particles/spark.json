@@ -1,0 +1,9 @@
+{
+	"emitter" : [ { "name" : "sphererandom", "rate" : 20 } ],
+	"initializer" : [ { "name" : "lifetimerandom", "min" : 1, "max" : 2 }, { "name" : "sizerandom", "min" : 4, "max" : 8 } ],
+	"operator" : [ { "name" : "movement" }, { "name" : "alphafade" } ],
+	"renderer" : [ { "name" : "sprite" }, { "name" : "spritetrail", "length" : 0.1 } ],
+	"children" : [ { "name" : "particles/glow.json", "origin" : "0 20 0" } ],
+	"material" : "materials/dot.json",
+	"maxcount" : 64
+}

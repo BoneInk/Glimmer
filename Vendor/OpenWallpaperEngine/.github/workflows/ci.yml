@@ -1,0 +1,454 @@
+name: CI
+
+# CI runs twice per change: on its pull request once it's labelled "ready to merge" (and up to
+# date with main), and on main once it's merged. A pull request without the label runs nothing;
+# a push to a labelled one runs again.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [labeled, synchronize, reopened]
+  workflow_dispatch:
+
+# Every job only reads the repository (and the Actions cache and artifacts, which need no token scope).
+permissions:
+  contents: read
+
+# A run that won't test anything (an unlabelled pull request, or another label added) gets a group
+# of its own, so it never cancels a real run.
+concurrency:
+  group: >-
+    ci-${{ github.ref }}-${{ (github.event_name != 'pull_request' ||
+    (contains(github.event.pull_request.labels.*.name, 'ready to merge') &&
+    (github.event.action != 'labeled' || github.event.label.name == 'ready to merge'))) && 'run' || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  XCODEBUILD_FLAGS: >-
+    -project OpenWallpaperEngine.xcodeproj
+    -scheme OpenWallpaperEngine
+    -configuration Debug
+    -destination platform=macOS
+    -derivedDataPath build/DerivedData
+    -clonedSourcePackagesDirPath build/SourcePackages
+    CODE_SIGNING_ALLOWED=NO
+    COMPILER_INDEX_STORE_ENABLE=NO
+  # The slow tier (tests over about a minute, SlowTests.swift) skips unless OWE_SLOW_TESTS=1;
+  # nightly.yml and Scripts/ci-local.sh run it. The test build is optimised
+  # (Scripts/test-build-settings.txt) but stays a Debug build: DEBUG code, signing and @testable
+  # imports are as before.
+  # Scripts/ci-test-plan.py lists the test classes and splits them into shards; .github/test-map.yml
+  # holds the serial classes and what a pull request's changed files select.
+  # Scripts/ci-run-tests.sh runs a shard (parallel classes, then serial ones, failures retried
+  # once); Scripts/ci-local.sh runs the whole suite the same way locally.
+
+jobs:
+  # Lets a pull request through only with the "ready to merge" label and only when it has every
+  # commit on main, so what is tested is what merges.
+  gate:
+    if: >-
+      github.event_name != 'pull_request' ||
+      (contains(github.event.pull_request.labels.*.name, 'ready to merge') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'ready to merge'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Up to date with main
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          base_sha=$(gh api "repos/$REPO/commits/$BASE" --jq .sha)
+          behind=$(gh api "repos/$REPO/compare/$base_sha...$HEAD_SHA" --jq .behind_by)
+          if [[ "$behind" != 0 ]]; then
+            echo "::error::The branch is $behind commit(s) behind $BASE. Merge $BASE into it, then label it again."
+            exit 1
+          fi
+
+  # Which test classes run: every one, except on a pull request, where the changed files pick them
+  # through .github/test-map.yml.
+  plan:
+    needs: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      selection: ${{ steps.plan.outputs.selection }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # A pull request checks out its merge commit, whose first parent is the base.
+          fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 1 }}
+
+      - name: Pick the test classes
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          selection=all
+          if [[ "$EVENT" == pull_request ]]; then
+            if [[ $(git rev-list --parents -n 1 HEAD | wc -w) -eq 3 ]]; then
+              git diff --name-only --no-renames HEAD^1 HEAD > changed.txt
+              selection=$(python3 Scripts/ci-test-plan.py affected --files changed.txt)
+            else
+              echo "::warning::HEAD is not a merge commit; running every test class."
+            fi
+          fi
+          echo "selection=$selection" >> "$GITHUB_OUTPUT"
+          case "$selection" in
+            all) summary="all" ;;
+            none) summary="none; only files that need no tests changed" ;;
+            *) summary="$(wc -w <<< "$selection" | tr -d ' '): $selection" ;;
+          esac
+          echo "Test classes: $summary" >> "$GITHUB_STEP_SUMMARY"
+
+  # Builds the app and the test bundle once; every test shard runs that build without recompiling.
+  build:
+    needs: gate
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - id: xcode
+        uses: ./.github/actions/select-xcode
+
+      - name: Restore the Swift packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/SourcePackages
+          key: spm-${{ steps.xcode.outputs.version }}-${{ hashFiles('OpenWallpaperEngine.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+
+      - name: Restore the build
+        # An exact hit is a build of these very sources: it is used as is. A partial hit still
+        # saves rebuilding the packages.
+        id: dd
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/DerivedData
+          # dd-opt: optimised builds, keyed on their settings too, never mixed with unoptimised ones.
+          key: dd-opt-${{ steps.xcode.outputs.version }}-${{ hashFiles('Scripts/test-build-settings.txt') }}-${{ hashFiles('OpenWallpaperEngine.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}-${{ hashFiles('OpenWallpaperEngine/**', 'OpenWallpaperEngineTests/**', 'OpenWallpaperEngine.xcodeproj/**', 'OpenWallpaperEngine-Info.plist', 'Vendor/**', 'Packages/**') }}
+          restore-keys: |
+            dd-opt-${{ steps.xcode.outputs.version }}-${{ hashFiles('Scripts/test-build-settings.txt') }}-${{ hashFiles('OpenWallpaperEngine.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}-
+
+      - name: Build for testing
+        if: steps.dd.outputs.cache-hit != 'true'
+        run: |
+          set -o pipefail
+          read -ra OPTIMISE < Scripts/test-build-settings.txt
+          # shellcheck disable=SC2086 # the flags split into words on purpose
+          xcodebuild build-for-testing $XCODEBUILD_FLAGS "${OPTIMISE[@]}" | tee xcodebuild.log
+
+      - name: Check for deployment target mismatches
+        # A library built for a newer macOS than the app's deployment target links, and then
+        # fails to load on that older macOS.
+        if: steps.dd.outputs.cache-hit != 'true'
+        run: |
+          if grep -E "was built for newer (macOS|macosx) version" xcodebuild.log; then
+            echo "::error::a linked library targets a newer macOS than the app"; exit 1
+          fi
+
+      - name: Check glslang and SPIRV-Cross for symbol clashes
+        run: Scripts/check-toolchain-symbols.sh build/DerivedData
+
+      - name: Pack the test build
+        run: tar -C build/DerivedData -czf products.tgz Build/Products
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: products
+          path: products.tgz
+          retention-days: 1
+          compression-level: 0
+
+      - name: Upload log
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: xcodebuild-log
+          path: xcodebuild.log
+
+  # The suite in three shards, split by test class. Each shard runs its parallel classes, then its
+  # serial ones.
+  test:
+    name: build-and-test (${{ matrix.shard }}/3)
+    needs: [plan, build]
+    if: needs.plan.outputs.selection != 'none'
+    runs-on: macos-26
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - id: xcode
+        uses: ./.github/actions/select-xcode
+
+      - name: Test the release scripts
+        if: matrix.shard == 1
+        run: |
+          set -euo pipefail
+          bash Scripts/release/test-release-version.sh
+          python3 Scripts/release/test_appcast.py
+          python3 Scripts/test_steam_totp.py
+          for f in Scripts/release/*.sh Scripts/*.sh; do bash -n "$f"; done
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: products
+
+      - name: Unpack the test build
+        run: |
+          mkdir -p build/DerivedData && tar -C build/DerivedData -xzf products.tgz
+          runs=("$PWD"/build/DerivedData/Build/Products/*.xctestrun)
+          echo "XCTESTRUN=${runs[0]}" >> "$GITHUB_ENV"
+          python3 Scripts/ci-test-summary.py --env >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check that the shards cover every test class
+        # -only-testing runs only the classes ci-test-plan.py finds; compare with the test bundle.
+        if: matrix.shard == 1
+        run: |
+          xcodebuild test-without-building -xctestrun "$XCTESTRUN" -destination platform=macOS \
+            -enumerate-tests -test-enumeration-style flat -test-enumeration-format json \
+            -test-enumeration-output-path build/enumeration.json > build/enumeration.log 2>&1 \
+            || { tail -40 build/enumeration.log; exit 1; }
+          python3 Scripts/ci-test-plan.py check --enumeration build/enumeration.json
+
+      # Only the fixtures' shaders (the project's own) are translated here, so the cache is plain.
+      - id: shadercache
+        uses: ./.github/actions/shader-cache
+        with:
+          mode: restore
+          xcode-version: ${{ steps.xcode.outputs.version }}
+
+      - name: Test
+        env:
+          SELECTION: ${{ needs.plan.outputs.selection }}
+          SHARD: ${{ matrix.shard }}
+        run: |
+          python3 Scripts/ci-test-plan.py shard --index "$SHARD" --count 3 --select "$SELECTION" > build/classes.txt
+          echo "Shard $SHARD: $(wc -l < build/classes.txt | tr -d ' ') test classes" >> "$GITHUB_STEP_SUMMARY"
+          Scripts/ci-run-tests.sh "$XCTESTRUN" build/classes.txt build/results
+
+      - name: List the test durations
+        if: ${{ !cancelled() }}
+        run: |
+          python3 Scripts/ci-test-durations.py --phases build/results/phases --csv build/durations.csv \
+            build/results/parallel.xcresult build/results/serial.xcresult >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the test durations
+        if: ${{ !cancelled() && hashFiles('build/durations.csv') != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-durations-${{ matrix.shard }}
+          path: build/durations.csv
+          retention-days: 30
+
+      # One shard saves, on main, what the run translated and compiled.
+      - uses: ./.github/actions/shader-cache
+        if: success() && matrix.shard == 1 && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          mode: save
+          xcode-version: ${{ steps.xcode.outputs.version }}
+          skip: ${{ steps.shadercache.outputs.hit }}
+
+      - name: List the failing tests
+        # Parallel runs print only "failed" per test; the result bundles hold the assertion text.
+        # It goes to the log and the job summary.
+        if: failure()
+        run: python3 Scripts/ci-test-summary.py build/results/parallel.xcresult build/results/serial.xcresult | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the results
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-${{ matrix.shard }}
+          path: build/results
+          retention-days: 7
+
+  # The local packages' own tests (Packages/*), which the app's test bundle doesn't hold.
+  packages:
+    needs: gate
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - id: xcode
+        uses: ./.github/actions/select-xcode
+
+      - name: Test the packages
+        run: |
+          set -o pipefail
+          for package in Packages/*/; do
+            swift test --package-path "$package" --scratch-path "build/packages/$(basename "$package")"
+          done
+
+  # The required status check: passes only when the build, every shard and the packages passed (or
+  # no test class had to run).
+  build-and-test:
+    needs: [gate, plan, build, test, packages]
+    if: ${{ !cancelled() && needs.gate.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check the shards
+        env:
+          GATE: ${{ needs.gate.result }}
+          PLAN: ${{ needs.plan.result }}
+          BUILD: ${{ needs.build.result }}
+          TEST: ${{ needs.test.result }}
+          PACKAGES: ${{ needs.packages.result }}
+          SELECTION: ${{ needs.plan.outputs.selection }}
+        run: |
+          echo "gate: $GATE, plan: $PLAN, build: $BUILD, shards: $TEST, packages: $PACKAGES"
+          [[ "$GATE" == success && "$PLAN" == success && "$BUILD" == success && "$PACKAGES" == success ]] || exit 1
+          [[ "$TEST" == success || ( "$TEST" == skipped && "$SELECTION" == none ) ]]
+
+  # The same suite with Wallpaper Engine's built-in assets, so the asset-gated tests run. The assets
+  # come from the CI Steam account (docs/ci-assets.md). They are cached only as an encrypted archive
+  # whose key is in the steam-ci environment, and never uploaded. It runs on pushes to main and on
+  # manual runs from main only, never for pull requests: the Steam secrets and the cache key live in
+  # the steam-ci environment, which only main can use. It always runs every test class.
+  # Contributors run the asset tests locally with OWE_ASSETS (CONTRIBUTING.md).
+  #
+  # asset-cache makes sure the encrypted cache holds the current build, so the four shards restore
+  # it rather than each logging in to Steam.
+  # It is the only job that logs in to Steam (with retries); the shards only restore, and fail
+  # if they can't.
+  asset-cache:
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    runs-on: macos-26
+    timeout-minutes: 40
+    environment: steam-ci
+    outputs:
+      build-id: ${{ steps.assets.outputs.build-id }}
+    env:
+      WE_ASSETS: ${{ github.workspace }}/../we-assets
+      WE_ASSETS_ENC: ${{ github.workspace }}/../we-assets.tar.enc
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - id: assets
+        uses: ./.github/actions/we-assets
+        with:
+          cache-key: ${{ secrets.OWE_ASSET_CACHE_KEY }}
+          steam-user: ${{ secrets.OWE_CI_STEAM_USER }}
+          steam-password: ${{ secrets.OWE_CI_STEAM_PASSWORD }}
+          steam-shared-secret: ${{ secrets.OWE_CI_STEAM_SHARED_SECRET }}
+          save: 'true'
+          prime: 'true'
+
+  asset-test:
+    name: asset-tests (${{ matrix.shard }}/4)
+    needs: [build, asset-cache]
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    runs-on: macos-26
+    timeout-minutes: 60
+    environment: steam-ci
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    env:
+      WE_ASSETS: ${{ github.workspace }}/../we-assets
+      WE_ASSETS_ENC: ${{ github.workspace }}/../we-assets.tar.enc
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - id: xcode
+        uses: ./.github/actions/select-xcode
+
+      # Restore only, the build asset-cache saved: the shards never log in to Steam.
+      - uses: ./.github/actions/we-assets
+        with:
+          cache-key: ${{ secrets.OWE_ASSET_CACHE_KEY }}
+          build-id: ${{ needs.asset-cache.outputs.build-id }}
+          download: 'false'
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: products
+
+      - name: Unpack the test build
+        run: |
+          mkdir -p build/DerivedData && tar -C build/DerivedData -xzf products.tgz
+          runs=("$PWD"/build/DerivedData/Build/Products/*.xctestrun)
+          echo "XCTESTRUN=${runs[0]}" >> "$GITHUB_ENV"
+          python3 Scripts/ci-test-summary.py --env >> "$GITHUB_STEP_SUMMARY"
+
+      # Encrypted: here the cache holds MSL translated from Wallpaper Engine's shaders.
+      - id: shadercache
+        uses: ./.github/actions/shader-cache
+        with:
+          mode: restore
+          xcode-version: ${{ steps.xcode.outputs.version }}
+          encryption-key: ${{ secrets.OWE_ASSET_CACHE_KEY }}
+
+      - name: Test with the assets
+        # OWE_LIBRARY stays unset: the library-gated tests skip.
+        env:
+          TEST_RUNNER_OWE_ASSETS: ${{ env.WE_ASSETS }}
+          SHARD: ${{ matrix.shard }}
+        run: |
+          python3 Scripts/ci-test-plan.py shard --index "$SHARD" --count 4 --select all > build/classes.txt
+          echo "Shard $SHARD: $(wc -l < build/classes.txt | tr -d ' ') test classes" >> "$GITHUB_STEP_SUMMARY"
+          Scripts/ci-run-tests.sh "$XCTESTRUN" build/classes.txt build/results
+
+      - name: List the test durations
+        if: ${{ !cancelled() }}
+        run: |
+          python3 Scripts/ci-test-durations.py --phases build/results/phases --csv build/durations.csv \
+            build/results/parallel.xcresult build/results/serial.xcresult >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the test durations
+        # Test names and times only.
+        if: ${{ !cancelled() && hashFiles('build/durations.csv') != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-durations-assets-${{ matrix.shard }}
+          path: build/durations.csv
+          retention-days: 30
+
+      - uses: ./.github/actions/shader-cache
+        if: success() && matrix.shard == 1
+        with:
+          mode: save
+          xcode-version: ${{ steps.xcode.outputs.version }}
+          encryption-key: ${{ secrets.OWE_ASSET_CACHE_KEY }}
+          skip: ${{ steps.shadercache.outputs.hit }}
+
+      - name: List the failing tests
+        # To the log and the job summary.
+        if: failure()
+        run: python3 Scripts/ci-test-summary.py build/results/parallel.xcresult build/results/serial.xcresult | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the results
+        # The log and the result bundles only; never the assets.
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-assets-${{ matrix.shard }}
+          path: build/results
+          retention-days: 7
+
+  # Passes only when every asset shard passed.
+  asset-tests:
+    needs: [asset-cache, asset-test]
+    if: ${{ !cancelled() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check the shards
+        env:
+          CACHE: ${{ needs.asset-cache.result }}
+          TEST: ${{ needs.asset-test.result }}
+        run: |
+          echo "asset cache: $CACHE, shards: $TEST"
+          [[ "$CACHE" == success && "$TEST" == success ]]

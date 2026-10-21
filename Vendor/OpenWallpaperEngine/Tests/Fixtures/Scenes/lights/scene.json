@@ -1,0 +1,173 @@
+{
+	"camera": {
+		"center": "960 540 -1",
+		"eye": "960 540 0",
+		"up": "0 1 0"
+	},
+	"general": {
+		"ambientcolor": "0.30000 0.30000 0.30000",
+		"bloom": true,
+		"bloomhdrfeather": 0.18000001,
+		"bloomhdriterations": 8,
+		"bloomhdrscatter": 2.0,
+		"bloomhdrstrength": 0.76999998,
+		"bloomhdrthreshold": 1.0,
+		"bloomstrength": 2.0,
+		"bloomthreshold": 0.64999998,
+		"bloomtint": "1.00000 1.00000 1.00000",
+		"camerafade": true,
+		"cameraparallax": false,
+		"cameraparallaxamount": 0.5,
+		"cameraparallaxdelay": 0.1,
+		"cameraparallaxmouseinfluence": 0.5,
+		"camerapreview": true,
+		"camerashake": false,
+		"camerashakeamplitude": 0.5,
+		"camerashakeroughness": 1.0,
+		"camerashakespeed": 3.0,
+		"clearcolor": "0.70000 0.70000 0.70000",
+		"clearenabled": true,
+		"farz": 10000.0,
+		"fov": 50.0,
+		"hdr": true,
+		"lightconfig": {
+			"spot": 1,
+			"spotcookie": 1
+		},
+		"nearz": 0.0099999998,
+		"orthogonalprojection": {
+			"height": 1080,
+			"width": 1920
+		},
+		"perspectiveoverridefov": 30.0,
+		"skylightcolor": "0.30000 0.30000 0.30000",
+		"zoom": 1.0
+	},
+	"objects": [
+		{
+			"id": 1,
+			"name": "Solid",
+			"image": "models/util/solidlayer.json",
+			"origin": "960 540 0",
+			"size": "1920 1080",
+			"color": "0 0 1"
+		},
+		{
+			"cascadedistance0": 576.0,
+			"cascadedistance1": 1152.0,
+			"cascadedistance2": 2112.0,
+			"castshadow": false,
+			"color": "1.00000 1.00000 1.00000",
+			"controlpoint": "1.87891 1131.81885 0.00000",
+			"density": 2.0,
+			"exponent": 2.0,
+			"id": 116,
+			"intensity": 10.0,
+			"light": "ltube",
+			"name": "",
+			"origin": "641.74176 -45.93243 250.00000",
+			"parallaxDepth": "0.00000 0.00000",
+			"radius": 500.0,
+			"volumetricsexponent": 1.0
+		},
+		{
+			"angles": "-0.14119 0.58229 -0.78032",
+			"cascadedistance0": 576.0,
+			"cascadedistance1": 1152.0,
+			"cascadedistance2": 2112.0,
+			"castshadow": false,
+			"castvolumetrics": true,
+			"color": "1.00000 1.00000 1.00000",
+			"density": 1.88,
+			"exponent": 1.02,
+			"id": 516,
+			"innercone": 80.0,
+			"intensity": 4.1199999,
+			"light": "lspot",
+			"name": "",
+			"origin": "609.58826 1037.37390 -421.09644",
+			"outercone": 80.0,
+			"parallaxDepth": "0.00000 0.00000",
+			"radius": 1135.67,
+			"usecookie": true,
+			"volumetricsexponent": 2.55
+		},
+		{
+			"angles": "0.00000 0.00000 -2.35619",
+			"castshadow": false,
+			"castvolumetrics": true,
+			"color": "0.45098 0.45098 0.45098",
+			"density": 10.0,
+			"exponent": 5.0,
+			"id": 39,
+			"intensity": 20.959999,
+			"light": "lpoint",
+			"name": "",
+			"origin": "9.00000 9.00000 1.00000",
+			"parallaxDepth": "0.00000 0.00000",
+			"radius": 50.0,
+			"scale": "1.00000 1.88825 1.00000",
+			"volumetricsexponent": 10.0
+		},
+		{
+			"angles": "-0.00000 -0.00000 -1.30900",
+			"castshadow": false,
+			"castvolumetrics": true,
+			"color": "1.00000 1.00000 1.00000",
+			"density": 10.0,
+			"exponent": 4.0,
+			"id": 285,
+			"intensity": 1.86,
+			"light": "lpoint",
+			"name": "",
+			"parallaxDepth": "0.00000 0.00000",
+			"parent": 1,
+			"radius": 2.97,
+			"scale": "5000.00000 9441.25000 5000.00000",
+			"visible": false,
+			"volumetricsexponent": 12.0
+		},
+		{
+			"angles": "0.000 0.000 0.000",
+			"color": "1.000 1.000 1.000",
+			"id": 2,
+			"intensity": 1.8700000047683716,
+			"light": "point",
+			"model": null,
+			"name": "",
+			"origin": "-1.110 2.460 0.335",
+			"particle": null,
+			"radius": 16.31999969482422,
+			"scale": "1.000 1.000 1.000",
+			"sprite": null
+		},
+		{
+			"angles": "0.000 0.000 0.000",
+			"color": "1.000 1.000 1.000",
+			"id": 5,
+			"intensity": 0.6700000166893005,
+			"light": "point",
+			"name": "",
+			"origin": "3.106 2.692 -0.204",
+			"radius": 17.1299991607666,
+			"scale": "1.000 1.000 1.000"
+		},
+		{
+			"id": 900,
+			"light": "ldirectional"
+		},
+		{
+			"id": 901,
+			"light": "lpoint",
+			"intensity": {
+				"user": "lamp",
+				"value": 3.0
+			},
+			"color": {
+				"user": "lampcolor",
+				"value": "1 0 0"
+			}
+		}
+	],
+	"version": 3
+}

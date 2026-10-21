@@ -1,0 +1,11 @@
+{
+	"passes" : [
+		{
+			"blending" : "additive",
+			"combos" : {},
+			"constantshadervalues" : { "ui_editor_properties_overbright" : 0.5 },
+			"shader" : "genericparticle",
+			"textures" : [ "particle/solid" ]
+		}
+	]
+}

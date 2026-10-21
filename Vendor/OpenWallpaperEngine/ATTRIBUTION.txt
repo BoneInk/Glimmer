@@ -1,0 +1,24 @@
+Wallpaper Engine attribution
+============================
+
+This is the one place where Open Wallpaper Engine credits Wallpaper Engine.
+
+Open Wallpaper Engine is an independent, open-source macOS app. It is not affiliated with,
+endorsed by or connected to Wallpaper Engine or its developers. "Wallpaper Engine" is the name
+of a commercial application by Kristjan Skutta / Wallpaper Engine Team, sold on Steam:
+https://www.wallpaperengine.io
+
+Neither this repository nor the app contains any of Wallpaper Engine's files. Scene wallpapers
+need Wallpaper Engine's built-in effects, materials, models, particles, GLSL shaders, SceneScript
+runtime, compatibility patches, fonts and UI strings; the app takes them from the user's own copy
+of Wallpaper Engine on Steam:
+
+- Settings > Assets downloads the user's copy with SteamCMD, using the account the user logged
+  in with (it must own Wallpaper Engine), keeps only those files and Wallpaper Engine's default
+  wallpapers in the user's Wallpaper Storage folder, and deletes the rest of the download; or
+- the user chooses the folder of an existing Wallpaper Engine install, which is read in place.
+
+The fonts keep their own licences; their licence files (e.g. "SIL Open Font License.txt") come
+with them.
+
+Wallpapers themselves belong to their Steam Workshop authors and are not part of this project.

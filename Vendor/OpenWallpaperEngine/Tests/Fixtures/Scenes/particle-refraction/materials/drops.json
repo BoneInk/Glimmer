@@ -1,0 +1,11 @@
+{
+	"passes" : [
+		{
+			"blending" : "translucent",
+			"combos" : { "REFRACT" : 1 },
+			"constantshadervalues" : { "ui_editor_properties_refract_amount" : 0.04 },
+			"shader" : "genericparticle",
+			"textures" : [ "particle/drop", "particle/drop_normal" ]
+		}
+	]
+}

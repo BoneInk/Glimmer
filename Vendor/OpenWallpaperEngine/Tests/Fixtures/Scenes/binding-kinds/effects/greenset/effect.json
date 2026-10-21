@@ -1,0 +1,9 @@
+{
+	"version": 1,
+	"name": "Green set",
+	"passes": [
+		{
+			"material": "materials/effects/greenset.json"
+		}
+	]
+}

@@ -1,0 +1,18 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : {
+		"clearcolor" : "0 0 0",
+		"orthogonalprojection" : { "width" : 64, "height" : 64 }
+	},
+	"objects" : [
+		{
+			"id" : 1,
+			"name" : "Hang",
+			"origin" : {
+				"script" : "'use strict';\n\nlet frames = 0;\n\nexport function update(value) {\n\tframes += 1;\n\tif (frames > 3) {\n\t\twhile (true) {}\n\t}\n\tvalue.x = frames;\n\treturn value;\n}\n",
+				"value" : "0 0 0"
+			}
+		}
+	],
+	"version" : 1
+}

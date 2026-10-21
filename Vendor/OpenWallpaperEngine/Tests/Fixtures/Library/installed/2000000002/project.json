@@ -1,0 +1,9 @@
+{
+	"category" : "Asset",
+	"contentrating" : "Everyone",
+	"file" : "effects/glow/effect.json",
+	"preview" : "preview.gif",
+	"tags" : [ "Effect" ],
+	"title" : "Glow Effect",
+	"visibility" : "public"
+}

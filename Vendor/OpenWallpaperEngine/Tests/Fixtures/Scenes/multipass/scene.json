@@ -1,0 +1,24 @@
+{
+	"objects" : [
+		{
+			"id" : 1,
+			"name" : "Layer",
+			"image" : "models/util/composelayer.json",
+			"effects" : [
+				{
+					"file" : "effects/blur/effect.json",
+					"id" : 10,
+					"name" : "Blur",
+					"visible" : { "user" : "showblur", "value" : true },
+					"passes" : [
+						{ "id" : 11, "combos" : { "KERNEL" : 2 }, "textures" : [ null, "masks/blur_mask" ],
+						  "constantshadervalues" : { "scale" : "2 2", "strength" : { "user" : "blurstrength", "value" : 0.25 } } },
+						{ "id" : 12, "combos" : { "VERTICAL" : 1 }, "constantshadervalues" : { "scale" : 3 },
+						  "usertextures" : [ null, { "name" : "$mediaThumbnail", "type" : "system" } ] },
+						{ "id" : 13 }
+					]
+				}
+			]
+		}
+	]
+}

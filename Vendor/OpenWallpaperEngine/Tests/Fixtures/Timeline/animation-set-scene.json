@@ -1,0 +1,375 @@
+{
+ "general": {
+  "bloomstrength": {
+   "value": 2,
+   "animation": {
+    "c0": [
+     {
+      "frame": 0,
+      "value": 1
+     },
+     {
+      "frame": 20,
+      "value": 3
+     }
+    ],
+    "options": {
+     "fps": 20,
+     "length": 20,
+     "mode": "mirror",
+     "name": "bloom"
+    }
+   }
+  },
+  "clearcolor": "0 0 0",
+  "properties": {
+   "animation": {
+    "order": 1,
+    "text": "Animation",
+    "type": "bool",
+    "value": true
+   }
+  }
+ },
+ "objects": [
+  {
+   "id": 7,
+   "name": "Title",
+   "image": "models/title.json",
+   "origin": {
+    "value": "-137.09760 619.67834 0.00000",
+    "script": "export function update(value) { return value; }",
+    "animation": {
+     "c0": [
+      {
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "frame": 5,
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": 0.00030000001
+      },
+      {
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "frame": 35,
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": 0
+      }
+     ],
+     "c1": [
+      {
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "frame": 5,
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": 28.875731
+      },
+      {
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "frame": 35,
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": 0
+      }
+     ],
+     "c2": [
+      {
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "frame": 5,
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": 0
+      },
+      {
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "frame": 35,
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": 0
+      }
+     ],
+     "options": {
+      "children": [
+       {
+        "key": "alpha"
+       }
+      ],
+      "fps": 60,
+      "length": 60,
+      "mode": "single",
+      "name": "Title",
+      "wraploop": null
+     },
+     "relative": true
+    }
+   },
+   "alpha": {
+    "value": 1,
+    "animation": {
+     "c0": [
+      {
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "frame": 5,
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": 0
+      },
+      {
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "frame": 35,
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       },
+       "lockangle": true,
+       "locklength": true,
+       "value": 1
+      }
+     ],
+     "options": {
+      "fps": 60,
+      "length": 60,
+      "mode": "single",
+      "parent": {
+       "key": "origin"
+      },
+      "wraploop": null
+     }
+    }
+   },
+   "scale": {
+    "value": "1 1 1",
+    "animation": {
+     "c0": [
+      {
+       "frame": 0,
+       "value": 1
+      }
+     ],
+     "options": {
+      "length": 10
+     }
+    }
+   }
+  },
+  {
+   "id": 12,
+   "name": "Thumbnail",
+   "image": "models/thumb.json",
+   "alpha": {
+    "value": 1,
+    "animation": {
+     "c0": [
+      {
+       "frame": 0,
+       "value": 0,
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       }
+      },
+      {
+       "frame": 30,
+       "value": 1,
+       "back": {
+        "enabled": true,
+        "x": -1,
+        "y": 0
+       },
+       "front": {
+        "enabled": true,
+        "x": 1,
+        "y": 0
+       }
+      }
+     ],
+     "options": {
+      "fps": 30,
+      "length": 30,
+      "mode": "loop",
+      "events": [
+       {
+        "name": "start",
+        "frame": 0
+       },
+       {
+        "name": "mid",
+        "frame": 15
+       },
+       {
+        "name": "end",
+        "frame": 30
+       },
+       {
+        "name": "late",
+        "frame": 29.5
+       }
+      ]
+     }
+    }
+   },
+   "effects": [
+    {
+     "file": "effects/tint/effect.json",
+     "visible": true,
+     "passes": [
+      {
+       "constantshadervalues": {
+        "color": "1 0 0",
+        "multiply": {
+         "value": 0,
+         "script": "export function update(value) { return value; }",
+         "animation": {
+          "c0": [
+           {
+            "back": {
+             "enabled": true,
+             "x": -1,
+             "y": 0
+            },
+            "frame": 0,
+            "front": {
+             "enabled": true,
+             "x": 1,
+             "y": 0
+            },
+            "lockangle": true,
+            "locklength": true,
+            "value": 1
+           },
+           {
+            "back": {
+             "enabled": true,
+             "x": -1,
+             "y": 0
+            },
+            "frame": 15,
+            "front": {
+             "enabled": true,
+             "x": 1,
+             "y": 0
+            },
+            "lockangle": true,
+            "locklength": true,
+            "value": 0
+           }
+          ],
+          "options": {
+           "fps": 15,
+           "length": 15,
+           "mode": "single",
+           "startpaused": true,
+           "wraploop": null,
+           "name": "fade"
+          }
+         }
+        }
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Sparks",
+   "particle": "particles/sparks.json",
+   "instanceoverride": {
+    "count": 2,
+    "alpha": {
+     "value": 1,
+     "animation": {
+      "c0": [
+       {
+        "frame": 0,
+        "value": 0
+       },
+       {
+        "frame": 10,
+        "value": 1
+       }
+      ],
+      "options": {
+       "fps": 10,
+       "length": 10,
+       "mode": "loop"
+      }
+     }
+    }
+   }
+  }
+ ]
+}

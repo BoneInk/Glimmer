@@ -1,0 +1,1174 @@
+{
+	"camera": {
+		"center": "0 0 -1",
+		"eye": "0 0 0",
+		"up": "0 1 0"
+	},
+	"general": {
+		"bloom": false,
+		"clearcolor": "0 0 0",
+		"orthogonalprojection": {
+			"width": 128,
+			"height": 64
+		}
+	},
+	"objects": [
+		{
+			"id": 1,
+			"name": "Fade",
+			"image": "models/util/solidlayer.json",
+			"size": "8 8",
+			"color": "1 1 1",
+			"origin": "8 32 0",
+			"alpha": {
+				"value": 0.4,
+				"animation": {
+					"c0": [
+						{
+							"frame": 0,
+							"value": 0,
+							"back": {
+								"enabled": true,
+								"x": -1,
+								"y": 0
+							},
+							"front": {
+								"enabled": true,
+								"x": 1,
+								"y": 0
+							},
+							"lockangle": true,
+							"locklength": true
+						},
+						{
+							"frame": 30,
+							"value": 1,
+							"back": {
+								"enabled": true,
+								"x": -1,
+								"y": 0
+							},
+							"front": {
+								"enabled": true,
+								"x": 1,
+								"y": 0
+							},
+							"lockangle": true,
+							"locklength": true
+						}
+					],
+					"options": {
+						"fps": 30,
+						"length": 60,
+						"mode": "loop",
+						"wraploop": true
+					}
+				}
+			}
+		},
+		{
+			"id": 2,
+			"name": "Slide",
+			"image": "models/util/solidlayer.json",
+			"size": "8 8",
+			"color": "1 0 0",
+			"origin": {
+				"value": "24 40 0",
+				"animation": {
+					"c0": [
+						{
+							"frame": 0,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 60,
+							"value": 40,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"c1": [
+						{
+							"frame": 0,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 60,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"c2": [
+						{
+							"frame": 0,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 60,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"options": {
+						"fps": 60,
+						"length": 60,
+						"mode": "single"
+					},
+					"relative": true
+				}
+			}
+		},
+		{
+			"id": 3,
+			"name": "Grow",
+			"image": "models/util/solidlayer.json",
+			"size": "4 4",
+			"color": "0 1 0",
+			"origin": "100 16 0",
+			"scale": {
+				"value": "1 1 1",
+				"animation": {
+					"c0": [
+						{
+							"frame": 0,
+							"value": 1,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 60,
+							"value": 4,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"c1": [
+						{
+							"frame": 0,
+							"value": 1,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 60,
+							"value": 4,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"c2": [
+						{
+							"frame": 0,
+							"value": 1,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 60,
+							"value": 1,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"options": {
+						"fps": 60,
+						"length": 60,
+						"mode": "single"
+					}
+				}
+			}
+		},
+		{
+			"id": 4,
+			"name": "Turn",
+			"image": "models/util/solidlayer.json",
+			"size": "16 2",
+			"color": "0 0 1",
+			"origin": "100 46 0",
+			"angles": {
+				"value": "0 0 0",
+				"animation": {
+					"c0": [
+						{
+							"frame": 0,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 60,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"c1": [
+						{
+							"frame": 0,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 60,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"c2": [
+						{
+							"frame": 0,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 60,
+							"value": 1.5707963,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"options": {
+						"fps": 60,
+						"length": 60,
+						"mode": "single"
+					}
+				}
+			}
+		},
+		{
+			"id": 5,
+			"name": "Reveal",
+			"image": "models/util/solidlayer.json",
+			"size": "8 8",
+			"color": "1 1 0",
+			"origin": {
+				"value": "40 8 0",
+				"script": "let frames = 0;\nexport function update(value) {\n\tif (++frames === 10) thisLayer.getAnimation('reveal').play();\n\treturn value;\n}\n",
+				"animation": {
+					"c0": [
+						{
+							"frame": 0,
+							"value": 40,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 30,
+							"value": 40,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"c1": [
+						{
+							"frame": 0,
+							"value": 8,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 30,
+							"value": 8,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"c2": [
+						{
+							"frame": 0,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 30,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"options": {
+						"fps": 30,
+						"length": 30,
+						"mode": "single",
+						"startpaused": true,
+						"name": "reveal"
+					}
+				}
+			},
+			"alpha": {
+				"value": 1,
+				"animation": {
+					"c0": [
+						{
+							"frame": 0,
+							"value": 0,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 30,
+							"value": 1,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"options": {
+						"fps": 30,
+						"length": 30,
+						"mode": "single",
+						"parent": {
+							"key": "origin"
+						}
+					}
+				}
+			}
+		},
+		{
+			"id": 6,
+			"name": "Echo",
+			"image": "models/util/solidlayer.json",
+			"size": "8 8",
+			"color": "1 1 1",
+			"origin": "60 56 0",
+			"alpha": {
+				"value": 1,
+				"script": "export function update(value) {\n\treturn value;\n}\n",
+				"animation": {
+					"c0": [
+						{
+							"frame": 0,
+							"value": 0.2,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 60,
+							"value": 0.6,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"options": {
+						"fps": 60,
+						"length": 60,
+						"mode": "single"
+					}
+				}
+			}
+		},
+		{
+			"id": 7,
+			"name": "Accumulate",
+			"image": "models/util/solidlayer.json",
+			"size": "8 8",
+			"color": "1 1 1",
+			"origin": "76 56 0",
+			"alpha": {
+				"value": 1,
+				"script": "export function update(value) {\n\tvalue += 0.2;\n\treturn value;\n}\n",
+				"animation": {
+					"c0": [
+						{
+							"frame": 0,
+							"value": 0.2,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						},
+						{
+							"frame": 60,
+							"value": 0.6,
+							"back": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							},
+							"front": {
+								"enabled": false,
+								"x": 0,
+								"y": 0
+							}
+						}
+					],
+					"options": {
+						"fps": 60,
+						"length": 60,
+						"mode": "single"
+					}
+				}
+			}
+		},
+		{
+			"id": 8,
+			"name": "Tinted",
+			"image": "models/util/solidlayer.json",
+			"size": "8 8",
+			"color": "1 1 1",
+			"origin": "16 8 0",
+			"effects": [
+				{
+					"file": "effects/tint/effect.json",
+					"id": 80,
+					"name": "",
+					"passes": [
+						{
+							"constantshadervalues": {
+								"alpha": 1,
+								"color": {
+									"value": "0 1 0",
+									"animation": {
+										"c0": [
+											{
+												"frame": 0,
+												"value": 1,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											},
+											{
+												"frame": 60,
+												"value": 0,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											}
+										],
+										"c1": [
+											{
+												"frame": 0,
+												"value": 0,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											},
+											{
+												"frame": 60,
+												"value": 0,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											}
+										],
+										"c2": [
+											{
+												"frame": 0,
+												"value": 0,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											},
+											{
+												"frame": 60,
+												"value": 1,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											}
+										],
+										"options": {
+											"fps": 60,
+											"length": 60,
+											"mode": "single"
+										}
+									}
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": 9,
+			"name": "Sheet",
+			"image": "models/sheet.json",
+			"size": "8 8",
+			"origin": "120 8 0"
+		},
+		{
+			"id": 10,
+			"name": "Held sheet",
+			"image": "models/sheet.json",
+			"size": "8 8",
+			"origin": {
+				"value": "120 24 0",
+				"script": "export function init(value) {\n\tthisLayer.getTextureAnimation().pause();\n\treturn value;\n}\n"
+			}
+		},
+		{
+			"id": 11,
+			"name": "Tinted echo",
+			"image": "models/util/solidlayer.json",
+			"size": "8 8",
+			"color": "1 1 1",
+			"origin": "24 24 0",
+			"effects": [
+				{
+					"file": "effects/tint/effect.json",
+					"id": 110,
+					"name": "",
+					"passes": [
+						{
+							"constantshadervalues": {
+								"alpha": 1,
+								"color": {
+									"value": "0 1 0",
+									"animation": {
+										"c0": [
+											{
+												"frame": 0,
+												"value": 1,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											},
+											{
+												"frame": 60,
+												"value": 0,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											}
+										],
+										"c1": [
+											{
+												"frame": 0,
+												"value": 0,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											},
+											{
+												"frame": 60,
+												"value": 0,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											}
+										],
+										"c2": [
+											{
+												"frame": 0,
+												"value": 0,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											},
+											{
+												"frame": 60,
+												"value": 1,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											}
+										],
+										"options": {
+											"fps": 60,
+											"length": 60,
+											"mode": "single"
+										}
+									},
+									"script": "export function update(value) {\n\treturn value;\n}\n"
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": 12,
+			"name": "Tinted init",
+			"image": "models/util/solidlayer.json",
+			"size": "8 8",
+			"color": "1 1 1",
+			"origin": "40 24 0",
+			"effects": [
+				{
+					"file": "effects/tint/effect.json",
+					"id": 120,
+					"name": "",
+					"passes": [
+						{
+							"constantshadervalues": {
+								"alpha": 1,
+								"color": {
+									"value": "0 1 0",
+									"animation": {
+										"c0": [
+											{
+												"frame": 0,
+												"value": 1,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											},
+											{
+												"frame": 60,
+												"value": 0,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											}
+										],
+										"c1": [
+											{
+												"frame": 0,
+												"value": 0,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											},
+											{
+												"frame": 60,
+												"value": 0,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											}
+										],
+										"c2": [
+											{
+												"frame": 0,
+												"value": 0,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											},
+											{
+												"frame": 60,
+												"value": 1,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											}
+										],
+										"options": {
+											"fps": 60,
+											"length": 60,
+											"mode": "single"
+										}
+									},
+									"script": "export function init(value) {\n\treturn value;\n}\n"
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": 13,
+			"name": "Tinted write",
+			"image": "models/util/solidlayer.json",
+			"size": "8 8",
+			"color": "1 1 1",
+			"origin": {
+				"value": "56 24 0",
+				"script": "let frames = 0;\nexport function update(value) {\n\tif (++frames === 5) thisLayer.getEffect(0).getMaterial(0).setMaterialProperty('color', new Vec3(0, 1, 0));\n\treturn value;\n}\n"
+			},
+			"effects": [
+				{
+					"file": "effects/tint/effect.json",
+					"id": 130,
+					"name": "",
+					"passes": [
+						{
+							"constantshadervalues": {
+								"alpha": 1,
+								"color": {
+									"value": "0 1 0",
+									"animation": {
+										"c0": [
+											{
+												"frame": 0,
+												"value": 1,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											},
+											{
+												"frame": 60,
+												"value": 0,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											}
+										],
+										"c1": [
+											{
+												"frame": 0,
+												"value": 0,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											},
+											{
+												"frame": 60,
+												"value": 0,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											}
+										],
+										"c2": [
+											{
+												"frame": 0,
+												"value": 0,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											},
+											{
+												"frame": 60,
+												"value": 1,
+												"back": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												},
+												"front": {
+													"enabled": false,
+													"x": 0,
+													"y": 0
+												}
+											}
+										],
+										"options": {
+											"fps": 60,
+											"length": 60,
+											"mode": "single"
+										}
+									}
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": 14,
+			"name": "Sheet effect",
+			"image": "models/util/solidlayer.json",
+			"size": "8 8",
+			"color": "1 1 1",
+			"origin": "72 24 0",
+			"effects": [
+				{
+					"file": "effects/spriteframe/effect.json",
+					"id": 140,
+					"name": "",
+					"passes": [
+						{}
+					]
+				}
+			]
+		}
+	],
+	"version": 1
+}

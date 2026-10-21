@@ -1,0 +1,10 @@
+{
+	"passes" : [
+		{
+			"blending" : "translucent",
+			"combos" : { "REFRACT" : 1 },
+			"shader" : "genericparticle",
+			"textures" : [ "particle/solid" ]
+		}
+	]
+}

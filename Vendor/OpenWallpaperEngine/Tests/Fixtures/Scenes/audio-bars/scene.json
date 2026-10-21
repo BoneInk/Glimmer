@@ -1,0 +1,33 @@
+{
+	"camera" : { "center" : "0 0 -1", "eye" : "0 0 0", "up" : "0 1 0" },
+	"general" : {
+		"bloom" : false,
+		"clearcolor" : "0 0 0",
+		"orthogonalprojection" : { "width" : 128, "height" : 64 }
+	},
+	"objects" : [
+		{
+			"id" : 1,
+			"name" : "Background",
+			"image" : "models/util/solidlayer.json",
+			"origin" : "64 32 0",
+			"size" : "128 64",
+			"color" : "0 0 1"
+		},
+		{
+			"id" : 2,
+			"name" : "Bars",
+			"image" : "models/util/composelayer.json",
+			"config" : { "passthrough" : true },
+			"origin" : "64 32 0",
+			"size" : "128 64",
+			"visible" : { "user" : "bars", "value" : false },
+			"effects" : [
+				{ "id" : 3, "file" : "effects/workshop/1/workshop/2/bars/effect.json", "name" : "", "visible" : true,
+				  "passes" : [ { "id" : 4, "combos" : { "BLENDMODE" : 0 },
+				                 "constantshadervalues" : { "Bar Color" : "1 0 0" } } ] }
+			]
+		}
+	],
+	"version" : 1
+}

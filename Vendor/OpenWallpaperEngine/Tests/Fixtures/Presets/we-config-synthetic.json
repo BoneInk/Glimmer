@@ -1,0 +1,31 @@
+{
+  "?installdirectory" : "C:/Program Files (x86)/Steam/steamapps/common/wallpaper_engine",
+  "?synthetic" : "SYNTHETIC FIXTURE. Written by hand from the layout of Wallpaper Engine's config.json (a user object with general.wpresets and wproperties keyed by the played file). No real user data: the user name, paths and ids are made up.",
+  "exampleuser" : {
+    "general" : {
+      "user" : { "fps" : 30, "language" : "en-us" },
+      "wpresets" : {
+        "C:/Program Files (x86)/Steam/steamapps/workshop/content/431960/515151/scene.pkg" : {
+          "presets" : [
+            { "name" : "Night", "properties" : { "rain" : false, "speed" : 0.75, "tint" : "0.2 0.3 0.4", "mode" : "2", "notaproperty" : 1 } },
+            { "name" : "Blue", "properties" : { "rain" : true, "speed" : "fast", "mode" : "7" } }
+          ]
+        },
+        "D:\\SteamLibrary\\steamapps\\workshop\\content\\431960\\999999\\scene.pkg" : {
+          "presets" : [ { "name" : "Gone", "properties" : { "rain" : true } } ]
+        },
+        "C:/Program Files (x86)/Steam/steamapps/common/wallpaper_engine/projects/defaultprojects/audiophile/audiophile.json" : {
+          "presets" : [ { "name" : "Default", "properties" : { "schemecolor" : "0 0 1" } } ]
+        }
+      }
+    },
+    "wproperties" : {
+      "C:/Program Files (x86)/Steam/steamapps/workshop/content/431960/515151/scene.pkg" : {
+        "//?/DISPLAY#EXAMPLE#4&0&UID1#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}" : { "rain" : true, "speed" : 0.5 },
+        "Monitor1" : { "rain" : true, "speed" : 0.5 }
+      },
+      "C:\\Program Files (x86)\\Steam\\steamapps\\workshop\\content\\431960\\515152\\index.html" : { "musicCombo" : "2" }
+    },
+    "version" : 5
+  }
+}

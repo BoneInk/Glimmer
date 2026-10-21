@@ -1,0 +1,11 @@
+{
+	"file" : "scene.json",
+	"general" : {
+		"properties" : {
+			"offset" : { "order" : 0, "text" : "Offset", "type" : "slider", "min" : 0, "max" : 100, "value" : 0 }
+		}
+	},
+	"preview" : "preview.jpg",
+	"title" : "Fixture: per-display script state",
+	"type" : "scene"
+}

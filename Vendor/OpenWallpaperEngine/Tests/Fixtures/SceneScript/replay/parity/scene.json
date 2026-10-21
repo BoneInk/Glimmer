@@ -1,0 +1,75 @@
+{
+ "general": {
+  "orthogonalprojection": {
+   "width": 1920,
+   "height": 1080
+  }
+ },
+ "objects": [
+  {
+   "id": 1,
+   "name": "Probe",
+   "image": "models/still.json",
+   "origin": "100 100 0",
+   "scale": "1 1 1",
+   "angles": "0 0 0",
+   "visible": {
+    "script": "'use strict';\nimport * as WEMath from 'WEMath';\nimport * as WEVector from 'WEVector';\nimport * as WEColor from 'WEColor';\n\n// Every global, member and module function lib.sceneScript.d.ts and the docs' reference declare\n// outside the object model (SceneScriptObjectTypingsTests walks that).\nconst missing = [];\nfunction need(label, ok) { if (!ok) missing.push(label); }\nfunction members(label, target, names, type) {\n\tneed(label, target !== undefined && target !== null);\n\tif (target === undefined || target === null) return;\n\tfor (const name of names) {\n\t\tconst kind = typeof target[name];\n\t\tneed(label + '.' + name + ':' + type, type === 'any' ? kind !== 'undefined' : kind === type);\n\t}\n}\n\n// Global scope: the calls WE allows only here, and the ones it forbids here.\nconst audio = engine.registerAudioBuffers(engine.AUDIO_RESOLUTION_64);\nneed('registerAudioBuffers(64)', audio && audio.left instanceof Float32Array && audio.average.length === 64);\nconst asset = engine.registerAsset('models/still.json');\nneed('registerAsset', asset !== undefined && asset !== null);\nfunction throwsAtGlobalScope(label, body) {\n\ttry { body(); missing.push(label + ' allowed at global scope'); } catch (error) {}\n}\nthrowsAtGlobalScope('setTimeout', function () { engine.setTimeout(function () {}, 10); });\nthrowsAtGlobalScope('setInterval', function () { engine.setInterval(function () {}, 10); });\nthrowsAtGlobalScope('localStorage.get', function () { localStorage.get('key'); });\n\nexport function init(value) {\n\tmembers('engine', engine, ['frametime', 'runtime', 'timeOfDay', 'AUDIO_RESOLUTION_16', 'AUDIO_RESOLUTION_32',\n\t\t'AUDIO_RESOLUTION_64'], 'number');\n\tmembers('engine', engine, ['screenResolution', 'canvasSize', 'userProperties'], 'object');\n\tmembers('engine', engine, ['isRunningInEditor', 'isPortrait', 'isLandscape', 'isDesktopDevice', 'isMobileDevice',\n\t\t'isWallpaper', 'isScreensaver', 'registerAudioBuffers', 'registerAsset', 'setTimeout', 'setInterval',\n\t\t'openUserShortcut'], 'function');\n\tneed('engine.AUDIO_RESOLUTION_*', engine.AUDIO_RESOLUTION_16 === 16 && engine.AUDIO_RESOLUTION_32 === 32\n\t\t&& engine.AUDIO_RESOLUTION_64 === 64);\n\tneed('engine.isWallpaper', engine.isWallpaper() === true && engine.isScreensaver() === false);\n\tneed('engine.isDesktopDevice', engine.isDesktopDevice() === true && engine.isMobileDevice() === false);\n\tneed('engine.isRunningInEditor', engine.isRunningInEditor() === false);\n\tneed('engine.isPortrait', engine.isPortrait() !== engine.isLandscape());\n\tneed('engine.timeOfDay', engine.timeOfDay >= 0 && engine.timeOfDay <= 1);\n\tneed('engine.canvasSize', engine.canvasSize.x === 1920 && engine.canvasSize.y === 1080);\n\tneed('engine.userProperties.tint', typeof engine.userProperties.tint === 'object' && engine.userProperties.tint.x === 1);\n\tneed('engine.userProperties.level', engine.userProperties.level === 3);\n\tmembers('input', input, ['cursorWorldPosition', 'cursorScreenPosition'], 'object');\n\tmembers('input', input, ['cursorLeftDown'], 'boolean');\n\tmembers('localStorage', localStorage, ['LOCATION_GLOBAL', 'LOCATION_SCREEN'], 'string');\n\tmembers('localStorage', localStorage, ['set', 'get', 'delete', 'clear'], 'function');\n\tneed('localStorage.LOCATION_*', localStorage.LOCATION_GLOBAL === 'global' && localStorage.LOCATION_SCREEN === 'screen');\n\tlocalStorage.set('probe', { n: 2 });\n\tneed('localStorage.get', localStorage.get('probe').n === 2 && localStorage.get('probe', localStorage.LOCATION_GLOBAL) === undefined);\n\tneed('localStorage.delete', localStorage.delete('probe') === true && localStorage.get('probe') === undefined);\n\tlocalStorage.clear(localStorage.LOCATION_GLOBAL);\n\tmembers('console', console, ['log', 'error'], 'function');\n\tneed('renderContext', typeof renderContext === 'object' && renderContext !== null);\n\tneed('shared', typeof shared === 'object' && shared !== null);\n\tneed('thisObject', thisObject === thisLayer);\n\tneed('thisScene', typeof thisScene === 'object' && typeof thisScene.getLayer === 'function');\n\tneed('createScriptProperties', typeof createScriptProperties === 'function');\n\tfor (const [name, ctor] of [['Vec2', Vec2], ['Vec3', Vec3], ['Vec4', Vec4], ['Mat3', Mat3], ['Mat4', Mat4],\n\t\t['IModelData', IModelData]]) {\n\t\tneed(name, typeof ctor === 'function');\n\t}\n\tneed('MediaPlaybackEvent', MediaPlaybackEvent.PLAYBACK_STOPPED === 0 && MediaPlaybackEvent.PLAYBACK_PLAYING === 1\n\t\t&& MediaPlaybackEvent.PLAYBACK_PAUSED === 2);\n\tmembers('WEMath', WEMath, ['smoothStep', 'mix'], 'function');\n\tmembers('WEMath', WEMath, ['deg2rad', 'rad2deg'], 'number');\n\tmembers('WEVector', WEVector, ['angleVector2', 'vectorAngle2'], 'function');\n\tmembers('WEColor', WEColor, ['rgb2hsv', 'hsv2rgb', 'normalizeColor', 'expandColor'], 'function');\n\tneed('WEMath.mix', WEMath.mix(0, 10, 0.5) === 5);\n\tneed('WEColor.expandColor', WEColor.expandColor(new Vec3(1, 0, 0)).x === 255);\n\tif (missing.length > 0) throw new Error('missing or wrong: ' + missing.join(', '));\n\tshared.probeOK = 1;\n\treturn value;\n}\n",
+    "value": true
+   },
+   "solid": false
+  },
+  {
+   "id": 2,
+   "name": "Lifecycle",
+   "image": "models/still.json",
+   "origin": "1700 900 0",
+   "scale": "1 1 1",
+   "angles": "0 0 0",
+   "visible": true,
+   "solid": true,
+   "alpha": {
+    "script": "'use strict';\n// The order the docs give (and WE's binaries confirm, docs/scenescript-plan.md \u00a71.9 P1/P7/P8):\n// init first; applyUserProperties with every property, then applyGeneralSettings, once at load\n// and before the first update; no resizeScreen at startup; timers before update in a frame;\n// cursorDown, cursorUp, then cursorClick on the same object.\nconst calls = [];\nlet updates = 0, cursor = 'none', inside = false;\nfunction fail(message) { throw new Error('lifecycle: ' + message + ' (after ' + calls.slice(-6).join(',') + ')'); }\nfunction vec3(v) { return v !== null && typeof v === 'object' && typeof v.x === 'number' && typeof v.y === 'number' && typeof v.z === 'number'; }\nfunction checkCursorEvent(name, event) {\n\tif (!vec3(event.worldPosition) || !vec3(event.localPosition)) fail(name + ' event lacks positions');\n}\nexport function init(value) {\n\tif (calls.length > 0) fail('init not first');\n\tcalls.push('init');\n\tshared.timeoutUpdates = -1;\n\tshared.intervalFires = 0;\n\tengine.setTimeout(function () { shared.timeoutUpdates = updates; }, 0);\n\tengine.setInterval(function () { shared.intervalFires += 1; }, 0);\n\treturn value;\n}\nexport function applyUserProperties(changed) {\n\tif (calls.indexOf('applyUserProperties') < 0) {\n\t\tif (calls[calls.length - 1] !== 'init') fail('initial applyUserProperties not right after init');\n\t\tif (!('flag' in changed) || !('level' in changed) || !('tint' in changed)) fail('initial applyUserProperties lacks properties');\n\t\tif (!vec3(changed.tint)) fail('colour property not a Vec3');\n\t}\n\tcalls.push('applyUserProperties');\n\tshared.userPropertyCalls = (shared.userPropertyCalls || 0) + 1;\n}\nexport function applyGeneralSettings(settings) {\n\tif (calls.indexOf('applyGeneralSettings') < 0 && calls[calls.length - 1] !== 'applyUserProperties') {\n\t\tfail('initial applyGeneralSettings not right after applyUserProperties');\n\t}\n\tif (!/^[a-z]{2}-[a-z]{2,3}$/.test(settings.language)) fail('language ' + settings.language);\n\tcalls.push('applyGeneralSettings');\n\tshared.generalSettingsCalls = (shared.generalSettingsCalls || 0) + 1;\n}\nexport function resizeScreen(size) {\n\tif (updates === 0) fail('resizeScreen at startup');\n}\nexport function update(value) {\n\tif (updates === 0 && calls.join(',') !== 'init,applyUserProperties,applyGeneralSettings') fail('load order');\n\tif (updates === 0 && shared.timeoutUpdates !== 0) fail('a 0 ms timeout did not fire before the first update');\n\tupdates += 1;\n\tif (shared.intervalFires !== updates) fail('a 0 ms interval fired ' + shared.intervalFires + ' times in ' + updates + ' frames');\n\tshared.lifecycleUpdates = updates;\n\treturn value;\n}\nexport function cursorEnter(event) { checkCursorEvent('cursorEnter', event); inside = true; shared.cursorEnters = (shared.cursorEnters || 0) + 1; }\nexport function cursorLeave(event) { checkCursorEvent('cursorLeave', event); inside = false; }\nexport function cursorMove(event) { checkCursorEvent('cursorMove', event); }\nexport function cursorDown(event) {\n\tcheckCursorEvent('cursorDown', event);\n\tif (!inside) fail('cursorDown without cursorEnter');\n\tcursor = 'down';\n}\nexport function cursorUp(event) {\n\tcheckCursorEvent('cursorUp', event);\n\tif (cursor !== 'down') fail('cursorUp without cursorDown');\n\tcursor = 'up';\n}\nexport function cursorClick(event) {\n\tcheckCursorEvent('cursorClick', event);\n\tif (cursor !== 'up') fail('cursorClick before cursorUp');\n\tcursor = 'clicked';\n\tshared.clicks = (shared.clicks || 0) + 1;\n}\nexport function destroy() {}\n",
+    "value": 1
+   }
+  },
+  {
+   "id": 3,
+   "name": "Media",
+   "text": {
+    "script": "'use strict';\n// Every media event's payload, as the d.ts declares it.\nfunction fail(message) { throw new Error('media: ' + message); }\nfunction count(name) { shared[name] = (shared[name] || 0) + 1; }\nfunction vec3(v) { return v !== null && typeof v === 'object' && typeof v.x === 'number' && typeof v.y === 'number' && typeof v.z === 'number'; }\nexport function mediaStatusChanged(event) {\n\tif (typeof event.enabled !== 'boolean') fail('status enabled');\n\tcount('mediaStatus');\n}\nexport function mediaPlaybackChanged(event) {\n\tif ([MediaPlaybackEvent.PLAYBACK_STOPPED, MediaPlaybackEvent.PLAYBACK_PLAYING, MediaPlaybackEvent.PLAYBACK_PAUSED]\n\t\t.indexOf(event.state) < 0) fail('playback state ' + event.state);\n\tcount('mediaPlayback');\n}\nexport function mediaPropertiesChanged(event) {\n\tfor (const name of ['title', 'artist', 'subTitle', 'albumTitle', 'albumArtist', 'genres', 'contentType']) {\n\t\tif (typeof event[name] !== 'string') fail('properties ' + name + ' is ' + typeof event[name]);\n\t}\n\tcount('mediaProperties');\n}\nexport function mediaThumbnailChanged(event) {\n\tif (typeof event.hasThumbnail !== 'boolean') fail('thumbnail hasThumbnail');\n\tfor (const name of ['primaryColor', 'secondaryColor', 'tertiaryColor', 'textColor', 'highContrastColor']) {\n\t\tif (!vec3(event[name])) fail('thumbnail ' + name);\n\t}\n\tcount('mediaThumbnail');\n}\nexport function mediaTimelineChanged(event) {\n\tif (typeof event.position !== 'number' || typeof event.duration !== 'number') fail('timeline');\n\tcount('mediaTimeline');\n}\n",
+    "value": ""
+   },
+   "origin": "100 300 0",
+   "font": "systemfont_arial",
+   "pointsize": 32,
+   "visible": true
+  },
+  {
+   "id": 4,
+   "name": "Killer",
+   "image": "models/still.json",
+   "origin": "100 500 0",
+   "scale": "1 1 1",
+   "angles": "0 0 0",
+   "visible": {
+    "script": "'use strict';\n// destroyLayer removes the layer after every script's update of that frame (the docs), and calls\n// the destroy() of the scripts on it once.\nlet done = false;\nexport function update(value) {\n\tif (!done && engine.runtime > 1) {\n\t\tdone = true;\n\t\tshared.updatesAtDestroyLayer = shared.doomedUpdates;\n\t\tthisScene.destroyLayer('Doomed');\n\t}\n\treturn value;\n}\n",
+    "value": true
+   },
+   "solid": false
+  },
+  {
+   "id": 5,
+   "name": "Doomed",
+   "image": "models/still.json",
+   "origin": "100 700 0",
+   "scale": "1 1 1",
+   "angles": "0 0 0",
+   "visible": {
+    "script": "'use strict';\nexport function update(value) {\n\tshared.doomedUpdates = (shared.doomedUpdates || 0) + 1;\n\treturn value;\n}\nexport function destroy() {\n\tshared.doomedDestroyCalls = (shared.doomedDestroyCalls || 0) + 1;\n\tshared.doomedUpdatesAtDestroy = shared.doomedUpdates;\n}\n",
+    "value": true
+   },
+   "solid": false
+  }
+ ]
+}

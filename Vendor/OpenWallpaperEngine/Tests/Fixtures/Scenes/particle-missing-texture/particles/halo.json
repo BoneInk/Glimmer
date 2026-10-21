@@ -1,0 +1,5 @@
+{
+	"emitter" : [ { "name" : "boxrandom", "rate" : 10 } ],
+	"material" : "materials/halo.json",
+	"maxcount" : 20
+}

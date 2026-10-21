@@ -1,0 +1,10 @@
+{
+  "name": "estraverse",
+  "version": "5.3.0",
+  "metadata": "https://registry.npmjs.org/estraverse/5.3.0",
+  "tarball": "https://registry.npmjs.org/estraverse/-/estraverse-5.3.0.tgz",
+  "integrity_verified": "sha512-MMdARuVEQziNTeJD8DgMqmhwR11BRQ/cBP+pLtYdSTnf3MIO8fFeiINEbX36ZdNlfU/7A9f3gUw49B3oQsvwBA==",
+  "gitHead": "ec3f900528eac270a51f7b079edeae086e7ebce4",
+  "license": "BSD-2-Clause",
+  "purpose": "Scope and reference analysis for original module lowering"
+}

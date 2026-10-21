@@ -1,0 +1,9 @@
+{
+	"children" : [ { "name" : "particles/glow.json" } ],
+	"emitter" : [ { "name" : "sphererandom", "rate" : 0, "instantaneous" : 20, "distancemax" : 8, "speedmin" : 200, "speedmax" : 300, "directions" : "1 1 0" } ],
+	"initializer" : [ { "name" : "lifetimerandom", "min" : 0.8, "max" : 0.8 } ],
+	"operator" : [ { "name" : "movement", "gravity" : "0 -500 0", "flags" : 1 } ],
+	"material" : "materials/dot.json",
+	"maxcount" : 20,
+	"flags" : 1
+}

@@ -1,0 +1,23 @@
+name: Use the supported Xcode
+description: Selects Xcode 26.3 (or the oldest Xcode 26) and outputs its build version.
+outputs:
+  version:
+    description: The Xcode build version, for cache keys
+    value: ${{ steps.select.outputs.version }}
+runs:
+  using: composite
+  steps:
+    - id: select
+      shell: bash
+      # Xcode 26.3 (macOS 26 SDK, which Liquid Glass needs), the oldest the project supports and
+      # the one release builds with. The runner is macOS 26: actool on macOS 15 crashes compiling
+      # the layered AppIcon.icon (its icon renderer needs macOS 26 frameworks).
+      run: |
+        X=/Applications/Xcode_26.3.app
+        [[ -d $X ]] || X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | head -1)
+        [[ -n "$X" && -d "$X" ]] || { echo "::error::no Xcode 26 on the runner"; exit 1; }
+        sudo xcode-select -s "$X"
+        xcodebuild -version
+        version=$(xcodebuild -version | tail -1 | awk '{print $NF}')
+        [[ "$version" =~ ^[0-9A-Za-z]+$ ]] || { echo "::error::unexpected Xcode build version"; exit 1; }
+        echo "version=$version" >> "$GITHUB_OUTPUT"
