@@ -31,12 +31,6 @@ Requires an **Apple Silicon Mac (M-series chip) running macOS 26 or later**. The
 
 The current development preview is **signed with Apple Development and has not been notarized by Apple**. macOS may block it when first opened on another Mac. Check the corresponding release notes and accompanying `manifest.json` for the package's signing status.
 
-### Upgrading from GlassWallpaper
-
-The previous app and Glimmer use different bundle IDs and can be installed side by side. Before opening Glimmer for the first time, fully quit any running copy of GlassWallpaper. Glimmer checks whether the previous app is running only when migration is needed: the old data directory exists and the new destination has not yet been created. If the previous app is running, Glimmer asks you to quit it; it does not close it automatically or read its keychain entries before migration. Once the destination has been initialized, Glimmer can start normally even if the old directory remains as a backup.
-
-Login items are not migrated; enable the new Glimmer login item in System Settings. Glimmer makes one best-effort attempt to read the old keychain entry and never deletes it. If macOS denies access under the old app's access control rules, sign in to Steam again; the old entry is preserved. The system's selected lock screen provider is not changed automatically. If it still points to the old extension, select the new one in System Settings.
-
 ## Getting Started
 
 ### Using Local Files
