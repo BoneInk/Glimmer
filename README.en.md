@@ -45,6 +45,10 @@ For Web and Scene wallpapers, select the complete project folder containing `pro
 
 Before using the Wallpaper Engine Workshop, sign in to your Steam account within Glimmer and make sure that the account owns Wallpaper Engine. Download and favorites records are stored locally and are not synced to the cloud.
 
+Wallpaper details use equally sized panels: creator information, a description summary and wallpaper actions on the left, with playback or author settings on the right. Select the **i** button beside Lock Screen to read the full description, creator information, tags and public statistics. Select the creator avatar or name to open a Workshop-style grid of their public works, with pagination, previews and downloads. Returning from a work preserves the list page, and downloaded works open their local preview. A visible Workshop preview switches to the same local detail layout once its download is imported successfully; it does not navigate if you have gone back or selected another work. Local projects show their available description; Steam creators are only resolved when a Workshop item ID is associated.
+
+Selecting the creator avatar starts the works request immediately and moves the avatar from the detail panel to its measured position in the list header, without returning the wallpaper to its source card. Reduce Motion displays the creator page directly.
+
 ## Wallpaper Compatibility
 
 | Type | Current Support | Notes |
@@ -87,7 +91,7 @@ Run the following commands from the project root:
 ./scripts/package-release.sh
 
 # Verify the packaged artifact
-./scripts/package-release.sh --verify dist/Glimmer-0.16.0-arm64.dmg
+./scripts/package-release.sh --verify dist/Glimmer-0.17.0-arm64.dmg
 ```
 
 Dependency preparation writes to the project's `.tools/` directory and verifies pinned versions and archive hashes. The root `Package.swift` supports IDE indexing and auxiliary development tasks; use the scripts above to build the complete app.

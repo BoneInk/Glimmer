@@ -40,7 +40,7 @@ Glimmer-<版本>-<架构>.dmg.sha256       SHA-256 校验文件（shasum 格式�
 Glimmer-<版本>-<架构>.manifest.json    版本 / 架构 / 签名状态 / 校验清单
 ```
 
-例如 `Glimmer-0.16.0-arm64.dmg`。文件名与 manifest 中的版本取自
+例如 `Glimmer-0.17.0-arm64.dmg`。文件名与 manifest 中的版本取自
 `Info.plist` 的 `CFBundleShortVersionString`，架构取自可执行文件的 `lipo -archs`
 （`arm64` / `x86_64` / `universal`）。
 
@@ -48,13 +48,13 @@ Glimmer-<版本>-<架构>.manifest.json    版本 / 架构 / 签名状态 / 校�
 
 ```bash
 # SHA-256
-(cd dist && shasum -a 256 -c Glimmer-0.16.0-arm64.dmg.sha256)
+(cd dist && shasum -a 256 -c Glimmer-0.17.0-arm64.dmg.sha256)
 
 # 磁盘映像完整性
-hdiutil verify dist/Glimmer-0.16.0-arm64.dmg
+hdiutil verify dist/Glimmer-0.17.0-arm64.dmg
 
 # 结构校验：app 存在、Applications 符号链接指向 /Applications、签名结构有效、SHA-256 一致
-scripts/package-release.sh --verify dist/Glimmer-0.16.0-arm64.dmg
+scripts/package-release.sh --verify dist/Glimmer-0.17.0-arm64.dmg
 ```
 
 ### 安装方式（供他人使用）
@@ -203,7 +203,7 @@ xcrun notarytool --version
 scripts/build-app.sh --clean && scripts/package-release.sh
 
 # 2) 结构校验（期望全部 ✓）
-scripts/package-release.sh --verify dist/Glimmer-0.16.0-arm64.dmg
+scripts/package-release.sh --verify dist/Glimmer-0.17.0-arm64.dmg
 
 # 3) 独立运行验证：把应用拷到开发仓库之外运行自检（不修改真实壁纸）
 mkdir -p "$TMPDIR/gw-standalone" && ditto build/Glimmer.app "$TMPDIR/gw-standalone/Glimmer.app"
