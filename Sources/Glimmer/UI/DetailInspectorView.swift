@@ -37,6 +37,9 @@ struct DetailInspectorView: View {
     @FocusState private var renameFocused: Bool
     @GlassState private var scenePreviewRelay = ScenePreviewControlsRelay()
     @GlassState private var localApplyState = DetailWallpaperApplyState()
+    @GlassState private var information = WorkshopInformationModel()
+    @GlassState private var projectDescription = ""
+    @GlassState private var projectAuthor = ""
     private var applyState: DetailWallpaperApplyState { sharedApplyState ?? localApplyState }
 
     private var missing: Bool { !item.fileExists }
@@ -89,7 +92,21 @@ struct DetailInspectorView: View {
             previewPaused = false
             cancelRename()
         }
-        .onDisappear { applyState.cancel(); cancelRename() }
+        .task(id: "\(item.id):\(item.workshopID ?? "")") {
+            projectDescription = ""; projectAuthor = ""
+            if item.isProjectWallpaper {
+                let selected = item
+                let summary = await Task.detached(priority: .utility) {
+                    let project = try? AuthorPropertyProject.load(projectURL: selected.fileURL, allowedRoot: selected.fileURL.deletingLastPathComponent())
+                    return (project?.rawJSON.objectValue?["description"]?.stringValue ?? "",
+                            project?.rawJSON.objectValue?["author"]?.stringValue ?? "")
+                }.value
+                guard !Task.isCancelled else { return }
+                projectDescription = summary.0; projectAuthor = summary.1
+            }
+            if let id = WorkshopItemID(item.workshopID ?? "") { await information.loadDetail(id) }
+        }
+        .onDisappear { applyState.cancel(); information.cancel(); cancelRename() }
         .onChange(of: previewError) { _, error in
             if let error { previewToast = TransientToast(SceneWallpaperPresentation.errorSummary(error), tone: .error) }
         }
@@ -97,37 +114,64 @@ struct DetailInspectorView: View {
     }
 
     private func immersiveCanvas(size: CGSize) -> some View {
-        ZStack(alignment: .bottom) {
+        let compact = size.width < 920
+        let availableWidth = min(1160, max(0, size.width - 48))
+        let columnWidth = compact ? availableWidth : max(0, (availableWidth - 16) / 2)
+        let maxHeight = min(320, size.height * (compact ? 0.29 : 0.44))
+        let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+            : AnyLayout(HStackLayout(alignment: .bottom, spacing: 16))
+        return ZStack(alignment: .bottom) {
             previewSurface
                 .frame(width: size.width, height: size.height)
                 .accessibilityIdentifier("wallpaper-details-full-window-media")
-            HStack(alignment: .bottom, spacing: 16) {
-                WallpaperDetailFloatingPanel(maxHeight: min(320, size.height * 0.44)) {
+            layout {
+                WallpaperDetailFloatingPanel(maxHeight: maxHeight) {
                     VStack(alignment: .leading, spacing: 16) {
                         header
-                        if missing { missingBanner }
-                        else { displaySection }
-                        previewControls
+                        HStack(alignment: .top, spacing: 14) {
+                            WallpaperCreatorBadge(item: item, detail: information.detail,
+                                fallbackName: !projectAuthor.isEmpty ? projectAuthor
+                                    : item.workshopID == nil ? "本地壁纸" : information.isLoading ? "正在加载作者…" : "作者信息暂不可用")
+                            VStack(alignment: .leading, spacing: 10) {
+                                if missing { missingBanner }
+                                else { displaySection }
+                                Text(wallpaperDescription)
+                                    .font(.caption).foregroundStyle(.secondary).lineLimit(4)
+                                    .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .accessibilityIdentifier("wallpaper-description-summary")
+                            }.frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
                 }
-                .frame(width: min(390, max(320, size.width * 0.34)))
+                .frame(width: columnWidth)
                 .accessibilityIdentifier("wallpaper-details-floating-actions")
                 if !missing, item.isProjectWallpaper {
                     AuthorWallpaperSettingsSection(store: store, item: item, playback: playback,
-                        floatingPanelMaxHeight: min(320, size.height * 0.44))
+                        floatingPanelMaxHeight: maxHeight)
+                        .frame(width: columnWidth)
                 } else if !missing, item.isVideoWallpaper {
-                    WallpaperDetailFloatingPanel(maxHeight: min(320, size.height * 0.44)) {
+                    WallpaperDetailFloatingPanel(maxHeight: maxHeight) {
                         playbackSettings
                     }
+                    .frame(width: columnWidth)
                     .accessibilityIdentifier("wallpaper-details-floating-settings")
                 }
 
             }
+            .equalWallpaperPanelHeights()
             .frame(maxWidth: 1160)
             .padding(.horizontal, 24).padding(.bottom, 24)
         }
         .frame(width: size.width, height: size.height)
         .background(.black)
+    }
+
+    private var wallpaperDescription: String {
+        let description = information.detail?.description.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !description.isEmpty { return description }
+        if !projectDescription.isEmpty { return projectDescription }
+        return information.isLoading ? "正在加载作品简介…" : "暂无作品简介"
     }
 
     private var previewControls: some View {
@@ -141,6 +185,7 @@ struct DetailInspectorView: View {
                     .accessibilityLabel("重新加载预览")
                     .accessibilityIdentifier("wallpaper-preview-reload")
             }
+            Spacer(minLength: 0)
         }
     }
     private func reloadPreview() {
@@ -432,7 +477,7 @@ struct DetailInspectorView: View {
                 if item.isVideoWallpaper || item.isWebWallpaper || item.isSceneWallpaper {
                     LockScreenApplyControls(item: item, onFeedback: { previewToast = $0 })
                 }
-                Spacer(minLength: 0)
+                WallpaperInformationButton(itemID: item.workshopID, localItem: item, initialDetail: information.detail)
         }
     }
 

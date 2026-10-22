@@ -7,7 +7,8 @@ APP="$OUT/GlimmerReview.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 SOURCES=()
 while IFS= read -r source; do SOURCES+=("$source"); done < <(find "$ROOT/Sources/Glimmer" -name '*.swift' ! -name 'AppMain.swift' | sort)
-swiftc -swift-version 6 -strict-concurrency=complete -D GW_UI_REVIEW -O -whole-module-optimization \
+while IFS= read -r source; do SOURCES+=("$source"); done < <(find "$ROOT/Sources/SceneBackendShared" -name '*.swift' | sort)
+swiftc -swift-version 6 -strict-concurrency=complete -D GW_UI_REVIEW -D GW_UNIVERSAL_SCENE_BACKEND -O -whole-module-optimization \
   -target arm64-apple-macos26.0 -sdk "$(xcrun --show-sdk-path --sdk macosx)" \
   -framework AppKit -framework SwiftUI -framework AVFoundation -framework CoreGraphics \
   -o "$APP/Contents/MacOS/GlimmerReview" \

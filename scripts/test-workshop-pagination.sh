@@ -17,6 +17,7 @@ SOURCES+=(
  "$ROOT/Sources/Glimmer/SteamContent/SteamContentTransferPresentation.swift"
 )
 
+SOURCES+=("$ROOT/Sources/Glimmer/Support/SceneSteamEngineAssetRegistration.swift")
 source "$ROOT/scripts/scene-inspection-core-sources.sh"
 swiftc "${SCENE_INSPECTION_CORE_SOURCES[@]}" -swift-version 6 -strict-concurrency=complete -target arm64-apple-macos26.0 \
   "${SOURCES[@]}" \

@@ -70,6 +70,7 @@ struct AppWorkspaceView: View {
     var initialDestination: AppDestination = .library(.all)
     var navigation: AppWorkspaceNavigation? = nil
     var wallpaperDetails: WorkspaceWallpaperDetails? = nil
+    var avatarTransition: WorkshopCreatorAvatarTransition? = nil
     @GlassState private var internalWallpaperDetails = WorkspaceWallpaperDetails()
     private var detailPresentation: WorkspaceWallpaperDetails { wallpaperDetails ?? internalWallpaperDetails }
     @GlassState private var didSetInitialDestination = false
@@ -81,6 +82,13 @@ struct AppWorkspaceView: View {
     @GlassState private var sortAscending = false
     @GlassState private var selectedItemID: UUID?
     @GlassState private var errorMessage: String?
+    @GlassState private var authorGallery: WorkshopAuthorGallerySession?
+    @GlassState private var internalAvatarTransition = WorkshopCreatorAvatarTransition()
+    private var creatorAvatarTransition: WorkshopCreatorAvatarTransition { avatarTransition ?? internalAvatarTransition }
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    @Environment(\.windowGlassReduceMotionOverride) private var reviewReduceMotion
+    @GlassState private var authorReturnItem: WallpaperItem?
+    @GlassState private var authorReturnResult: WorkshopSearchResult?
 
     @MainActor
     init(store: VideoLibraryStore, importService: ImportService,
@@ -93,12 +101,18 @@ struct AppWorkspaceView: View {
          onOpenWallpaperDetails: ((WallpaperItem) -> Void)? = nil,
          initialDestination: AppDestination = .library(.all),
          navigation: AppWorkspaceNavigation? = nil,
-         wallpaperDetails: WorkspaceWallpaperDetails? = nil) {
+         wallpaperDetails: WorkspaceWallpaperDetails? = nil,
+         avatarTransition: WorkshopCreatorAvatarTransition? = nil) {
         let internalDetails = WorkspaceWallpaperDetails()
         internalDetails.configureScenePreview(
             storage: store.storage, wallpaperFPS: settings.preferences.wallpaperFPS)
         wallpaperDetails?.configureScenePreview(
             storage: store.storage, wallpaperFPS: settings.preferences.wallpaperFPS)
+        let localLookup: @MainActor (String) -> WallpaperItem? = { [weak store] id in
+            store?.items.first { $0.workshopID == id && $0.fileExists }
+        }
+        internalDetails.localWallpaperLookup = localLookup
+        wallpaperDetails?.localWallpaperLookup = localLookup
         self.store = store
         self.importService = importService
         self.playback = playback
@@ -115,6 +129,7 @@ struct AppWorkspaceView: View {
         self.initialDestination = initialDestination
         self.navigation = navigation
         self.wallpaperDetails = wallpaperDetails
+        self.avatarTransition = avatarTransition
         _internalWallpaperDetails = GlassState(wrappedValue: internalDetails)
     }
 
@@ -148,8 +163,20 @@ struct AppWorkspaceView: View {
                 immersiveDetail(route)
             }
             .environment(\.wallpaperDetailChromeTopInset, windowContent.safeAreaInsets.top)
+            .environment(\.workshopCreatorNavigation, { author in
+                authorGallery?.cancel()
+                let gallery = WorkshopAuthorGallerySession(author: author)
+                gallery.load()
+                authorReturnItem = detailPresentation.route?.item
+                authorReturnResult = detailPresentation.route?.result
+                creatorAvatarTransition.begin(authorID: author.id, reduceMotion: systemReduceMotion || reviewReduceMotion)
+                authorGallery = gallery
+                workshop.cancelOpeningWallpaperDetails()
+                detailPresentation.dismissForCreatorNavigation()
+            })
             .ignoresSafeArea(.container)
         }
+        .modifier(WorkshopCreatorAvatarTransitionHost(transition: creatorAvatarTransition))
         .frame(minWidth: 1000, minHeight: 640)
         .containerBackground(.clear, for: .window)
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
@@ -172,15 +199,21 @@ struct AppWorkspaceView: View {
             detailPresentation.configureScenePreview(
                 storage: store.storage, wallpaperFPS: wallpaperFPS)
         }
+        .onChange(of: detailPresentation.downloadedItemForCurrentResult?.id, initial: true) { _, id in
+            if id != nil { detailPresentation.promoteDownloadedResult() }
+        }
         .onChange(of: detailPresentation.closing) { _, closing in
             if closing { workshop.cancelOpeningWallpaperDetails() }
         }
         .onChange(of: destination) { _, _ in
+            creatorAvatarTransition.cancel(); authorGallery?.cancel(); authorGallery = nil
+            authorReturnItem = nil; authorReturnResult = nil
             if detailPresentation.route != nil { detailPresentation.dismiss() }
         }
         .onChange(of: navigation?.route) { _, route in
             if let route { destination = route.destination }
         }
+        .onDisappear { authorGallery?.cancel() }
     }
 
     private func alignedColumn<Content: View>(
@@ -347,6 +380,14 @@ struct AppWorkspaceView: View {
 
     @ViewBuilder
     private var detailContent: some View {
+        if let gallery = authorGallery {
+            WorkshopAuthorGalleryView(session: gallery, coordinator: workshop, onBack: {
+                creatorAvatarTransition.cancel(); gallery.cancel(); authorGallery = nil
+                if let item = authorReturnItem { detailPresentation.open(item) }
+                else if let result = authorReturnResult { detailPresentation.open(result) }
+                authorReturnItem = nil; authorReturnResult = nil
+            }).id(gallery.author.id)
+        } else {
         switch destination {
         case .library:
             LibraryWorkspaceView(
@@ -392,6 +433,7 @@ struct AppWorkspaceView: View {
                 loginItem: loginItem,
                 onOpenPlaylist: { destination = .playlist }
             )
+        }
         }
     }
 }

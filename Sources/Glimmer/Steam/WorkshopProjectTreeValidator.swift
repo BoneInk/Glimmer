@@ -20,7 +20,6 @@ struct WorkshopProjectTreeValidation {
     let entries: [WorkshopProjectTreeEntry]
     let contentFingerprint: String
     let totalByteSize: Int64
-    let largeFileCount: Int
 }
 
 enum WorkshopProjectTreeOrdering {
@@ -33,7 +32,6 @@ enum WorkshopProjectTreeOrdering {
 enum WorkshopProjectTreeValidator {
     static let maximumBytes: Int64 = 2_147_483_648
     static let maximumEntries = 20_000
-    static let largeFileThreshold: Int64 = 32 * 1024 * 1024
 
     static func validate(root: URL, excluded: URL, label: String,
                          ordering: WorkshopProjectTreeOrdering) throws -> WorkshopProjectTreeValidation {
@@ -52,7 +50,6 @@ enum WorkshopProjectTreeValidator {
 
         var tree = SHA256()
         var total: Int64 = 0
-        var largeFiles = 0
         for entry in inventory {
             try Task.checkCancellation()
             let descriptorFD = try openRelative(entry.path, rootFD: rootFD, label: label)
@@ -81,7 +78,6 @@ enum WorkshopProjectTreeValidator {
                   after.st_mtimespec.tv_nsec == entry.modifiedNanoseconds else {
                 throw invalid("\(label) 资源在校验期间发生变化")
             }
-            if count > largeFileThreshold { largeFiles += 1 }
             tree.update(data: Data(entry.path.utf8))
             tree.update(data: Data([0]))
             tree.update(data: Data(hash.finalize()))
@@ -92,8 +88,7 @@ enum WorkshopProjectTreeValidator {
         return WorkshopProjectTreeValidation(
             entries: inventory,
             contentFingerprint: tree.finalize().map { String(format: "%02x", $0) }.joined(),
-            totalByteSize: total,
-            largeFileCount: largeFiles
+            totalByteSize: total
         )
     }
 

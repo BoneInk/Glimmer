@@ -10,6 +10,7 @@ import Foundation
 /// 因此这里对传统结构做解析，并在结构变化时给出明确错误而不是空结果。
 enum WorkshopItemPageParser {
     static func parse(html: String, requestedID: String) throws -> WorkshopItemDetail {
+        guard html.utf8.count <= 8 * 1024 * 1024 else { throw SteamHTTPError.structureChanged("作品页面超出解析大小限制。") }
         var diagnostics: [String] = []
 
         // 1) 标题
@@ -57,7 +58,7 @@ enum WorkshopItemPageParser {
             throw SteamHTTPError.structureChanged("详情页中没有解析到标题（Steam 结构可能变化，或该作品不存在/被删除）")
         }
 
-        return WorkshopItemDetail(
+        var detail = WorkshopItemDetail(
             publishedFileID: requestedID,
             title: title ?? "(无标题)",
             description: description ?? "",
@@ -73,6 +74,15 @@ enum WorkshopItemPageParser {
             timeUpdated: timeUpdated,
             diagnostics: diagnostics
         )
+        detail.authors = extractAuthors(from: html)
+        let labels = WorkshopPublicHTML.elements(in: html, className: "detailsStatLeft").map { SteamHTML.stripTags($0.body).lowercased() }
+        let values = WorkshopPublicHTML.elements(in: html, className: "detailsStatRight").map { SteamHTML.stripTags($0.body) }
+        for (label, value) in zip(labels, values) where !value.isEmpty {
+            if ["file size", "文件大小"].contains(label) { detail.fileSizeText = value }
+            if ["posted", "发布时间", "发布于"].contains(label) { detail.createdText = value }
+            if ["updated", "更新时间", "更新于"].contains(label) { detail.updatedText = value }
+        }
+        return detail
     }
 
     // MARK: - 字段抽取
@@ -101,24 +111,28 @@ enum WorkshopItemPageParser {
     }
 
     static func extractDescription(from html: String) -> String? {
-        // 详情页描述正文位于 workshopItemDescription 之后的 div（多语言为「描述」标题 + 正文）。
-        if let raw = SteamHTML.elementContent(in: html, className: "workshopItemDescription", tagLimit: 60_000) {
-            var text = raw
-            if let bodyStart = raw.range(of: "<div[^>]*>", options: .regularExpression),
-               let bodyEnd = raw.range(of: "</div>", options: .backwards),
-               bodyStart.upperBound < bodyEnd.lowerBound {
-                text = String(raw[bodyStart.upperBound..<bodyEnd.lowerBound])
-            } else if let closing = raw.range(of: "</div>") {
-                text = String(raw[raw.startIndex..<closing.lowerBound])
-            }
-            let cleaned = SteamHTML.collapseWhitespace(SteamHTML.stripTags(text))
-            if !cleaned.isEmpty { return cleaned }
+        guard let element = WorkshopPublicHTML.elements(in: html, className: "workshopItemDescription").first
+            ?? WorkshopPublicHTML.elements(in: html, id: "workshopItemDescription").first else { return nil }
+        let text = WorkshopPublicHTML.plainText(element.body)
+        return text.isEmpty ? nil : text
+    }
+
+    static func extractAuthors(from html: String) -> [WorkshopAuthor] {
+        guard let creators = WorkshopPublicHTML.elements(in: html, className: "creatorsBlock").first else { return [] }
+        var seen = Set<String>()
+        return WorkshopPublicHTML.elements(in: creators.body, className: "friendBlock").prefix(16).compactMap { block in
+            guard let anchor = WorkshopPublicHTML.tags(in: block.body, tag: "a").first(where: { WorkshopPublicHTML.hasClass($0, "friendBlockLinkOverlay") }),
+                  let href = WorkshopPublicHTML.attribute("href", in: anchor), let url = URL(string: href),
+                  let content = WorkshopPublicHTML.elements(in: block.body, className: "friendBlockContent").first else { return nil }
+            let namePart = content.body.components(separatedBy: "<br").first ?? content.body
+            let name = SteamHTML.stripTags(namePart)
+            let account = WorkshopPublicHTML.attribute("data-miniprofile", in: block.opening).flatMap(UInt64.init)
+            let image = WorkshopPublicHTML.tags(in: block.body, tag: "img").first
+                .flatMap { WorkshopPublicHTML.attribute("src", in: $0) }.flatMap(URL.init(string:))
+            guard let author = WorkshopAuthor(profileURL: url, name: name, avatarURL: image, accountID: account),
+                  seen.insert(author.id).inserted else { return nil }
+            return author
         }
-        if let raw = SteamHTML.firstMatch(in: html, pattern: "id=\"workshopItemDescription\"[^>]*>(.{0,60000}?)</div>", group: 1) {
-            let cleaned = SteamHTML.collapseWhitespace(SteamHTML.stripTags(raw))
-            if !cleaned.isEmpty { return cleaned }
-        }
-        return nil
     }
 
     static func extractConsumerAppID(from html: String) -> Int? {
@@ -144,10 +158,24 @@ enum WorkshopItemPageParser {
     }
 
     static func extractPreviewURL(from html: String) -> URL? {
-        guard let raw = SteamHTML.firstMatch(in: html, pattern: "(https://images\\.steamusercontent\\.com/ugc/[0-9A-Fa-f/]+?/)", group: 1) else {
-            return nil
+        var candidates = WorkshopPublicHTML.tags(in: html, tag: "meta").compactMap { tag -> String? in
+            let name = WorkshopPublicHTML.attribute("property", in: tag) ?? WorkshopPublicHTML.attribute("name", in: tag)
+            return ["og:image", "twitter:image"].contains(name?.lowercased() ?? "")
+                ? WorkshopPublicHTML.attribute("content", in: tag) : nil
         }
-        return URL(string: raw)
+        candidates += WorkshopPublicHTML.tags(in: html, tag: "img").compactMap { tag in
+            ["previewImage", "enlargedImage"].contains(WorkshopPublicHTML.attribute("id", in: tag) ?? "")
+                ? WorkshopPublicHTML.attribute("src", in: tag) : nil
+        }
+        for raw in candidates {
+            guard let url = WorkshopAuthor.imageURL(URL(string: raw)) else { continue }
+            let parts = url.path.split(separator: "/")
+            // A UGC image needs BOTH its owner/directory and image key. A URL
+            // ending at /ugc/<number>/ is a directory, not a preview image.
+            if parts.first == "ugc", parts.count < 3 { continue }
+            return url
+        }
+        return nil
     }
 
     private static func extractStats(from html: String) -> (subscriptions: Int?, favorited: Int?, views: Int?) {
@@ -175,5 +203,99 @@ enum WorkshopItemPageParser {
         guard let raw = SteamHTML.firstMatch(in: html, pattern: "\(marker)\"?\\s*[:=]\\s*\"?(\\d{9,11})", group: 1),
               let seconds = TimeInterval(raw) else { return nil }
         return Date(timeIntervalSince1970: seconds)
+    }
+}
+
+/// Bounded, data-only parsing of Steam's legacy public creator pages. No HTML or
+/// page JavaScript is executed; creator links and image hosts are validated.
+enum WorkshopPublicHTML {
+    struct Element { let opening: String; let body: String }
+
+    static func attribute(_ name: String, in tag: String) -> String? {
+        SteamHTML.firstMatch(in: tag, pattern: "(?:^|\\s)" + NSRegularExpression.escapedPattern(for: name) + "\\s*=\\s*[\"']([^\"']*)[\"']")
+            .map(SteamHTML.decodeEntities)
+    }
+    static func hasClass(_ tag: String, _ name: String) -> Bool {
+        attribute("class", in: tag)?.split(whereSeparator: \.isWhitespace).contains(Substring(name)) == true
+    }
+    static func tags(in html: String, tag: String) -> [String] {
+        guard let regex = try? NSRegularExpression(pattern: "<" + tag + "\\b[^>]{0,8192}>", options: [.caseInsensitive]) else { return [] }
+        return regex.matches(in: html, range: NSRange(html.startIndex..., in: html)).prefix(2000).compactMap {
+            Range($0.range, in: html).map { String(html[$0]) }
+        }
+    }
+    static func elements(in html: String, className: String? = nil, id: String? = nil) -> [Element] {
+        guard let regex = try? NSRegularExpression(pattern: "</?div\\b[^>]{0,8192}>", options: [.caseInsensitive]) else { return [] }
+        let tags = regex.matches(in: html, range: NSRange(html.startIndex..., in: html))
+        var result = [Element](), start: Range<String.Index>?, opening = "", depth = 0
+        for match in tags {
+            guard let range = Range(match.range, in: html) else { continue }
+            let tag = String(html[range])
+            let closing = tag.hasPrefix("</")
+            if let current = start {
+                depth += closing ? -1 : 1
+                if depth == 0 {
+                    if html.distance(from: current.upperBound, to: range.lowerBound) <= 1_000_000 {
+                        result.append(.init(opening: opening, body: String(html[current.upperBound..<range.lowerBound])))
+                    }
+                    start = nil
+                    if result.count >= 1000 { break }
+                }
+            } else if !closing, (className.map { hasClass(tag, $0) } ?? false) || (id != nil && attribute("id", in: tag) == id) {
+                start = range; opening = tag; depth = 1
+            }
+        }
+        return result
+    }
+    static func plainText(_ html: String) -> String {
+        let breaks = html.replacingOccurrences(of: "(?i)<br\\s*/?>|</?(?:p|div|li|h[1-6])\\b[^>]*>", with: "\n", options: .regularExpression)
+            .replacingOccurrences(of: "<[^>]*>", with: "", options: .regularExpression)
+        return SteamHTML.decodeEntities(breaks).components(separatedBy: .newlines)
+            .map(SteamHTML.collapseWhitespace).joined(separator: "\n")
+            .replacingOccurrences(of: "\n{3,}", with: "\n\n", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+enum WorkshopAuthorPageParser {
+    static func parse(html: String, author: WorkshopAuthor, page: Int) throws -> WorkshopAuthorWorksPage {
+        guard (1...100_000).contains(page), html.utf8.count <= 8 * 1024 * 1024,
+              let container = WorkshopPublicHTML.elements(in: html, className: "workshopBrowseItems").first else {
+            throw SteamHTTPError.structureChanged("没有找到作者作品列表，作者页面可能不可访问。")
+        }
+        let paging = WorkshopPublicHTML.elements(in: html, className: "workshopBrowsePagingInfo").first.map { SteamHTML.stripTags($0.body) } ?? ""
+        var total = 0
+        var first = 0, last = 0
+        if let regex = try? NSRegularExpression(pattern: "Showing\\s+([0-9,]+)\\s*[-–]\\s*([0-9,]+)\\s+of\\s+([0-9,]+)\\s+entries", options: [.caseInsensitive]),
+           let match = regex.firstMatch(in: paging, range: NSRange(paging.startIndex..., in: paging)) {
+            let numbers = (1...3).compactMap { Range(match.range(at: $0), in: paging).flatMap { Int(paging[$0].replacingOccurrences(of: ",", with: "")) } }
+            guard numbers.count == 3 else { throw SteamHTTPError.structureChanged("无法读取作者作品页码。") }
+            first = numbers[0]; last = numbers[1]; total = numbers[2]
+            guard total <= 3_000_000, total >= last, last >= first,
+                  (total == 0 && first == 0 && last == 0 && page == 1) || (first == (page - 1) * 30 + 1 && last - first < 30) else {
+                throw SteamHTTPError.structureChanged("作者作品页码与请求不一致，请重试。")
+            }
+        } else if !container.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            throw SteamHTTPError.structureChanged("作者作品列表缺少可验证的分页信息。")
+        } else if page != 1 { throw SteamHTTPError.structureChanged("作者作品页码超出范围。") }
+        var results = [WorkshopSearchResult](), seen = Set<String>()
+        for block in WorkshopPublicHTML.elements(in: container.body, className: "workshopItem") {
+            guard let anchor = WorkshopPublicHTML.tags(in: block.body, tag: "a").first(where: { WorkshopPublicHTML.attribute("data-publishedfileid", in: $0) != nil }),
+                  let rawID = WorkshopPublicHTML.attribute("data-publishedfileid", in: anchor), let id = WorkshopItemID(rawID),
+                  WorkshopPublicHTML.attribute("data-appid", in: anchor) == "431960",
+                  let title = WorkshopPublicHTML.elements(in: block.body, className: "workshopItemTitle").first,
+                  seen.insert(id.value).inserted else { throw SteamHTTPError.structureChanged("作者作品卡片缺少有效 ID、应用或标题。") }
+            let name = SteamHTML.stripTags(title.body)
+            guard !name.isEmpty else { throw SteamHTTPError.structureChanged("作者作品没有标题。") }
+            let preview = WorkshopPublicHTML.tags(in: block.body, tag: "img").first(where: { WorkshopPublicHTML.hasClass($0, "workshopItemPreviewImage") })
+                .flatMap { WorkshopPublicHTML.attribute("src", in: $0) }.flatMap(URL.init(string:))
+            let collection = block.body.contains("workshopItemCollection")
+            results.append(.init(publishedFileID: id.value, title: name, shortDescription: "", consumerAppID: 431960,
+                previewURL: WorkshopAuthor.imageURL(preview), tags: collection ? ["Collection"] : [], childCount: 0, isCollection: collection))
+        }
+        guard results.count == (total == 0 ? 0 : last - first + 1) else {
+            throw SteamHTTPError.structureChanged("作者作品数量与分页信息不一致，未显示不完整的列表。")
+        }
+        return .init(author: author, page: page, totalCount: total, totalPages: max(1, (total + 29) / 30), results: results)
     }
 }

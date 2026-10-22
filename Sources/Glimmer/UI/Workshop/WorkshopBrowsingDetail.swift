@@ -10,7 +10,6 @@ struct WorkshopSearchResultDetail: View {
     @Environment(\.wallpaperDetailChromeTopInset) private var chromeTopInset
     @Environment(\.dismiss) private var dismiss
     @GlassState private var showCover = false
-    @GlassState private var videoPreview: WorkshopLocalVideoPreview?
     @GlassState private var showMetadata = false
 
     private var queueState: WorkshopDownloadState? {
@@ -34,7 +33,6 @@ struct WorkshopSearchResultDetail: View {
         .onExitCommand { if let onClose { onClose() } else { dismiss() } }
         .background { if !immersive { PopupSurfaceBackground() } }
         .sheet(isPresented: $showCover) { WorkshopCoverLightbox(result: result) }
-        .sheet(item: $videoPreview) { preview in WorkshopVideoPreviewSheet(preview: preview, coordinator: coordinator) }
     }
 
     private var immersiveCanvas: some View {
@@ -46,9 +44,6 @@ struct WorkshopSearchResultDetail: View {
                 WallpaperDetailFloatingPanel(maxHeight: min(280, geometry.size.height * 0.4)) {
                     VStack(alignment: .leading, spacing: 14) {
                         Text(result.title).font(.title2.weight(.semibold)).lineLimit(2).textSelection(.enabled)
-                        if coordinator.hasLocalWallpaper(itemID: result.id) {
-                            WorkshopApplyWallpaperControls(coordinator: coordinator, itemID: result.id)
-                        }
                         actionBar
                         if let queueState {
                             Text(queueState.displayText).font(.caption).foregroundStyle(.secondary)
@@ -117,9 +112,6 @@ struct WorkshopSearchResultDetail: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(coordinator.hasLocalWallpaper(itemID: result.id) ? "打开\(result.title)详情与设置" : "\(result.title)，放大作品静态预览图")
-                    if coordinator.hasLocalWallpaper(itemID: result.id) {
-                        WorkshopApplyWallpaperControls(coordinator: coordinator, itemID: result.id)
-                    }
                     actionBar
                     if let queueState, !queueState.isSuccess || !coordinator.hasLocalWallpaper(itemID: result.id) {
                         Label(queueState.isSuccess ? "本地文件不可用" : queueState.displayText,
@@ -187,9 +179,12 @@ struct WorkshopSearchResultDetail: View {
 
     private var actionBar: some View {
         HStack(spacing: 10) {
-            if let local = coordinator.localPreview(for: result.id) {
-                Button { videoPreview = local } label: { Label("预览视频", systemImage: "play.circle.fill") }
+            if coordinator.hasLocalWallpaper(itemID: result.id) {
+                Button { Task { await coordinator.openWallpaperDetails(itemID: result.id) } } label: {
+                    Label("详情与设置", systemImage: "slider.horizontal.3")
+                }
                     .buttonStyle(.glassProminent)
+                    .disabled(coordinator.openingDetailsItemID != nil)
             } else if !coordinator.hasLocalWallpaper(itemID: result.id) {
                 Button { coordinator.performDownloadAction(result) } label: {
                     Label(queueState?.isSuccess == true ? "本地文件不可用" : (downloadDisabled ? downloadPresentation.statusText ?? "已加入下载队列" : downloadPresentation.actionTitle), systemImage: downloadPresentation.symbolName)
@@ -206,6 +201,7 @@ struct WorkshopSearchResultDetail: View {
             }
             .buttonStyle(.glass)
             .help("仅保存在本机，不会同步到 Steam 收藏")
+            WallpaperInformationButton(itemID: result.id)
             Spacer(minLength: 0)
         }
         .padding(immersive ? 0 : 12)

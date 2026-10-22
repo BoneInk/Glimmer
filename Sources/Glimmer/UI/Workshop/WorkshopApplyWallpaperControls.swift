@@ -53,6 +53,7 @@ struct WorkshopApplyWallpaperControls: View {
                 .disabled(!supportsLockScreen || lockScreenActions == nil || lockScreenActions?.isBusy == true || coordinator.isPreparingDynamicLockScreen || lockScreenTask != nil)
                 .accessibilityIdentifier("workshop-dynamic-lock-screen")
                 .help(supportsLockScreen ? "设为动态锁屏，同时更新系统桌面底图" : "动态锁屏仅支持视频壁纸")
+                WallpaperInformationButton(itemID: itemID)
                 Spacer(minLength: 0)
             }
             .controlSize(.regular)

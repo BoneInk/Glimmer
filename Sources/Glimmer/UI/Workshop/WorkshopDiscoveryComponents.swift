@@ -169,9 +169,19 @@ struct WorkshopCoverImage: View {
         }
         .task(id: "\(result.previewURL?.absoluteString ?? ""):\(retryGeneration)") {
             imageData = nil; image = nil; imageLoadFailed = false
-            guard let url = result.previewURL else { imageLoadFailed = true; return }
             loading = true
             defer { loading = false }
+            var previewURL = result.previewURL
+            let parts = previewURL?.path.split(separator: "/") ?? []
+            if detailDestination, previewURL == nil || (parts.first == "ugc" && parts.count < 3),
+               let id = WorkshopItemID(result.id) {
+                // Repair legacy saved entries which lost the image key. This
+                // runs only after opening details, never for every grid tile.
+                let service = WorkshopService(http: .init(timeout: 12, maximumRetries: 0))
+                if let detail = try? await service.detail(itemID: id) { previewURL = detail.previewImageURL }
+            }
+            guard !Task.isCancelled else { return }
+            guard let url = previewURL else { imageLoadFailed = true; return }
             let data = await WorkshopPreviewCache.shared.data(for: url)
             guard !Task.isCancelled else { return }
             imageData = data

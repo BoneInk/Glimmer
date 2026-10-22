@@ -381,6 +381,60 @@ enum WorkshopItemKind: String, Sendable, CaseIterable {
     }
 }
 
+/// Public creator identity. Requests use a canonical Steam profile, never an
+/// arbitrary link from a description, comment, or imported project.
+struct WorkshopAuthor: Identifiable, Hashable, Sendable {
+    let profilePath: String
+    let name: String
+    let avatarURL: URL?
+    var id: String { profilePath }
+    var profileURL: URL { URL(string: "https://steamcommunity.com/" + profilePath)! }
+
+    init?(profileURL: URL, name: String, avatarURL: URL? = nil, accountID: UInt64? = nil) {
+        guard profileURL.scheme == "https", profileURL.host?.lowercased() == "steamcommunity.com",
+              profileURL.user == nil, profileURL.password == nil, profileURL.port == nil,
+              profileURL.query == nil, profileURL.fragment == nil else { return nil }
+        let parts = profileURL.path.split(separator: "/")
+        guard parts.count == 2, ["id", "profiles"].contains(parts[0]),
+              !parts[1].isEmpty, parts[1].utf8.count <= 128,
+              parts[1].utf8.allSatisfy({ (48...57).contains($0) || (65...90).contains($0) || (97...122).contains($0) || [45, 46, 95].contains($0) }),
+              parts[1] != ".", parts[1] != ".." else { return nil }
+        let base: UInt64 = 76_561_197_960_265_728
+        guard accountID == nil || (accountID! > 0 && accountID! <= UInt32.max) else { return nil }
+        if parts[0] == "profiles" {
+            guard let value = UInt64(parts[1]), value > base, value <= base + UInt64(UInt32.max),
+                  accountID == nil || value == base + accountID! else { return nil }
+        }
+        profilePath = accountID.map { "profiles/\(base + $0)" } ?? parts.joined(separator: "/")
+        self.name = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(512))
+        guard !self.name.isEmpty else { return nil }
+        self.avatarURL = Self.imageURL(avatarURL)
+    }
+
+    static func imageURL(_ url: URL?) -> URL? {
+        guard let url, url.scheme == "https", url.user == nil, url.password == nil, url.port == nil,
+              url.absoluteString.utf8.count <= 2048, let host = url.host?.lowercased(),
+              ["steamstatic.com", "steamusercontent.com", "steamuserimages-a.akamaihd.net"].contains(where: { host == $0 || host.hasSuffix("." + $0) }) else { return nil }
+        return url
+    }
+
+    func worksURL(page: Int) -> URL {
+        var components = URLComponents(url: profileURL.appendingPathComponent("myworkshopfiles/"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "appid", value: "431960"), URLQueryItem(name: "browsefilter", value: "myfiles"),
+            URLQueryItem(name: "sortmethod", value: "creationorder"), URLQueryItem(name: "numperpage", value: "30"),
+            URLQueryItem(name: "p", value: String(max(1, page))), URLQueryItem(name: "l", value: "english")]
+        return components.url!
+    }
+}
+
+struct WorkshopAuthorWorksPage: Sendable {
+    let author: WorkshopAuthor
+    let page: Int
+    let totalCount: Int
+    let totalPages: Int
+    let results: [WorkshopSearchResult]
+}
+
 /// 工坊作品详情（来自公开详情页）。
 struct WorkshopItemDetail: Identifiable, Hashable, Sendable {
     var id: String { publishedFileID }
@@ -400,6 +454,10 @@ struct WorkshopItemDetail: Identifiable, Hashable, Sendable {
     var timeUpdated: Date?
     /// 解析取证：哪些字段真实出现（供回归诊断）。
     var diagnostics: [String]
+    var authors: [WorkshopAuthor] = []
+    var fileSizeText: String? = nil
+    var createdText: String? = nil
+    var updatedText: String? = nil
 
     static func == (lhs: WorkshopItemDetail, rhs: WorkshopItemDetail) -> Bool {
         lhs.publishedFileID == rhs.publishedFileID
@@ -407,6 +465,7 @@ struct WorkshopItemDetail: Identifiable, Hashable, Sendable {
             && lhs.description == rhs.description
             && lhs.kind == rhs.kind
             && lhs.tags.map(\.value) == rhs.tags.map(\.value)
+            && lhs.authors == rhs.authors
     }
 
     func hash(into hasher: inout Hasher) {
@@ -428,6 +487,15 @@ struct WorkshopItemDetail: Identifiable, Hashable, Sendable {
     var genreText: String? { tagValue("Genre") ?? tagValue("类型") }
     var resolutionText: String? { tagValue("Resolution") ?? tagValue("分辨率") }
     var ageRatingText: String? { tagValue("Age Rating") ?? tagValue("年龄分级") }
+
+    var searchResult: WorkshopSearchResult {
+        var values = tags.map(\.value)
+        if let declaredTypeTag, !values.contains(declaredTypeTag) { values.insert(declaredTypeTag, at: 0) }
+        return .init(publishedFileID: publishedFileID, title: title, shortDescription: description,
+            consumerAppID: appID, previewURL: previewImageURL, timeCreated: timeCreated, timeUpdated: timeUpdated,
+            tags: values, subscriptions: subscriptions, favorited: favorited, views: views,
+            childCount: 0, isCollection: kind == .collection)
+    }
 }
 
 // MARK: - 下载导入元数据（对外回调载荷）

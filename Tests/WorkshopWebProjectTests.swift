@@ -124,9 +124,17 @@ import Foundation
         let oversizedHandle = try FileHandle(forWritingTo: oversizedMedia)
         try oversizedHandle.truncate(atOffset: 32 * 1024 * 1024 + 1); try oversizedHandle.close()
         let limitedRuntime = try await WorkshopProjectResolver.resolve(workshopID: id.value, directory: download)
-        check(limitedRuntime.webProject?.diagnostics.contains { $0.contains("32 MiB") } == true && limitedRuntime.videoProject == nil,
-              "structurally valid oversized dependencies report actual runtime limit without invented playable result")
+        check(limitedRuntime.webProject?.diagnostics.contains { $0.contains("32 MiB") } == false && limitedRuntime.videoProject == nil,
+              "large binary media is not mislabeled as exceeding the buffered HTML document limit")
         try fm.removeItem(at: oversizedMedia)
+        let oversizedHTML = assets.appendingPathComponent("large.html")
+        fm.createFile(atPath: oversizedHTML.path, contents: nil)
+        let htmlHandle = try FileHandle(forWritingTo: oversizedHTML)
+        try htmlHandle.truncate(atOffset: 32 * 1024 * 1024 + 1); try htmlHandle.close()
+        let documentLimited = try await WorkshopProjectResolver.resolve(workshopID: id.value, directory: download)
+        check(documentLimited.webProject?.diagnostics.contains { $0.contains("HTML") && $0.contains("32 MiB") } == true,
+              "buffered HTML document limits are still reported accurately")
+        try fm.removeItem(at: oversizedHTML)
         let nestedDownload = root.appendingPathComponent("nested-download", isDirectory: true)
         let nestedProject = nestedDownload.appendingPathComponent("resolution/web", isDirectory: true)
         try writeProject(nestedProject)

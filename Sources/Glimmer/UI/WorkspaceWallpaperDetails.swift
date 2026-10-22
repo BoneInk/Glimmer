@@ -8,8 +8,8 @@ final class WorkspaceWallpaperDetails {
     struct Route: Identifiable {
         let id = UUID()
         let key: String
-        let item: WallpaperItem?
-        let result: WorkshopSearchResult?
+        var item: WallpaperItem?
+        var result: WorkshopSearchResult?
         var scenePreview: (any WorkspaceScenePreviewOwning)?
 
         @MainActor
@@ -38,6 +38,34 @@ final class WorkspaceWallpaperDetails {
     }
     @ObservationIgnored var scenePreviewScreenResolutionProvider: @MainActor () -> SceneVector2? = {
         SceneWallpaperClickContext.physicalDisplayResolution()
+    }
+    @ObservationIgnored var localWallpaperLookup: @MainActor (String) -> WallpaperItem? = { _ in nil }
+
+    /// Queue completion precedes import. Observe the live library before
+    /// replacing the public preview with a local detail page.
+    var downloadedItemForCurrentResult: WallpaperItem? {
+        guard !closing, let result = route?.result,
+              let item = localWallpaperLookup(result.id),
+              item.workshopID == result.id, item.fileExists else { return nil }
+        return item
+    }
+
+    @discardableResult
+    func promoteDownloadedResult() -> Bool {
+        guard var current = route, let item = downloadedItemForCurrentResult else { return false }
+        current.item = item
+        current.result = nil
+        if item.isSceneWallpaper, let scenePreviewStorage {
+            current.scenePreview = scenePreviewPreparationFactory(
+                item, scenePreviewStorage, scenePreviewWallpaperFPS,
+                scenePreviewScreenResolutionProvider())
+        }
+        destinationSnapshot = nil
+        snapshotPreparationFinished = false
+        // Keep the route identity and source key so the card-opening flight
+        // does not replay and Back still returns to the same browsing page.
+        route = current
+        return true
     }
 
     func configureScenePreview(storage: AppStorage, wallpaperFPS: Int) {
@@ -76,6 +104,10 @@ final class WorkspaceWallpaperDetails {
                       scenePreview: scenePreview)
     }
     func open(_ result: WorkshopSearchResult) {
+        if let item = localWallpaperLookup(result.id), item.workshopID == result.id, item.fileExists {
+            open(item)
+            return
+        }
         cancelCurrentScenePreview()
         resetCover()
         closing = false
@@ -89,6 +121,10 @@ final class WorkspaceWallpaperDetails {
     func dismiss() {
         closing = true
         cancelCurrentScenePreview()
+    }
+    func dismissForCreatorNavigation() {
+        cancelCurrentScenePreview()
+        route = nil; closing = false; pendingSourceKey = nil; resetCover()
     }
     func finishDismissal(_ id: UUID) {
         guard route?.id == id, closing else { return }

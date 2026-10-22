@@ -7,10 +7,12 @@ import Foundation
 /// - 网页登录状态与下载权限无关（F13 明确要求不得把 OpenID/网页会话当成下载认证）；
 /// - 所有方法都是真实网络请求，失败时抛出带原因的错误，不返回伪造结果。
 actor WorkshopService {
+    static let shared = WorkshopService()
     private let http: SteamHTTPClient
     private var recentSearchPages: [(request: WorkshopSearchRequest, ids: [String])] = []
     private var unionPageCache: [(request: WorkshopSearchRequest, page: WorkshopSearchPage)] = []
     private var unionCacheKey: WorkshopSearchRequest?
+    private var recentAuthorPages: [(authorID: String, page: Int, ids: [String])] = []
 
     init(http: SteamHTTPClient = SteamHTTPClient()) {
         self.http = http
@@ -107,6 +109,23 @@ actor WorkshopService {
             throw WorkshopAccessError.notWallpaperEngineItem(appID: appID)
         }
         return detail
+    }
+
+    func authorWorks(author: WorkshopAuthor, page: Int) async throws -> WorkshopAuthorWorksPage {
+        guard (1...100_000).contains(page) else { throw WorkshopInputError.invalidInput("作者作品页码无效。") }
+        // English paging labels are explicitly requested so their numeric range
+        // can be checked rather than assuming Steam honored the requested page.
+        let html = try await http.fetchPage(author.worksURL(page: page), acceptLanguage: false)
+        let result = try WorkshopAuthorPageParser.parse(html: html, author: author, page: page)
+        try Task.checkCancellation()
+        let ids = result.results.map(\.id)
+        if !ids.isEmpty, recentAuthorPages.contains(where: { $0.authorID == author.id && $0.page != page && $0.ids == ids }) {
+            throw SteamHTTPError.structureChanged("Steam 返回了重复的作者作品页，请重试。")
+        }
+        recentAuthorPages.removeAll { $0.authorID == author.id && $0.page == page }
+        recentAuthorPages.append((author.id, page, ids))
+        if recentAuthorPages.count > 12 { recentAuthorPages.removeFirst() }
+        return result
     }
 
     /// F12：解析用户输入（URL 或纯数字 ID）并返回详情。

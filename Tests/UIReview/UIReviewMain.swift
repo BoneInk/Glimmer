@@ -26,6 +26,7 @@ final class UIReviewDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate 
     var detailsReviewWindow: NSWindow?
     var detailsReviewSelection: WallpaperDetailsSelection?
     let workspaceWallpaperDetails = WorkspaceWallpaperDetails()
+    let creatorAvatarTransition = WorkshopCreatorAvatarTransition()
     var lockScreenActions: LockScreenActionController?
     var lockScreenTerminationWait: Task<Void,Never>?
     var playback: DesktopPlaybackController?
@@ -172,7 +173,7 @@ final class UIReviewDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate 
         // No real Steam home/config/credentials/logs or download manifests are copied.
         let media = argument("--media").map { URL(fileURLWithPath: $0) }
             ?? Bundle.main.url(forResource: "ui-test-video", withExtension: "mp4")
-        if !hasFlag("--scene-parent-review"), let media, WorkshopProjectResolver.isCandidateVideo(url: media) {
+        if argument("--web-project") == nil, !hasFlag("--scene-parent-review"), let media, WorkshopProjectResolver.isCandidateVideo(url: media) {
             let itemID = argument("--workshop-id").flatMap(WorkshopItemID.init) ?? WorkshopItemID("9999999999")!
             let title = argument("--media-title") ?? "界面验证视频（演示素材）"
             let directory = layout.downloadDirectory(for: itemID)
@@ -183,8 +184,13 @@ final class UIReviewDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate 
                 let metadata: [String: String] = ["type": "video", "title": title, "file": copy.lastPathComponent]
                 try JSONSerialization.data(withJSONObject: metadata, options: [.prettyPrinted, .sortedKeys])
                     .write(to: directory.appendingPathComponent("project.json"))
-                await importer.importURLs([copy])
-                if let first = store.items.first { store.rename(id: first.id, to: title) }
+                if !hasFlag("--download-completion-review") {
+                    await importer.importURLs([copy])
+                    if let first = store.items.first {
+                        store.rename(id: first.id, to: title)
+                        store.mutate(id: first.id) { $0.workshopID = itemID.value }
+                    }
+                }
                 await workshop.reloadDownloadedItems()
             } catch { print("Review fixture unavailable: \(error.localizedDescription)") }
         }
@@ -194,6 +200,10 @@ final class UIReviewDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate 
             do {
                 _ = try await WebWallpaperProjectImporter.importProject(fixture.appendingPathComponent("project.json"), store: store)
             } catch { print("Web author review fixture unavailable: \(error.localizedDescription)") }
+        }
+        if let project = argument("--web-project") {
+            do { _ = try await WebWallpaperProjectImporter.importProject(URL(fileURLWithPath: project), store: store) }
+            catch { print("Explicit Web review fixture unavailable: \(error.localizedDescription)") }
         }
 
         if hasFlag("--scene-author-review") || hasFlag("--scene-script-review") || hasFlag("--scene-module-review") || hasFlag("--scene-parent-review") {
@@ -245,7 +255,8 @@ final class UIReviewDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate 
                 self?.showLockScreenReview(item: item, storage: storage)
             }, onOpenWallpaperDetails: { [weak self] item in
                 self?.showWallpaperDetailsReview(item: item, storage: storage, displays: displays, playback: playback)
-            }, initialDestination: destination, wallpaperDetails: workspaceWallpaperDetails)
+            }, initialDestination: destination, wallpaperDetails: workspaceWallpaperDetails,
+            avatarTransition: creatorAvatarTransition)
         let reduceTransparency = hasFlag("--reduce-transparency")
         let reviewContent: AnyView
         if hasFlag("--details-window-review"), let item = store.items.first {
@@ -272,10 +283,38 @@ final class UIReviewDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate 
             reviewContent = AnyView(GlassStyleReader { style in
                 WorkshopSearchResultDetail(result: result, coordinator: workshop, style: style)
             })
+        } else if hasFlag("--download-completion-review"), let download = workshop.downloadProgress.items.first {
+            let result = WorkshopSearchResult(publishedFileID: download.id, title: download.title,
+                shortDescription: "下载已校验，等待模拟素材导入完成。", tags: ["Video"], childCount: 0, isCollection: false)
+            workspaceWallpaperDetails.open(result)
+            reviewContent = AnyView(view.overlay(alignment: .topTrailing) {
+                Button("完成模拟素材导入") { [weak self] in
+                    Task { @MainActor in
+                        guard let self, let project = download.validatedProject, let metadata = download.metadata else { return }
+                        let previousRouteID = self.workspaceWallpaperDetails.route?.id
+                        let error = await workshop.onImportProject?(project, metadata)
+                        try? await Task.sleep(for: .milliseconds(300))
+                        let evidence: [String: Any] = [
+                            "error": error ?? "", "libraryItemCount": store.items.count,
+                            "promotedItemID": self.workspaceWallpaperDetails.route?.item?.id.uuidString ?? "",
+                            "hasPublicResult": self.workspaceWallpaperDetails.route?.result != nil,
+                            "preservedRouteID": self.workspaceWallpaperDetails.route?.id == previousRouteID,
+                            "sessionCount": playback.sessions.count, "savedAssignmentCount": store.assignments.count
+                        ]
+                        if let data = try? JSONSerialization.data(withJSONObject: evidence, options: [.prettyPrinted, .sortedKeys]) {
+                            try? data.write(to: reviewRoot.appendingPathComponent("download-completion-review.json"))
+                        }
+                    }
+                }
+                .buttonStyle(.glass).padding(16)
+                .accessibilityIdentifier("review-complete-import")
+            })
         } else {
             reviewContent = AnyView(view)
         }
         let reviewView = reviewContent
+            .modifier(CreatorAvatarReviewEvidence(transition: creatorAvatarTransition,
+                presentation: workspaceWallpaperDetails, root: root))
             .environment(\.lockScreenActions, lockScreenActions)
             .environment(\.libraryReviewShowInspector, hasFlag("--show-inspector"))
             .environment(\.windowGlassReduceTransparencyOverride, reduceTransparency)
@@ -395,5 +434,30 @@ final class UIReviewDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate 
         workshop?.cancelActiveDownload()
         workshop?.cancelOpeningWallpaperDetails()
         store?.flush()
+    }
+}
+
+private struct CreatorAvatarReviewEvidence: ViewModifier {
+    let transition: WorkshopCreatorAvatarTransition
+    let presentation: WorkspaceWallpaperDetails
+    let root: URL
+    func body(content: Content) -> some View {
+        content.onChange(of: transition.flight?.id) { _, id in
+            guard id != nil, let flight = transition.flight else { return }
+            func rectangle(_ frame: CGRect) -> [String: Double] {
+                ["x": frame.minX, "y": frame.minY, "width": frame.width, "height": frame.height]
+            }
+            let values: [String: Any] = [
+                "authorID": flight.authorID, "source": rectangle(flight.source.frame),
+                "destination": rectangle(flight.destination.frame),
+                "movesUpward": flight.destination.frame.midY < flight.source.frame.midY,
+                "capturedSourceBitmap": flight.source.image != nil,
+                "wallpaperRouteCleared": presentation.route == nil,
+                "wallpaperReturning": presentation.closing
+            ]
+            if let data = try? JSONSerialization.data(withJSONObject: values, options: [.prettyPrinted, .sortedKeys]) {
+                try? data.write(to: root.appendingPathComponent("creator-avatar-transition-review.json"))
+            }
+        }
     }
 }

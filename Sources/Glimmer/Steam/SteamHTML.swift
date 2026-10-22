@@ -120,21 +120,21 @@ enum SteamHTML {
     }
 
     private static func firstScriptRange(in html: String, id: String) -> Range<String.Index>? {
-        let lowered = html.lowercased()
-        let loweredID = id.lowercased()
-        var searchStart = lowered.startIndex
-
-        while let scriptStart = lowered.range(of: "<script", range: searchStart..<lowered.endIndex) {
-            guard let tagEnd = lowered.range(of: ">", range: scriptStart.upperBound..<lowered.endIndex) else { return nil }
+        // Case conversion can change UTF-8 length (e.g. İ -> i + combining
+        // dot). Indices from a lowercased COPY cannot slice the original HTML.
+        // Search case-insensitively in the same string we eventually slice.
+        var searchStart = html.startIndex
+        let idPattern = "\\sid\\s*=\\s*([\"'])" + NSRegularExpression.escapedPattern(for: id) + "\\1(?=\\s|/|$)"
+        while let scriptStart = html.range(of: "<script", options: .caseInsensitive, range: searchStart..<html.endIndex) {
+            guard let tagEnd = html.range(of: ">", range: scriptStart.upperBound..<html.endIndex) else { return nil }
             let tag = String(html[scriptStart.lowerBound..<tagEnd.lowerBound])
-            let tagLowered = tag.lowercased()
-            let matchesID = tagLowered.contains("id=\"\(loweredID)\"") || tagLowered.contains("id='\(loweredID)'")
+            let matchesID = tag.range(of: idPattern, options: [.regularExpression, .caseInsensitive]) != nil
             if matchesID {
                 // 找到 </script>
-                if let contentEnd = lowered.range(of: "</script", range: tagEnd.upperBound..<lowered.endIndex) {
+                if let contentEnd = html.range(of: "</script", options: .caseInsensitive, range: tagEnd.upperBound..<html.endIndex) {
                     return tagEnd.upperBound..<contentEnd.lowerBound
                 }
-                return tagEnd.upperBound..<lowered.endIndex
+                return tagEnd.upperBound..<html.endIndex
             }
             searchStart = tagEnd.upperBound
         }
