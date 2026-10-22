@@ -246,6 +246,71 @@ enum ScenePreviewPreloadTests {
             }
             presentation.open(WorkshopSearchResult(id: "remote-only"))
             check(remoteFactoryCalls == 0, "undownloaded Workshop result never preheats Scene")
+            let authorRoute = WorkspaceWallpaperDetails()
+            authorRoute.scenePreviewScreenResolutionProvider = { nil }
+            authorRoute.configureScenePreview(storage: storage, wallpaperFPS: 30)
+            var authorOwners = [FakeRoutePreviewOwner]()
+            authorRoute.scenePreviewPreparationFactory = { item, _, fps, resolution in
+                let owner = FakeRoutePreviewOwner(itemID: item.id, wallpaperFPS: fps, screenResolution: resolution)
+                authorOwners.append(owner); return owner
+            }
+            authorRoute.localWallpaperLookup = { $0 == sceneA.workshopID ? sceneA : nil }
+            authorRoute.open(WorkshopSearchResult(id: sceneA.workshopID!))
+            check(authorRoute.route?.item?.id == sceneA.id && authorRoute.route?.result == nil && authorOwners.count == 1,
+                  "opening an installed author work selects local preview and starts Scene preloading")
+            authorRoute.localWallpaperLookup = { _ in WallpaperItem(workshopID: "88", exists: false) }
+            authorRoute.open(WorkshopSearchResult(id: "88"))
+            check(authorRoute.route?.result?.id == "88" && authorRoute.route?.item == nil,
+                  "an unavailable local author work falls back to its Workshop cover")
+
+            // Downloads finish before their automatic library import. Promote
+            // only the still-visible matching result when that import arrives.
+            var newlyImported: WallpaperItem?
+            authorRoute.localWallpaperLookup = { _ in newlyImported }
+            authorRoute.prepareSource("workshop:88:creator:example")
+            authorRoute.open(WorkshopSearchResult(id: "88"))
+            let publicRouteID = authorRoute.route!.id
+            let publicKey = authorRoute.route!.key
+            let ownersBeforeImport = authorOwners.count
+            check(!authorRoute.promoteDownloadedResult() && authorRoute.route?.id == publicRouteID,
+                  "completed download without imported library item keeps the current public detail")
+            newlyImported = sceneB
+            check(!authorRoute.promoteDownloadedResult(), "a different imported work cannot replace the current detail")
+            newlyImported = WallpaperItem(workshopID: "88", exists: false)
+            check(!authorRoute.promoteDownloadedResult(), "missing imported files cannot promote a public detail")
+            newlyImported = sceneA
+            check(authorRoute.promoteDownloadedResult() && authorRoute.route?.item?.id == sceneA.id && authorRoute.route?.result == nil,
+                  "download import replaces the public preview with unified local details")
+            check(authorRoute.route?.id == publicRouteID && authorRoute.route?.key == publicKey,
+                  "download promotion preserves route identity and the browsing return source")
+            check(authorOwners.count == ownersBeforeImport + 1 && !authorRoute.promoteDownloadedResult(),
+                  "download promotion starts Scene preparation once without repeated route replacement")
+            authorRoute.open(WorkshopSearchResult(id: "99"))
+            authorRoute.dismiss()
+            newlyImported = sceneB
+            check(!authorRoute.promoteDownloadedResult() && authorRoute.route?.result?.id == "99",
+                  "an import finishing during Back cannot reopen or replace the closing detail")
+            authorRoute.finishDismissal(authorRoute.route!.id)
+            check(!authorRoute.promoteDownloadedResult() && authorRoute.route == nil,
+                  "an import finishing after Back leaves the browser visible")
+            newlyImported = nil
+            authorRoute.open(WorkshopSearchResult(id: "88"))
+            authorRoute.open(WorkshopSearchResult(id: "another-work"))
+            newlyImported = sceneA
+            check(!authorRoute.promoteDownloadedResult() && authorRoute.route?.result?.id == "another-work",
+                  "late import cannot steal the detail after selecting another work")
+            newlyImported = nil
+            authorRoute.open(WorkshopSearchResult(id: "video"))
+            newlyImported = WallpaperItem(workshopID: "video", scene: false)
+            let sceneOwnerCount = authorOwners.count
+            check(authorRoute.promoteDownloadedResult() && authorOwners.count == sceneOwnerCount,
+                  "video download promotion uses local details without starting a Scene renderer")
+            authorRoute.open(sceneA)
+            let navigatingOwner = authorOwners.last!
+            authorRoute.coverImage = NSImage(size: NSSize(width: 10, height: 10))
+            authorRoute.dismissForCreatorNavigation()
+            check(authorRoute.route == nil && !authorRoute.closing && authorRoute.coverImage == nil && navigatingOwner.cancelCount == 1,
+                  "creator navigation clears wallpaper ownership directly without its returning flight")
 
             // Concurrent takeover awaits the single initial load. It must not
             // initialize/load again, and must not apply properties over it.

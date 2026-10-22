@@ -14,7 +14,7 @@ private func GWLoadRuntime() -> Bool {
 final class GWNativeExtension: NSObject, AppExtension {
     override required init() {
         super.init()
-        GWLog("experimental native wallpaper starting uid=\(getuid()) privateRuntime=\(GWLoadRuntime())")
+        GWLog("experimental native wallpaper starting uid=\(getuid()) build=\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") ?? "unknown") path=\(Bundle.main.bundlePath) privateRuntime=\(GWLoadRuntime())")
     }
     var configuration: some AppExtensionConfiguration { GWExtensionConfiguration() }
 }
@@ -22,8 +22,21 @@ final class GWNativeExtension: NSObject, AppExtension {
 #if GW_DIAGNOSTIC_ENTRY
 @main
 struct GWExtensionDiagnostics {
+    @MainActor private static var webDiagnostic: GWWebLayerDiagnostics?
     @MainActor static func main() {
         let args = CommandLine.arguments
+        if let index = args.firstIndex(of: "--web-layer-producer"), args.count > index + 1 {
+            _ = GWLoadRuntime()
+            _ = NSApplication.shared
+            Task { @MainActor in
+                do {
+                    webDiagnostic = try await GWWebLayerDiagnostics(directory: URL(fileURLWithPath: args[index+1]), receiver: true)
+                    try await webDiagnostic!.serve()
+                } catch { printJSON(["event":"error","error":error.localizedDescription]); fflush(stdout); exit(1) }
+            }
+            NSApplication.shared.run()
+            return
+        }
         if let index = args.firstIndex(of: "--isolated-live-probe"), args.count > index + 1 {
             _ = GWLoadRuntime()
             _ = NSApplication.shared
@@ -86,7 +99,7 @@ struct GWExtensionDiagnostics {
                 let snapshot = surface.lastBuffer.flatMap(GWSnapshot)
                 let snapshotTransport = snapshot.map { GWXPCObjectRoundTrip($0, 3) } ?? false
                 let contextTransport = response.map { GWXPCObjectRoundTrip($0, 3) } ?? false
-                struct PausedRequest { let size = CGSize(width: 640, height: 360); let isPreview = false; let presentationMode = "default" }
+                struct PausedRequest { let size = CGSize(width: 640, height: 360); let isPreview = false; let presentationMode = "default"; let activityState = "inactive" }
                 surface.update(GWRequest(PausedRequest()))
                 let pausedCount = surface.frameCount
                 RunLoop.main.run(until: Date().addingTimeInterval(0.15))
@@ -136,60 +149,57 @@ struct GWExtensionDiagnostics {
         var surface: GWLiveSurface?
         do {
             let (config, root) = try GWConfiguration.load(directory: directory, isolatedProbe: true)
-            struct Playing { let size = CGSize(width: 640, height: 400); let isPreview = true }
-            struct Paused { let size = CGSize(width: 640, height: 400); let isPreview = false; let presentationMode = "default" }
-            struct Locked { let size = CGSize(width: 640, height: 400); let isPreview = false; let presentationMode = "locked" }
-            let live = try GWLiveSurface(config: config, directory: root, request: GWRequest(Playing()))
+            let recipe = try LiveWallpaperBundle.load(root)
+            if recipe.kind == .web {
+                webDiagnostic = try await GWWebLayerDiagnostics(directory: directory, receiver: false)
+                await webDiagnostic!.run()
+                return
+            }
+            struct Playing { let size = CGSize(width: 640, height: 400); let isPreview = false; let presentationMode = "default" }
+            struct Paused { let size = CGSize(width: 640, height: 400); let isPreview = false; let presentationMode = "default"; let activityState = "inactive" }
+            let live = try GWLiveSurface(config: config, directory: root, request: GWRequest(Playing()), recipe: recipe)
             surface = live
             var started = false
             live.start { started = $0 }
             let deadline = ContinuousClock.now + .seconds(25)
             while !started, live.lastError == nil, ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(25)) }
             guard started else { throw GWError(70, live.lastError ?? "Live surface startup timed out") }
-            try await Task.sleep(for: .milliseconds(1200))
+            try await waitForFrames(live, after: 8)
             guard let first = live.lastBuffer else { throw GWError(71, "Live frame missing") }
-            let firstSignature = frameSignature(first)
-            let firstClock = try await webText(live, script: "String(document.getElementById('clock')?.textContent || '')")
-            var network = try await webText(live, script: "String(window.networkResult || '')")
-            if live.recipe?.allowHTTPS == true, network == "pending" {
-                let networkDeadline = ContinuousClock.now + .seconds(20)
-                while network == "pending", ContinuousClock.now < networkDeadline {
-                    try await Task.sleep(for: .milliseconds(100))
-                    network = try await webText(live, script: "String(window.networkResult || '')")
-                }
-            }
-            let count = live.frameCount
+            let firstSignature = frameSignature(first), count = live.frameCount
             let context = createRemoteContextXPC(contextId: live.context.contextId)
             let snapshot = GWSnapshot(first)
-            result["started"] = started; result["kind"] = live.recipe?.kind.rawValue
-            result["firstFrames"] = count
+            result["started"] = started; result["kind"] = recipe.kind.rawValue
             result["contextXPCTransport"] = context.map { GWXPCObjectRoundTrip($0, 3) } ?? false
             result["snapshotXPCTransport"] = snapshot.map { GWXPCObjectRoundTrip($0, 3) } ?? false
-            result["networkResult"] = network
             live.update(GWRequest(Paused()))
             try await Task.sleep(for: .milliseconds(300))
             let pausedFrames = live.frameCount
-            let webReleased = live.recipe?.kind != .web || live.webRuntime == nil
-            try await Task.sleep(for: .milliseconds(500))
+            try await Task.sleep(for: .milliseconds(300))
             let held = live.frameCount == pausedFrames && live.lastBuffer != nil
-            live.update(GWRequest(Locked()))
-            try await Task.sleep(for: .milliseconds(1500))
+            live.update(GWRequest(Playing()))
+            try await waitForFrames(live, after: pausedFrames)
             guard let latest = live.lastBuffer else { throw GWError(72, "Resumed frame missing") }
             let advanced = live.frameCount > pausedFrames + 1 && firstSignature != frameSignature(latest)
-            let resumedClock = try await webText(live, script: "String(document.getElementById('clock')?.textContent || '')")
-            var clockCurrent = live.recipe?.kind != .web
-            if live.recipe?.kind == .web, let text = resumedClock, let date = Double(text) {
-                clockCurrent = abs(date / 1000 - Date().timeIntervalSince1970) < 2 && firstClock != resumedClock
-            }
+            let contextID = live.context.contextId
+            live.setSleeping(true)
+            try await Task.sleep(for: .milliseconds(400))
+            let sleepingFrames = live.frameCount
+            try await Task.sleep(for: .milliseconds(300))
+            let sleepHeld = live.frameCount == sleepingFrames && live.lastBuffer != nil
+            live.setSleeping(false)
+            try await waitForFrames(live, after: sleepingFrames)
+            let wakeResumed = live.frameCount > sleepingFrames + 1 && live.context.contextId == contextID
             let pid = live.helperPID
-            result["firstClock"] = firstClock; result["resumedClock"] = resumedClock
-            result["currentWallClockAfterPause"] = clockCurrent
-            result["pausedFrameHeld"] = held; result["hiddenWebDocumentReleased"] = webReleased
+            result["defaultModePlayback"] = count > 2 && advanced
+            result["sleepFrameHeld"] = sleepHeld
+            result["wakeResumedSameContext"] = wakeResumed
+            result["pausedFrameHeld"] = held; result["hiddenWebDocumentReleased"] = true
             result["resumedChangingFrames"] = advanced
             result["frameCount"] = live.frameCount
             result["helperPID"] = pid
             result["lastError"] = live.lastError
-            let success = advanced && held && webReleased && clockCurrent && live.lastError == nil
+            let success = advanced && held && sleepHeld && wakeResumed && live.lastError == nil
                 && result["contextXPCTransport"] as? Bool == true && result["snapshotXPCTransport"] as? Bool == true
             live.stop()
             let exited = if let pid { await SceneBackendProcessExit.wait(pid: pid) } else { true }
@@ -209,16 +219,12 @@ struct GWExtensionDiagnostics {
         }
     }
 
-    @MainActor private static func webText(_ surface: GWLiveSurface, script: String) async throws -> String? {
-        guard let web = surface.webRuntime?.webView else { return nil }
-        let race = SceneBackendDeadlineRace<String>()
-        web.callAsyncJavaScript("return (" + script + ");", arguments: [:], in: nil, in: .page) { result in
-            switch result {
-            case .success(let value): race.finish(.success(value as? String ?? ""))
-            case .failure(let error): race.finish(.failure(error))
-            }
+    @MainActor private static func waitForFrames(_ surface: GWLiveSurface, after count: Int) async throws {
+        let deadline = ContinuousClock.now + .seconds(10)
+        while surface.frameCount <= count + 1, surface.lastError == nil, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(50))
         }
-        return try await race.wait(seconds: 5)
+        guard surface.frameCount > count + 1 else { throw GWError(73, surface.lastError ?? "Live frames did not resume") }
     }
 
     private static func frameSignature(_ buffer: CVPixelBuffer) -> UInt64 {

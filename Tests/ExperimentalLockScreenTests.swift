@@ -12,11 +12,19 @@ import Foundation
             return try PropertyListSerialization.data(fromPropertyList: root, format: .binary, options: 0)
         }
         let extensionURL = URL(fileURLWithPath: "/Applications/Fixture.app/Contents/PlugIns/GlimmerWallpaperExtension.appex")
-        let registration = "+ "+LockScreenStorePatcher.provider+" (1.0)\n"+extensionURL.path+"\n"
+        let registration = "+ "+LockScreenStorePatcher.provider+"(1.0)\tUUID\t2026-10-22 00:00:00 +0000\t"+extensionURL.path+"\n"
         check(ExperimentalLockScreenRegistrar.registrationMatches(output: registration, extensionURL: extensionURL), "registration requires expected bundle and current exact path")
         check(!ExperimentalLockScreenRegistrar.registrationMatches(output: registration.replacingOccurrences(of: LockScreenStorePatcher.provider, with: LockScreenStorePatcher.provider+".other"), extensionURL: extensionURL), "registration rejects different bundle suffix")
         check(!ExperimentalLockScreenRegistrar.registrationMatches(output: registration.replacingOccurrences(of: "Fixture.app", with: "Old.app"), extensionURL: extensionURL), "registration rejects stale extension path")
         check(!ExperimentalLockScreenRegistrar.registrationMatches(output: registration.replacingOccurrences(of: ".appex", with: ".appex.backup"), extensionURL: extensionURL), "registration rejects path-prefix matches")
+        let otherProvider = registration.replacingOccurrences(of: LockScreenStorePatcher.provider, with: "other.provider")
+        let oldRegistration = registration.replacingOccurrences(of: "Fixture.app", with: "Old.app")
+        check(!ExperimentalLockScreenRegistrar.registrationMatches(output: oldRegistration + otherProvider, extensionURL: extensionURL), "provider and path must belong to the same record")
+        check(!ExperimentalLockScreenRegistrar.registrationMatches(output: oldRegistration + registration, extensionURL: extensionURL), "duplicate inventory cannot prove system selection")
+        for marker in ["-", "!", "=", "?"] {
+            check(!ExperimentalLockScreenRegistrar.registrationMatches(output: marker + registration.dropFirst(), extensionURL: extensionURL), "disabled or superseded extension is not selected")
+        }
+        check(ExperimentalLockScreenRegistrar.registeredExtensionURLs(output: oldRegistration + registration + otherProvider).count == 2, "inventory retires only matching provider records")
         let root = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent("gw-lock-screen-fixture-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: root) }
         try LockScreenOwnedFiles.makePrivateDirectory(root)

@@ -177,11 +177,36 @@ actor ExperimentalLockScreenAssetPreparer {
 }
 
 actor ExperimentalLockScreenRegistrar {
+    private struct Registration {
+        let path: URL
+        let eligible: Bool
+    }
+
+    /// `-v` prints one tab-separated record per physical extension. Match the
+    /// provider and path on the same record; -A/-D inventory is not selection.
+    private nonisolated static func registrations(_ output: String) -> [Registration] {
+        output.split(separator: "\n").compactMap { line in
+            let fields = line.split(separator: "\t", omittingEmptySubsequences: false)
+            guard fields.count >= 4 else { return nil }
+            var identity = fields[0].trimmingCharacters(in: .whitespaces)
+            let marker = identity.first
+            if let marker, "+-=!?".contains(marker) {
+                identity.removeFirst(); identity = identity.trimmingCharacters(in: .whitespaces)
+            }
+            guard identity.hasPrefix(LockScreenStorePatcher.provider + "("),
+                  let path = fields.last, path.hasPrefix("/"), path.hasSuffix(".appex") else { return nil }
+            return Registration(path: URL(fileURLWithPath: String(path)).standardizedFileURL,
+                eligible: marker != "-" && marker != "=" && marker != "!" && marker != "?")
+        }
+    }
+
+    nonisolated static func registeredExtensionURLs(output: String) -> [URL] {
+        Array(Set(registrations(output).map(\.path))).sorted { $0.path < $1.path }
+    }
+
     nonisolated static func registrationMatches(output: String, extensionURL: URL) -> Bool {
-        let identifier = NSRegularExpression.escapedPattern(for: LockScreenStorePatcher.provider)
-        let path = NSRegularExpression.escapedPattern(for: extensionURL.standardizedFileURL.path)
-        return output.range(of: "(?<![A-Za-z0-9.-])" + identifier + "(?![A-Za-z0-9.-])", options: .regularExpression) != nil
-            && output.range(of: path + "(?=$|[\\s\"\\)])", options: .regularExpression) != nil
+        let records = registrations(output).filter(\.eligible)
+        return records.count == 1 && records[0].path == extensionURL.standardizedFileURL
     }
 
     func register(extensionURL: URL) async throws {
@@ -190,12 +215,28 @@ actor ExperimentalLockScreenRegistrar {
               info["CFBundleIdentifier"] as? String == LockScreenStorePatcher.provider else {
             throw ExperimentalLockScreenFailure(message: "应用内没有匹配的动态锁屏扩展，请使用完整安装包。")
         }
+        let inventory = try await run(executable: "/usr/bin/pluginkit",
+            arguments: ["-m", "-A", "-D", "-v", "-i", LockScreenStorePatcher.provider], capture: true)
+        // Development builds and moved installs can leave the same provider in
+        // several bundles. Retire only confirmed copies of our own extension;
+        // no files or other providers are removed.
+        for old in Self.registeredExtensionURLs(output: String(decoding: inventory.output, as: UTF8.self))
+            where old != extensionURL.standardizedFileURL {
+            let oldInfo = old.appendingPathComponent("Contents/Info.plist")
+            guard let bytes = try? Data(contentsOf: oldInfo),
+                  let value = try? PropertyListSerialization.propertyList(from: bytes, format: nil) as? [String: Any],
+                  value["CFBundleIdentifier"] as? String == LockScreenStorePatcher.provider else { continue }
+            let removed = try await run(executable: "/usr/bin/pluginkit", arguments: ["-r", old.path])
+            guard removed.status == 0 else {
+                throw ExperimentalLockScreenFailure(message: "无法注销旧安装包的锁屏扩展；系统壁纸未修改。")
+            }
+        }
         let added = try await run(executable: "/usr/bin/pluginkit", arguments: ["-a", extensionURL.path])
         guard added.status == 0 else {
             throw ExperimentalLockScreenFailure(message: "系统未接受动态锁屏扩展注册（状态 \(added.status)）。")
         }
         let matched = try await run(executable: "/usr/bin/pluginkit",
-            arguments: ["-m", "-A", "-D", "-v", "-i", LockScreenStorePatcher.provider], capture: true)
+            arguments: ["-m", "-v", "-i", LockScreenStorePatcher.provider], capture: true)
         guard matched.status == 0,
               Self.registrationMatches(output: String(decoding: matched.output, as: UTF8.self), extensionURL: extensionURL) else {
             throw ExperimentalLockScreenFailure(message: "注册后未能核对当前安装包的扩展标识与路径；系统壁纸未修改。")
@@ -205,6 +246,13 @@ actor ExperimentalLockScreenRegistrar {
     /// Production only: terminate this user's exact WallpaperAgent executable name.
     /// launchd owns restarting it. Never signal another user or a broader name pattern.
     func reloadCurrentUser() async throws {
+        // A running old service can survive registration and be reused by the
+        // agent. Retire this user's exact extension before requesting reacquire.
+        let retired = try await run(executable: "/usr/bin/pkill",
+            arguments: ["-TERM", "-u", String(getuid()), "-x", "GlimmerWallpaperExtension"])
+        guard retired.status == 0 || retired.status == 1 else {
+            throw ExperimentalLockScreenFailure(message: "无法停止旧锁屏扩展，请稍后重新应用锁屏。")
+        }
         let result = try await run(executable: "/usr/bin/pkill",
             arguments: ["-TERM", "-u", String(getuid()), "-x", "WallpaperAgent"])
         guard result.status == 0 else {

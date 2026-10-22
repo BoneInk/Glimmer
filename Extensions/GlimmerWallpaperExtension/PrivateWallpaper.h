@@ -87,11 +87,15 @@
 
 #import <AVFoundation/AVFoundation.h>
 #import <Security/Security.h>
+#import <WebKit/WebKit.h>
 NS_ASSUME_NONNULL_BEGIN
 BOOL GWSandboxIsActive(void);
 BOOL GWUseRemoteVideoComposition(AVSampleBufferDisplayLayer *layer);
 BOOL GWApplePeer(NSXPCConnection *connection);
 id _Nullable GWDecodeAsClass(NSData *data, Class targetClass, NSString *sourceName);
 BOOL GWRoundTripObject(id object);
+BOOL GWSetWebDeviceScale(WKWebView *view, double scale);
+void GWAfterWebPresentation(WKWebView *view, void (^reply)(BOOL));
+void GWCloseWebPage(WKWebView *view);
 NS_ASSUME_NONNULL_END
 BOOL GWXPCObjectRoundTrip(id _Nonnull object, NSTimeInterval timeout);

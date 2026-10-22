@@ -176,6 +176,8 @@ enum LockScreenInlineControlsLayoutTests {
         settle(host)
         let idle = snapshot(host)
         precondition(idle.panel.height > 0 && idle.wallpaperButton.width > 0 && idle.lockButton.width > 0)
+        precondition(abs(idle.wallpaperButton.width - idle.lockButton.width) < 0.5 && abs(idle.wallpaperButton.height - idle.lockButton.height) < 0.5,
+                     "Wallpaper and lock-screen buttons must have identical sizes")
 
         actions.itemID = item.id
         actions.phase = .preparing

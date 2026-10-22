@@ -10,7 +10,7 @@ base=user/('isolated-live-'+str(uuid.uuid4()));base.mkdir(mode=0o700)
 profile=pathlib.Path(sys.argv[1]);receipt=json.loads((profile/'SceneBackend/active-receipt.json').read_text());digest=receipt['manifestIdentity']['sha256']
 assert len(digest)==64 and all(c in '0123456789abcdef' for c in digest)
 assets=profile/'Workshop/SteamContent/scene-runtime-assets'/digest/'content/assets'
-for kind in ['scene','web','web-network']:
+for kind in (['web','web-network'] if len(sys.argv)>3 and sys.argv[3]=='--web-only' else ['scene','web','web-network']):
  folder=base/kind;folder.mkdir(mode=0o700);aid=str(uuid.uuid4()).upper();live=folder/('live-'+aid);live.mkdir(mode=0o700);project=live/'project'
  if kind=='scene':
   shutil.copytree(repo/'Tests/Fixtures/SceneScriptWallpaper',project)
@@ -20,6 +20,8 @@ for kind in ['scene','web','web-network']:
  else:
   project.mkdir(mode=0o700);(project/'project.json').write_text(json.dumps({'type':'web','file':'index.html','general':{'properties':{}}}))
   (project/'index.html').write_text('''<!doctype html><html><head><style>html,body{margin:0;width:100%;height:100%;background:#12334d;color:white;font:28px sans-serif}#clock{padding:30px}#weather{padding:30px;color:#69e2ac}</style></head><body><div id="clock"></div><div id="weather"></div><script>window.networkResult='pending'; fetch('https://api.open-meteo.com/v1/forecast?latitude=0&longitude=0&current=temperature_2m').then(r=>r.json()).then(x=>{window.networkResult='allowed';document.getElementById('weather').textContent='Weather '+x.current.temperature_2m;}).catch(()=>{window.networkResult='blocked';document.getElementById('weather').textContent='Network blocked';}); function tick(){document.getElementById('clock').textContent=String(Date.now());document.body.style.background='rgb('+Math.floor(Date.now()/100%100+30)+',40,80)';requestAnimationFrame(tick);}tick();</script></body></html>''')
+  shutil.copyfile(sys.argv[2],project/'video.mp4')
+  html=project/'index.html';html.write_text(html.read_text().replace('<body>','<body><video autoplay loop playsinline src="video.mp4" style="position:absolute;right:0;bottom:0;width:50%;height:50%"></video>'))
  files=[]
  for p in sorted(live.rglob('*')):
   if p.is_dir():p.chmod(0o700)

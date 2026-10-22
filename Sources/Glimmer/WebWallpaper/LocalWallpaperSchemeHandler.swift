@@ -6,7 +6,7 @@ import WebKit
 /// Every scheme read is re-resolved against the canonical root. No arbitrary path bridge
 /// is exported to JavaScript. This limits resources, not malicious browser-engine exploits.
 final class LocalWallpaperSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Sendable {
-    nonisolated static let maximumResourceBytes = 32 * 1024 * 1024
+    nonisolated static let maximumDocumentBytes = 32 * 1024 * 1024
     let location: WebWallpaperProjectLocation
     private let allowHTTPS: Bool
     private let lock = NSLock()
@@ -17,6 +17,8 @@ final class LocalWallpaperSchemeHandler: NSObject, WKURLSchemeHandler, @unchecke
     nonisolated(unsafe) private var documentToken = ""
     nonisolated(unsafe) private var resourceEpoch = 0
     private let reader = DispatchQueue(label: "com.boneinkzhong.glimmer.web-assets", qos: .userInitiated)
+    // Owned exclusively by `reader`, including its in-memory cache index.
+    nonisolated(unsafe) private let mediaResolver = WebWallpaperMediaResolver()
 
     init(location: WebWallpaperProjectLocation, allowHTTPS: Bool = false) {
         self.location = location; self.allowHTTPS = allowHTTPS
@@ -24,6 +26,9 @@ final class LocalWallpaperSchemeHandler: NSObject, WKURLSchemeHandler, @unchecke
     private final class TaskBox: @unchecked Sendable {
         let task: any WKURLSchemeTask
         init(_ task: any WKURLSchemeTask) { self.task = task }
+    }
+    private enum Delivery: @unchecked Sendable {
+        case response(URLResponse), bytes(Data), finished, failed(Error)
     }
 
     func configureResources(root: URL?, grants: [String: URL]) {
@@ -58,81 +63,76 @@ final class LocalWallpaperSchemeHandler: NSObject, WKURLSchemeHandler, @unchecke
         lock.unlock()
         guard allowed else { urlSchemeTask.didFailWithError(URLError(.cancelled)); return }
         let box = TaskBox(urlSchemeTask)
+        let request = urlSchemeTask.request
         reader.async { [weak self] in
-            let result: Result<(Data, String, Int), Error>
+            guard let self else { return }
             do {
-                guard let url = box.task.request.url, ["GET", "HEAD"].contains(box.task.request.httpMethod ?? "GET") else {
+                let method = request.httpMethod ?? "GET"
+                guard let url = request.url, ["GET", "HEAD"].contains(method) else {
                     throw WebWallpaperFailure(message: "Unsupported wallpaper resource request.")
                 }
-                guard let self else { throw URLError(.cancelled) }
                 let (local, root, epoch, fileExtension) = try self.resolve(url)
-                var bytes = try Self.readBoundedFile(local, root: root)
+                var file = try LocalWallpaperFileResource(file: local, root: root)
                 guard self.isCurrentEpoch(epoch) else { throw URLError(.cancelled) }
-                let mime = UTType(filenameExtension: fileExtension)?.preferredMIMEType ?? "application/octet-stream"
+                var mime = UTType(filenameExtension: fileExtension)?.preferredMIMEType ?? "application/octet-stream"
+                if let media = try self.mediaResolver.resolve(file, extension: fileExtension,
+                    cancelled: { !self.isActive(id) || !self.isCurrentEpoch(epoch) }) {
+                    file = media.file; mime = media.mime
+                }
+                if mime.hasPrefix("text/") || mime.contains("javascript") { mime += "; charset=utf-8" }
+                var document: Data?
                 if ["html", "htm"].contains(fileExtension.lowercased()) {
+                    let bytes = try file.readDocument(maximumBytes: Self.maximumDocumentBytes)
                     guard let text = String(data: bytes, encoding: .utf8) else {
                         throw WebWallpaperFailure(message: "Wallpaper HTML must be UTF-8.")
                     }
-                    bytes = Data(Self.secureHTML(text, allowHTTPS: self.allowHTTPS).utf8)
+                    document = Data(Self.secureHTML(text, allowHTTPS: self.allowHTTPS).utf8)
                 }
-                result = .success((bytes, mime, epoch))
-            } catch { result = .failure(error) }
-            DispatchQueue.main.async { [weak self] in
-                guard let self, self.isActive(id) else { return }
-                switch result {
-                case let .success((bytes, mime, epoch)):
-                    guard self.isCurrentEpoch(epoch) else { box.task.didFailWithError(URLError(.cancelled)); self.finish(id); return }
-                    guard let url = box.task.request.url else { self.finish(id); return }
-                    let response: URLResponse = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: [
-                        "Content-Type": mime + (mime.hasPrefix("text/") || mime.contains("javascript") ? "; charset=utf-8" : ""),
-                        "Content-Length": String(bytes.count), "Cache-Control": "no-store"
-                    ]) ?? URLResponse(url: url, mimeType: mime, expectedContentLength: bytes.count, textEncodingName: nil)
-                    box.task.didReceive(response)
-                    if self.isActive(id), box.task.request.httpMethod != "HEAD" { box.task.didReceive(bytes) }
-                    if self.isActive(id) { box.task.didFinish() }
-                case let .failure(error): box.task.didFailWithError(error)
+                let plan = LocalWallpaperResourceResponse(size: document.map { Int64($0.count) } ?? file.size,
+                    range: request.value(forHTTPHeaderField: "Range"), method: method)
+                guard let response = HTTPURLResponse(url: url, statusCode: plan.status, httpVersion: "HTTP/1.1",
+                    headerFields: plan.headers(mimeType: mime)) else { throw URLError(.badServerResponse) }
+                guard self.deliver(.response(response), box: box, id: id, epoch: epoch) else { return }
+                if method != "HEAD" {
+                    var offset = plan.offset, remaining = plan.length
+                    while remaining > 0 {
+                        guard self.isActive(id), self.isCurrentEpoch(epoch) else { throw URLError(.cancelled) }
+                        let count = Int(min(Int64(LocalWallpaperFileResource.chunkBytes), remaining))
+                        let chunk: Data
+                        if let document { chunk = document.subdata(in: Int(offset)..<(Int(offset) + count)) }
+                        else { chunk = try file.read(offset: offset, count: count) }
+                        guard self.deliver(.bytes(chunk), box: box, id: id, epoch: epoch) else { return }
+                        offset += Int64(count); remaining -= Int64(count)
+                    }
                 }
-                self.finish(id)
+                _ = self.deliver(.finished, box: box, id: id, epoch: epoch)
+            } catch { _ = self.deliver(.failed(error), box: box, id: id, epoch: nil) }
+        }
+    }
+
+    /// One chunk is handed to WebKit before the reader allocates the next one.
+    /// All task callbacks and stop/dispose checks run on the main queue.
+    nonisolated private func deliver(_ event: Delivery, box: TaskBox, id: ObjectIdentifier, epoch: Int?) -> Bool {
+        DispatchQueue.main.sync {
+            guard self.isActive(id) else { return false }
+            if let epoch, !self.isCurrentEpoch(epoch) {
+                box.task.didFailWithError(URLError(.cancelled)); self.finish(id); return false
             }
+            switch event {
+            case .response(let response): box.task.didReceive(response)
+            case .bytes(let bytes): box.task.didReceive(bytes)
+            case .finished: box.task.didFinish(); self.finish(id)
+            case .failed(let error): box.task.didFailWithError(error); self.finish(id)
+            }
+            return self.isActive(id)
         }
     }
 
     func webView(_ webView: WKWebView, stop urlSchemeTask: any WKURLSchemeTask) { finish(ObjectIdentifier(urlSchemeTask)) }
     func dispose() { lock.lock(); disposed = true; tasks.removeAll(); grants.removeAll(); resourceRoot = nil; resourceEpoch += 1; lock.unlock() }
     nonisolated private func isCurrentEpoch(_ epoch: Int) -> Bool { lock.lock(); defer { lock.unlock() }; return !disposed && resourceEpoch == epoch }
-    private func isActive(_ id: ObjectIdentifier) -> Bool { lock.lock(); defer { lock.unlock() }; return !disposed && tasks.contains(id) }
-    private func finish(_ id: ObjectIdentifier) { lock.lock(); tasks.remove(id); lock.unlock() }
-
-    /// Open every component relative to a directory descriptor without following links.
-    /// Size is bounded again while reading, so growth cannot bypass the allocation limit.
-    nonisolated private static func readBoundedFile(_ file: URL, root: URL) throws -> Data {
-        guard WebWallpaperProjectLocation.contains(file, in: root) else { throw URLError(.noPermissionsToReadFile) }
-        var descriptor = Darwin.open(root.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
-        guard descriptor >= 0 else { throw URLError(.noPermissionsToReadFile) }
-        defer { Darwin.close(descriptor) }
-        let pieces = file.path.dropFirst(root.path.count + 1).split(separator: "/").map(String.init)
-        for (index, component) in pieces.enumerated() {
-            guard component != ".", component != ".." else { throw URLError(.noPermissionsToReadFile) }
-            let flags = O_RDONLY | O_NOFOLLOW | O_CLOEXEC | (index < pieces.count - 1 ? O_DIRECTORY : 0)
-            let next = Darwin.openat(descriptor, component, flags)
-            guard next >= 0 else { throw URLError(.noPermissionsToReadFile) }
-            Darwin.close(descriptor); descriptor = next
-        }
-        var info = stat()
-        guard fstat(descriptor, &info) == 0, (info.st_mode & S_IFMT) == S_IFREG,
-              info.st_size >= 0, info.st_size <= maximumResourceBytes else {
-            throw WebWallpaperFailure(message: "Blocked special or oversized wallpaper resource (32 MiB limit).")
-        }
-        var result = Data(), buffer = [UInt8](repeating: 0, count: 64 * 1024)
-        while true {
-            let count = Darwin.read(descriptor, &buffer, buffer.count)
-            if count < 0 { if errno == EINTR { continue }; throw URLError(.cannotOpenFile) }
-            if count == 0 { break }
-            guard result.count + count <= maximumResourceBytes else { throw WebWallpaperFailure(message: "Wallpaper resource grew beyond 32 MiB.") }
-            result.append(contentsOf: buffer.prefix(count))
-        }
-        return result
-    }
+    nonisolated private func isActive(_ id: ObjectIdentifier) -> Bool { lock.lock(); defer { lock.unlock() }; return !disposed && tasks.contains(id) }
+    nonisolated private func finish(_ id: ObjectIdentifier) { lock.lock(); tasks.remove(id); lock.unlock() }
 
     nonisolated private static func secureHTML(_ text: String, allowHTTPS: Bool) -> String {
         let remote = allowHTTPS ? " https:" : ""

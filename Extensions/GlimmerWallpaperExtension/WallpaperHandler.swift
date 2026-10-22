@@ -36,6 +36,7 @@ private final class GWSurfaces {
         keys.forEach { remove($0, owner: owner) }
     }
     func removeAll() { let old = values; values.removeAll(); owners.removeAll(); old.values.forEach { $0.stop() } }
+    func setSleeping(_ value: Bool) { values.values.forEach { $0.setSleeping(value) } }
     func get(_ key: String) -> (any GWNativeWallpaperSurface)? { values[key] }
     func set(_ surface: any GWNativeWallpaperSurface, key: String) {
         remove(key)
@@ -64,9 +65,7 @@ final class GWWallpaperHandler: NSObject, WallpaperExtensionXPCProtocol {
                     reply(response, nil)
                     return
                 }
-                let surface: any GWNativeWallpaperSurface = try config.liveDirectoryName == nil
-                    ? GWVideoSurface(config: config, video: url, request: info)
-                    : GWLiveSurface(config: config, directory: url, request: info)
+                let surface = try await GWMakeNativeWallpaperSurface(config: config, url: url, request: info)
                 guard let response = createRemoteContextXPC(contextId: surface.context.contextId),
                       GWRoundTripObject(response) else {
                     surface.stop(); throw GWError(30, "Unsupported wallpaper remote-context layout")
@@ -90,7 +89,9 @@ final class GWWallpaperHandler: NSObject, WallpaperExtensionXPCProtocol {
         let inputs = GWBox(value: (id, request, reply))
         Task { @MainActor in
             let (id, request, reply) = inputs.value
-            GWSurfaces.shared.get(GWSurfaces.shared.key(id))?.update(GWRequest(request))
+            let info = GWRequest(request)
+            GWLog("wallpaper activity mode=\(info.mode ?? "none") activity=\(info.activity ?? "none") playing=\(info.shouldPlay)")
+            GWSurfaces.shared.get(GWSurfaces.shared.key(id))?.update(info)
             reply(nil)
         }
     }
@@ -107,9 +108,16 @@ final class GWWallpaperHandler: NSObject, WallpaperExtensionXPCProtocol {
         let inputs = GWBox(value: (id, reply))
         Task { @MainActor in
             let registry = GWSurfaces.shared
-            guard let buffer = registry.get(registry.key(inputs.value.0))?.lastBuffer,
+            guard let surface = registry.get(registry.key(inputs.value.0)) else {
+                inputs.value.1(nil, GWError(32, "Wallpaper surface is unavailable")); return
+            }
+            do {
+                let buffer = try await surface.snapshot()
+                guard let current = registry.get(registry.key(inputs.value.0)), current === surface,
+                      let buffer,
                   let response = GWSnapshot(buffer) else { inputs.value.1(nil, GWError(32, "No decoded snapshot available")); return }
-            inputs.value.1(response, nil)
+                inputs.value.1(response, nil)
+            } catch { inputs.value.1(nil, error) }
         }
     }
 
@@ -126,7 +134,11 @@ final class GWWallpaperHandler: NSObject, WallpaperExtensionXPCProtocol {
         let text = String(describing: name ?? "").lowercased()
         let callback = GWBox(value: reply)
         Task { @MainActor in
-            if text.contains("sleep") || text.contains("terminate") { GWSurfaces.shared.removeAll() }
+            if text.contains("terminate") { GWSurfaces.shared.removeAll() }
+            // Sleep is not invalidation: the host may only update the same
+            // context on wake, without acquiring a replacement surface.
+            else if text.contains("wake") { GWSurfaces.shared.setSleeping(false) }
+            else if text.contains("sleep") { GWSurfaces.shared.setSleeping(true) }
             callback.value(nil)
         }
     }

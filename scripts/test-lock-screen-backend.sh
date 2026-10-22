@@ -24,7 +24,12 @@ swiftc -swift-version 6 -strict-concurrency=complete -target arm64-apple-macos26
  "$ROOT/Sources/Glimmer/WebWallpaper/WebWallpaperResourceBridge.swift" \
  "$ROOT/Sources/Glimmer/WebWallpaper/WebWallpaperBridge.swift" \
  "$ROOT/Sources/Glimmer/WebWallpaper/LocalWallpaperSchemeHandler.swift" \
+ "$ROOT/Sources/Glimmer/WebWallpaper/LocalWallpaperFileResource.swift" \
+ "$ROOT/Sources/Glimmer/WebWallpaper/WebMVP9Container.swift" \
+ "$ROOT/Sources/Glimmer/WebWallpaper/WebWallpaperMediaResolver.swift" \
  "$ROOT/Sources/Glimmer/WebWallpaper/WebWallpaperRuntime.swift" \
+ "$ROOT/Sources/Glimmer/WebWallpaper/WebWallpaperFramePacer.swift" \
+ "$ROOT/Sources/Glimmer/WebWallpaper/WebWallpaperMutedMediaPolicy.swift" \
  "$ROOT/Sources/Glimmer/LockScreen/LockScreenStoreTransaction.swift" \
  "$ROOT/Sources/Glimmer/LockScreen/LockScreenExportSettings.swift" \
  "$ROOT/Sources/Glimmer/LockScreen/LockScreenVideoTranscoder.swift" \

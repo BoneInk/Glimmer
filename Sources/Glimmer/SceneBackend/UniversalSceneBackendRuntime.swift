@@ -47,6 +47,8 @@ final class UniversalSceneBackendRuntime {
     private(set) var soundEnabled = false
     private(set) var soundVolume: Double = 1
     private var frameLoop: Task<Void, Never>?
+    private var frameLoopID: UUID?
+    private var frameLoopSuspensions = 0
     private var lastTick: ContinuousClock.Instant?
     private var lastProperties = Data("{}".utf8)
     private var operationTicket = UUID()
@@ -307,6 +309,8 @@ final class UniversalSceneBackendRuntime {
                                                            allowedRoot: projectURL.deletingLastPathComponent())
             return try SceneBackendPropertyValues.normalize(propertiesJSON, project: project)
         }.value
+        frameLoopSuspensions += 1
+        defer { frameLoopSuspensions -= 1; startFrameLoop() }
         stopFrameLoop(); await waitForFrameLoop()
         try Task.checkCancellation(); try requireActive()
         propertyRevision &+= 1
@@ -423,6 +427,8 @@ final class UniversalSceneBackendRuntime {
         guard let session = context else { return }
         aspectUpdateTask = Task { [weak self, weak client = session.client] in
             guard let self, let client else { return }
+            self.frameLoopSuspensions += 1
+            defer { self.frameLoopSuspensions -= 1; self.startFrameLoop() }
             do {
                 self.stopFrameLoop(); await self.waitForFrameLoop()
                 try Task.checkCancellation()
@@ -547,11 +553,21 @@ final class UniversalSceneBackendRuntime {
     }
 
     private func startFrameLoop() {
-        guard frameLoop == nil, !desiredPaused, !manualFrameExport, state == .ready else { return }
+        guard frameLoop == nil, frameLoopSuspensions == 0, !desiredPaused, !manualFrameExport, state == .ready else { return }
         let ticket = operationTicket
+        let loopID = UUID(); frameLoopID = loopID
         if lastTick == nil { lastTick = .now }
         frameLoop = Task { [weak self] in
             guard let self else { return }
+            defer {
+                if self.frameLoopID == loopID {
+                    self.frameLoop = nil; self.frameLoopID = nil
+                    // Resume may have arrived while this cancelled loop was
+                    // still awaiting its GPU/XPC frame. Reconcile the latest
+                    // intent after draining instead of losing that resume.
+                    self.startFrameLoop()
+                }
+            }
             while !Task.isCancelled, self.state == .ready, self.operationTicket == ticket, !self.desiredPaused {
                 let interval = Duration.seconds(1.0 / Double(self.frameRateLimit))
                 try? await Task.sleep(for: interval)
@@ -566,12 +582,17 @@ final class UniversalSceneBackendRuntime {
                 catch is CancellationError { break }
                 catch { self.fail(error.localizedDescription); break }
             }
-            if self.operationTicket == ticket { self.frameLoop = nil }
         }
     }
 
     private func stopFrameLoop() { frameLoop?.cancel(); lastTick = nil }
-    private func waitForFrameLoop() async { if let frameLoop { await frameLoop.value; self.frameLoop = nil } }
+    private func waitForFrameLoop() async {
+        if let frameLoop {
+            let id = frameLoopID
+            await frameLoop.value
+            if frameLoopID == id { self.frameLoop = nil; frameLoopID = nil }
+        }
+    }
 
     private func retireCurrentSession() async {
         stopFrameLoop(); await waitForFrameLoop()

@@ -25,6 +25,7 @@ final class GWVideoSurface: GWNativeWallpaperSurface {
     private(set) var sampledSignatures = Set<UInt64>()
     private(set) var lastBuffer: CVPixelBuffer?
     private var wantsPlayback: Bool
+    private var sleeping = false
     private var stopped = false
     private var orientation = CGAffineTransform.identity
 
@@ -114,7 +115,7 @@ final class GWVideoSurface: GWNativeWallpaperSurface {
         CATransaction.flush()
         if let callback = startup {
             startup = nil
-            if !wantsPlayback { player.pause(); timer?.invalidate(); timer = nil }
+            if !wantsPlayback || sleeping { player.pause(); timer?.invalidate(); timer = nil }
             callback(true)
         }
     }
@@ -125,7 +126,18 @@ final class GWVideoSurface: GWNativeWallpaperSurface {
         root.contentsScale = request.scale
         applyGeometry()
         wantsPlayback = request.shouldPlay
-        if wantsPlayback {
+        reconcilePlayback()
+        CATransaction.flush()
+    }
+
+    func setSleeping(_ value: Bool) {
+        sleeping = value
+        reconcilePlayback()
+    }
+
+    private func reconcilePlayback() {
+        guard !stopped else { return }
+        if wantsPlayback && !sleeping {
             player.play()
             if timer == nil {
                 timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
@@ -136,7 +148,6 @@ final class GWVideoSurface: GWNativeWallpaperSurface {
         } else if startup == nil {
             player.pause(); timer?.invalidate(); timer = nil
         }
-        CATransaction.flush()
     }
 
     private func applyGeometry() {

@@ -45,8 +45,8 @@ struct LockScreenApplyControls: View {
                         onFeedback(TransientToast(message, tone: .error))
                     }
                 } label: {
-                    WallpaperActionLabel(title: "锁屏", symbol: "lock.rectangle", busy: actions.isBusy && actions.itemID == item.id)
-                        .padding(.trailing, 24)
+                    WallpaperActionLabel(title: "锁屏", symbol: "lock.rectangle", busy: actions.isBusy && actions.itemID == item.id,
+                        busyTitle: actions.canCancelPreparation ? "准备中" : "设置中")
                 }
                 .buttonStyle(.glass)
                 .disabled(actions.isBusy || !(item.isVideoWallpaper || item.isWebWallpaper || item.isSceneWallpaper) || !item.fileExists)

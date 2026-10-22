@@ -3,6 +3,24 @@
 extern int sandbox_check(pid_t pid, const char *operation, int type, ...);
 BOOL GWSandboxIsActive(void) { return sandbox_check(getpid(), NULL, 0) > 0; }
 
+BOOL GWSetWebDeviceScale(WKWebView *view, double scale) {
+    SEL selector = NSSelectorFromString(@"_setOverrideDeviceScaleFactor:");
+    if (![view respondsToSelector:selector]) return NO;
+    ((void (*)(id, SEL, double))objc_msgSend)(view, selector, scale);
+    return YES;
+}
+
+void GWAfterWebPresentation(WKWebView *view, void (^reply)(BOOL)) {
+    SEL selector = NSSelectorFromString(@"_doAfterNextPresentationUpdate:");
+    if (![view respondsToSelector:selector]) { reply(NO); return; }
+    ((void (*)(id, SEL, id))objc_msgSend)(view, selector, ^{ reply(YES); });
+}
+
+void GWCloseWebPage(WKWebView *view) {
+    SEL selector = NSSelectorFromString(@"_close");
+    if ([view respondsToSelector:selector]) ((void (*)(id, SEL))objc_msgSend)(view, selector);
+}
+
 // Isolate private-selector calls and Objective-C archive exceptions from Swift.
 BOOL GWUseRemoteVideoComposition(AVSampleBufferDisplayLayer *layer) {
     SEL selector = NSSelectorFromString(@"_setDisallowsVideoLayerDisplayCompositing:");

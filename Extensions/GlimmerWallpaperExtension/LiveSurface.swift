@@ -11,13 +11,27 @@ protocol GWNativeWallpaperSurface: AnyObject {
     var context: CAContext { get }
     var assetID: UUID { get }
     var lastBuffer: CVPixelBuffer? { get }
+    func snapshot() async throws -> CVPixelBuffer?
     func start(completion: @escaping (Bool) -> Void)
     func update(_ request: GWRequest)
+    func setSleeping(_ value: Bool)
     func stop()
 }
 
-/// An independently owned helper or web document feeds the native remote
-/// context. This never draws a window over the login/lock UI.
+extension GWNativeWallpaperSurface {
+    func snapshot() async throws -> CVPixelBuffer? { lastBuffer }
+}
+
+@MainActor
+func GWMakeNativeWallpaperSurface(config: GWConfiguration, url: URL, request: GWRequest) async throws -> any GWNativeWallpaperSurface {
+    guard config.liveDirectoryName != nil else { return try GWVideoSurface(config: config, video: url, request: request) }
+    let recipe = try await Task.detached(priority: .userInitiated) { try LiveWallpaperBundle.load(url) }.value
+    guard recipe.assetID == config.assetID else { throw GWError(51, "Live wallpaper revision changed") }
+    if recipe.kind == .web { return try GWWebLayerSurface(config: config, directory: url, recipe: recipe, request: request) }
+    return try GWLiveSurface(config: config, directory: url, request: request, recipe: recipe)
+}
+
+/// An independently owned Scene helper feeds the native remote context.
 @MainActor
 final class GWLiveSurface: GWNativeWallpaperSurface {
     private static let pool = SceneBackendServicePool(serviceNames: (0..<8).map { "com.boneink.Glimmer.LockScreenScene.slot\($0)" })
@@ -33,7 +47,7 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
     private(set) var lastError: String?
     private(set) var failureDetail: SceneBackendFailureDetail?
     private(set) var helperPID: Int32?
-    private(set) var webRuntime: WebWallpaperRuntime?
+    private let preparedRecipe: LiveWallpaperRecipe?
     private var client: SceneBackendXPCClient?
     private var lease: Int?
     private let sessionID = UUID()
@@ -47,25 +61,26 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
     private var sleeping = false
     private var sleepObservers = [NSObjectProtocol]()
 
-    init(config: GWConfiguration, directory: URL, request: GWRequest) throws {
+    init(config: GWConfiguration, directory: URL, request: GWRequest, recipe: LiveWallpaperRecipe? = nil) throws {
         guard let device = MTLCreateSystemDefaultDevice(), let commands = device.makeCommandQueue(),
               let context = (request.displayID.map { CAContext.remoteContext(withOptions: ["displayId": $0]) }
                 ?? CAContext.remoteContext()) as? CAContext, context.contextId != 0,
               GWUseRemoteVideoComposition(layer) else { throw GWError(50, "Live wallpaper composition is unavailable") }
         self.device = device; self.commands = commands; self.context = context
         self.directory = directory; self.request = request; assetID = config.assetID
+        preparedRecipe = recipe
         root.backgroundColor = NSColor.black.cgColor
         layer.videoGravity = config.gravity == "fit" ? .resizeAspect : .resizeAspectFill
         root.addSublayer(layer); context.layer = root
         update(request)
         for notification in [NSWorkspace.willSleepNotification, NSWorkspace.screensDidSleepNotification] {
             sleepObservers.append(NSWorkspace.shared.notificationCenter.addObserver(forName: notification, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.sleeping = true }
+                MainActor.assumeIsolated { self?.setSleeping(true) }
             })
         }
         for notification in [NSWorkspace.didWakeNotification, NSWorkspace.screensDidWakeNotification] {
             sleepObservers.append(NSWorkspace.shared.notificationCenter.addObserver(forName: notification, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.sleeping = false }
+                MainActor.assumeIsolated { self?.setSleeping(false) }
             })
         }
     }
@@ -77,13 +92,13 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
             guard let self else { return }
             do {
                 let directory = directory
-                let recipe = try await Task.detached(priority: .userInitiated) { try LiveWallpaperBundle.load(directory) }.value
+                let recipe = if let preparedRecipe { preparedRecipe }
+                    else { try await Task.detached(priority: .userInitiated) { try LiveWallpaperBundle.load(directory) }.value }
                 try Task.checkCancellation()
-                guard recipe.assetID == assetID, !stopped else { throw GWError(51, "Live wallpaper revision changed") }
+                guard recipe.assetID == assetID, recipe.kind == .scene, !stopped else { throw GWError(51, "Scene wallpaper revision changed") }
                 self.recipe = recipe
                 try createFramePool(recipe)
-                if recipe.kind == .scene { try await prepareScene(recipe) }
-                else { try await prepareWeb(recipe) }
+                try await prepareScene(recipe)
                 var lastTick: ContinuousClock.Instant?, elapsed = 0.0, sentPaused: Bool?
                 while !stopped, !Task.isCancelled {
                     let playing = request.shouldPlay && !sleeping
@@ -91,14 +106,6 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
                     let paused = frameCount > 0 && !playing
                     if sentPaused != paused {
                         try await client?.setPaused(paused)
-                        if recipe.kind == .web {
-                            if paused {
-                                // Cooperative pause cannot stop arbitrary JS
-                                // timers or network requests. Retain the native
-                                // frame and release the hidden web document.
-                                webRuntime?.dispose(); webRuntime = nil
-                            } else if webRuntime == nil { try await prepareWeb(recipe) }
-                        }
                         sentPaused = paused
                         lastTick = nil
                     }
@@ -107,8 +114,8 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
                         if let lastTick { elapsed += Self.seconds(lastTick.duration(to: now)) }
                         lastTick = now
                         let buffer: CVPixelBuffer
-                        if let client { buffer = try await sceneFrame(client, recipe: recipe, elapsed: elapsed) }
-                        else { buffer = try await webFrame(recipe) }
+                        guard let client else { throw GWError(52, "Live Scene helper is unavailable") }
+                        buffer = try await sceneFrame(client, recipe: recipe, elapsed: elapsed)
                         guard !stopped, !Task.isCancelled else { break }
                         if frameCount > 0, !request.shouldPlay || sleeping { continue }
                         if present(buffer) {
@@ -193,57 +200,6 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
         return buffer
     }
 
-    private func prepareWeb(_ recipe: LiveWallpaperRecipe) async throws {
-        let project = directory.appendingPathComponent("project")
-        let runtime = try WebWallpaperRuntime(projectURL: project.appendingPathComponent("project.json"),
-            entryURL: project.appendingPathComponent(recipe.entryFile!), propertiesJSON: recipe.propertiesJSON,
-            manualFrameExport: true, allowHTTPS: recipe.allowHTTPS, mutedPlayback: true, toleratesBlockedHTTPS: true)
-        webRuntime = runtime
-        runtime.webView.frame = .init(x: 0, y: 0, width: recipe.width, height: recipe.height)
-        runtime.webView.wantsLayer = true
-        try runtime.setFrameRateLimit(recipe.fps)
-        runtime.load()
-        let deadline = ContinuousClock.now + .seconds(15)
-        while runtime.state != .ready && runtime.state != .paused {
-            try Task.checkCancellation()
-            guard runtime.state != .failed, !stopped, ContinuousClock.now < deadline else {
-                throw GWError(57, runtime.lastError ?? "Live web wallpaper did not become ready")
-            }
-            try await Task.sleep(for: .milliseconds(25))
-        }
-    }
-
-    private func webFrame(_ recipe: LiveWallpaperRecipe) async throws -> CVPixelBuffer {
-        guard let runtime = webRuntime, runtime.state != .failed else { throw GWError(58, webRuntime?.lastError ?? "Web document closed") }
-        let webView = runtime.webView
-        let advance = SceneBackendDeadlineRace<Bool>()
-        webView.callAsyncJavaScript("window.__gwLockScreenCaptureFrame(); return true;", arguments: [:], in: nil, in: .page) {
-            switch $0 {
-            case .success: advance.finish(.success(true))
-            case .failure(let error): advance.finish(.failure(error))
-            }
-        }
-        _ = try await advance.wait(seconds: 5)
-        let snapshot = SceneBackendDeadlineRace<NSImage>()
-        let configuration = WKSnapshotConfiguration()
-        configuration.rect = webView.bounds
-        configuration.snapshotWidth = NSNumber(value: recipe.width)
-        webView.takeSnapshot(with: configuration) { image, error in
-            if let image { snapshot.finish(.success(image)) }
-            else { snapshot.finish(.failure(error ?? GWError(59, "No live Web frame"))) }
-        }
-        let image = try await snapshot.wait(seconds: 5)
-        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { throw GWError(60, "Invalid Web frame") }
-        let buffer = try allocateFrame()
-        CVPixelBufferLockBaseAddress(buffer, [])
-        defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
-        guard let bitmap = CGContext(data: CVPixelBufferGetBaseAddress(buffer), width: recipe.width, height: recipe.height,
-            bitsPerComponent: 8, bytesPerRow: CVPixelBufferGetBytesPerRow(buffer), space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: CGBitmapInfo.byteOrder32Little.rawValue | CGImageAlphaInfo.premultipliedFirst.rawValue) else { throw GWError(61, "Cannot copy Web frame") }
-        bitmap.draw(cgImage, in: .init(x: 0, y: 0, width: recipe.width, height: recipe.height))
-        return buffer
-    }
-
     private func createFramePool(_ recipe: LiveWallpaperRecipe) throws {
         let attributes: [String: Any] = [kCVPixelBufferWidthKey as String: recipe.width,
             kCVPixelBufferHeightKey as String: recipe.height, kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
@@ -281,10 +237,10 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
         layer.frame = root.bounds
         CATransaction.commit(); CATransaction.flush()
     }
+    func setSleeping(_ value: Bool) { sleeping = value }
     func stop() {
         guard !stopped else { return }
         stopped = true; loop?.cancel(); loop = nil
-        webRuntime?.dispose(); webRuntime = nil
         for observer in sleepObservers { NSWorkspace.shared.notificationCenter.removeObserver(observer) }
         sleepObservers.removeAll()
         let client = client, lease = lease, pid = helperPID, session = sessionID

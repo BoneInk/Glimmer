@@ -104,9 +104,10 @@ This backend intentionally uses undocumented system interfaces:
 - the `WallpaperSettingsViewModels` Codable/XPC schema and wallpaper XPC protocol.
 
 Unknown classes/ivars, failed bounds checks, or failed video composition yield
-errors. Up to 12 surfaces are held; ordinary `default` presentation freezes after
-the initial frame, `locked`/`idle` and preview play, inactive/sleep states pause,
-and invalidation/connection teardown releases that connection's surfaces. Context
+errors. Up to 12 surfaces are held. Explicit inactive/sleep states pause; an
+ordinary `default` presentation is not treated as an inactive surface, because
+real lock-screen acquisitions also use that mode. Invalidation/connection teardown
+releases that connection's surfaces. Context
 ownership transfers on re-acquire so an old connection cannot tear down a surface
 already re-owned by a new connection. No unsupported downloads, migration or
 shuffle operation claims success as an implemented feature.
@@ -131,20 +132,34 @@ manifest records every regular file's size and SHA-256; both processes reject
 links, unexpected files, mutations and unsafe permissions. Existing schema 1
 video configurations remain supported.
 
-The extension presents live frames through the existing remote CAContext and
-sample-buffer composition. Scene sessions use eight independently identified,
+The extension presents live content through the existing remote CAContext.
+Scene sessions use sample-buffer composition and eight independently identified,
 same-team authenticated nested XPC services, isolated from desktop renderers.
 Each helper accepts only the extension identity. An extension-owned Metal copy
 completes before the helper's IOSurface is acknowledged. Helper caches are
 explicit per-revision, per-slot private directories prepared by the application.
 
-Web uses a nonpersistent WKWebView without an NSWindow and advances/captures
-frames at the selected FPS cap. HTTPS is opt-in for the lock-screen runtime;
+Web uses a separate `GWWebLayerSurface`: a nonpersistent WKWebView exports its
+live compositor tree, rather than captured playback frames. An unshown AppKit
+window schedules rendering; it is never ordered on screen. Export waits for a
+WebKit presentation update and reconciles AppKit backing-layer ownership on
+window updates, without fixed startup delays or a host frame timer. Snapshots
+are coalesced and limited to first-frame readiness, explicit OS snapshot requests
+and a transition to hidden/sleep. WebKit page output muting keeps HTML video and
+Web Audio timelines running without sound. A native-display-clock RAF pacer
+limits main-frame script callbacks to the configured FPS, without advancing a
+synthetic clock. A scoped `userInitiatedAllowingIdleSystemSleep` process activity
+prevents App Nap from throttling the remotely visible page, without disabling
+idle system sleep; it ends when the owned document is released.
+CSS animations, videos, workers and timers retain their own
+native cadence; the setting is not a universal browser/GPU workload cap.
+The export resolution bounds the page's device scale and snapshot pixels.
+HTTPS is opt-in for the lock-screen runtime;
 HTTP, external navigation, child frames and native resource grants stay closed.
 Weather requires a compatible service and author configuration. Hidden pages
 are destroyed, retaining the last native frame; resume creates a current page.
 Scene sessions pause and owned helpers terminate when their surface is released.
-Source size/FPS limits apply to both live and recorded modes. Author/settings
+Source size/FPS limits apply during preparation. Author/settings
 changes apply when the wallpaper is prepared and submitted again.
 
 Run `bash scripts/test-live-lock-screen-sandbox.sh` after the full build. It uses a copied verified local asset profile, synthetic clock/weather fixtures (coordinates 0,0), isolated review stores and a separately signed diagnostic extension. It never registers a provider or edits the actual system store.
@@ -153,6 +168,31 @@ Validation: `Tests/LiveWallpaperBundleTests.swift`,
 `Tests/LiveLockScreenPreparationTests.swift`, and the diagnostic-only
 `--isolated-live-probe <isolated-shared-directory>` exercise private manifests,
 production preparation/staging/replacement, real sandbox Scene/Web frames,
-clock resume, optional HTTPS weather, native snapshot/context XPC transport,
-pause and resource release. These isolated tests do not establish visual
+clock/video recovery after document recreation, absence of periodic playback
+snapshots, optional HTTPS weather, native snapshot/context XPC transport,
+pause and resource release. `scripts/build-web-layer-receiver.sh` builds a
+separate CALayerHost receiver for visual cross-process checks against the
+production diagnostic's `--web-layer-producer` mode. These isolated tests do not establish visual
 acceptance by the actual system lock-screen host or FileVault/startup support.
+
+
+### Current experiment boundary (macOS 27.0.1, 2026-10-22)
+
+The production Web layer path passed sandbox, cross-process visual, muted video,
+current-clock, optional HTTPS, hidden/sleep recreation and NSXPC snapshot/context
+checks. A 12-FPS MP4 fixture ran for 43 seconds and completed eight native loops;
+a real 4K WebM page sustained approximately 30 RAF callbacks/second for over
+100 seconds with no periodic playback snapshots. These are page-callback
+measurements, not measured lock-screen scanout or a power-consumption result.
+
+Build 41 resolves the reproduced 14-second, 3840x2160/60-FPS VP9 WebM second-loop failure with the shared lossless container adapter. `WebMVP9Container` retains encoded samples and constructs standard `vp09`/`vpcC` sample tables; `WebWallpaperMediaResolver` supplies correct MP4 MIME, byte ranges and a private bounded cache. Both desktop Web runtimes and this live layer backend use the same resource layer. The original author HTML/media, live page clock, and user properties are retained. No external FFmpeg executable/library is a production dependency.
+
+The exact real video's compressed sample SHA-256 matched before/after, and all 840 independently decoded frame hashes matched. An isolated sandbox live page ran 74 seconds, completed five native loops and sustained about 30 page RAF callbacks/second without periodic playback snapshots. Unsupported audio/multiple-track, alpha/lacing/track transforms, other profiles and oversized media retain the original path; this does not claim a fix for every WebM format. Current evidence is in `evidence/20261022-webm-loop-fix/`.
+
+On the same host, the signed embedded Build 40 was subsequently loaded by
+WallpaperAgent from `build/web-layer-lock-screen/Glimmer.app`. The system
+acquired a non-preview `default` remote context and the Web layer reached
+first-presentation readiness in 0.533 seconds after context creation. The system
+store's content matched the pre-test store apart from role timestamps. This
+confirms native provider launch/acquisition, not visual or frame-rate acceptance
+on the actual password screen. Build 41 media-loop validation is recorded separately above.

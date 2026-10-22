@@ -14,7 +14,17 @@ trap cleanup EXIT
 mkdir -p "$OUT"
 bash "$ROOT/scripts/build-wallpaper-extension.sh" --diagnostic-entry --output "$WORK/Probe.bundle"
 bash "$ROOT/scripts/embed-lock-screen-scene-backend.sh" "$APP" "$WORK/Probe.bundle"
-FIXTURES="$(python3 "$ROOT/Tests/LiveLockScreenFixtureBuilder.py" "$PROFILE")"
+cat > "$WORK/MakeVideo.swift" <<'SWIFT'
+import Foundation
+@main struct MakeVideo {
+    static func main() async throws {
+        try await SyntheticVideoWriter.write(to: URL(fileURLWithPath: CommandLine.arguments[1]))
+    }
+}
+SWIFT
+swiftc -parse-as-library "$ROOT/Sources/Glimmer/Media/SyntheticVideoWriter.swift" "$WORK/MakeVideo.swift" -o "$WORK/make-video"
+"$WORK/make-video" "$WORK/video.mp4"
+FIXTURES="$(python3 "$ROOT/Tests/LiveLockScreenFixtureBuilder.py" "$PROFILE" "$WORK/video.mp4")"
 GW_CONFIGURED_EXPORT_APP="$APP" GW_LIVE_PROBE_FIXTURES="$FIXTURES" GW_SCENE_EXPORT_ASSET_PROFILE="$PROFILE" \
   bash "$ROOT/scripts/test-live-lock-screen-preparation.sh" > "$OUT/preparation.log" 2>&1
 for kind in scene web web-network prepared-scene prepared-web; do
@@ -26,10 +36,17 @@ p=pathlib.Path(sys.argv[1])
 for kind in ['scene','web','web-network','prepared-scene','prepared-web']:
     value=json.loads((p/(kind+'.json')).read_text())
     assert value['success'] and value['sandboxActive'] and not value['systemWallpaperModified'], value
-    assert value['frameCount']>8 and value['pausedFrameHeld'] and value['resumedChangingFrames'], value
+    assert value['pausedFrameHeld'] and value['resumedChangingFrames'], value
+    if 'web' not in kind: assert value['frameCount']>8, value
     assert value['ownedHelperExited'] and value['releasedContextAndFrames'], value
+    assert value['defaultModePlayback'] and value['sleepFrameHeld'] and value['wakeResumedSameContext'], value
     assert value['contextXPCTransport'] and value['snapshotXPCTransport'], value
-    if 'web' in kind: assert value['currentWallClockAfterPause'] and value['hiddenWebDocumentReleased'], value
+    if 'web' in kind:
+        assert value['currentWallClockAfterPause'] and value['hiddenWebDocumentReleased'], value
+        assert value['videoPlayingAfterWake'] and value['pageAudioMuted'] and value['noPeriodicSnapshots'], value
+        assert value['measurement']['snapshotsDuringPlayback']==0 and value['resumedMeasurement']['snapshotsDuringPlayback']==0, value
+        assert 3 <= value['documentCount'] and value['snapshotCount'] <= 12, value
+        assert value['webRenderHostUnshown'], value
     if kind=='web': assert value['networkResult']=='blocked', value
     if kind in ['web-network','prepared-web']: assert value['networkResult']=='allowed', value
 print('PASS: real sandbox Scene/Web frames, clock resume, optional HTTPS weather, private production staging, pause/release and XPC composition; actual system store unchanged')

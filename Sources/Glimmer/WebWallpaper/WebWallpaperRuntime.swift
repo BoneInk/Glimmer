@@ -50,10 +50,16 @@ final class WebWallpaperRuntime: NSObject {
     /// pending settings can be changed before loading and are delivered on readiness.
     private let manualFrameExport: Bool
     private let toleratesBlockedHTTPS: Bool
+    private let animationFrameRateLimit: Int?
 
     init(projectURL: URL, entryURL: URL, propertiesJSON: Data, manualFrameExport: Bool = false,
-         allowHTTPS: Bool = false, mutedPlayback: Bool = false, toleratesBlockedHTTPS: Bool = false) throws {
+         allowHTTPS: Bool = false, mutedPlayback: Bool = false, toleratesBlockedHTTPS: Bool = false,
+         animationFrameRateLimit: Int? = nil, remoteLayerRendering: Bool = false) throws {
+        guard animationFrameRateLimit.map({ (1...240).contains($0) }) ?? true else {
+            throw WebWallpaperFailure(message: "Web animation frame rate must be in 1...240.")
+        }
         self.manualFrameExport = manualFrameExport
+        self.animationFrameRateLimit = animationFrameRateLimit
         capabilities = WebWallpaperCapabilities(remoteResources: allowHTTPS)
         self.toleratesBlockedHTTPS = toleratesBlockedHTTPS
         let location = try WebWallpaperProjectLocation(projectURL: projectURL, entryURL: entryURL)
@@ -65,11 +71,14 @@ final class WebWallpaperRuntime: NSObject {
         configuration.websiteDataStore = .nonPersistent()
         configuration.setURLSchemeHandler(schemeHandler, forURLScheme: WebWallpaperProjectLocation.scheme)
         configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
-        if manualFrameExport { configuration.preferences.inactiveSchedulingPolicy = .none }
-        configuration.mediaTypesRequiringUserActionForPlayback = mutedPlayback ? .all : .audio
+        if manualFrameExport || remoteLayerRendering { configuration.preferences.inactiveSchedulingPolicy = .none }
+        // Requiring a gesture for video prevents lock-screen backgrounds from
+        // loading at all. Silence output separately while allowing video frames.
+        configuration.mediaTypesRequiringUserActionForPlayback = mutedPlayback ? [] : .audio
         configuration.userContentController.add(messages, name: "gwWallpaper")
         webView = WKWebView(frame: .zero, configuration: configuration)
         super.init()
+        if mutedPlayback { try WebWallpaperMutedMediaPolicy.apply(to: webView) }
         messages.runtime = self
         webView.navigationDelegate = self
         webView.uiDelegate = self
@@ -237,6 +246,9 @@ final class WebWallpaperRuntime: NSObject {
         controller.addUserScript(WKUserScript(source: WebWallpaperBridge.script(token: token), injectionTime: .atDocumentStart, forMainFrameOnly: true))
         if manualFrameExport {
             controller.addUserScript(WKUserScript(source: Self.manualFrameClock,
+                injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        } else if let animationFrameRateLimit {
+            controller.addUserScript(WKUserScript(source: WebWallpaperFramePacer.script(fps: animationFrameRateLimit),
                 injectionTime: .atDocumentStart, forMainFrameOnly: true))
         }
         navigation = webView.load(URLRequest(url: location.documentURL))

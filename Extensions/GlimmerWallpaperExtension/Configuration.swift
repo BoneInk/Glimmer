@@ -110,7 +110,11 @@ struct GWRequest {
         activity = GWField("activityState", in: value).map { String(describing: $0) }
     }
     var shouldPlay: Bool {
-        if activity?.lowercased().contains("inactive") == true || activity?.lowercased().contains("sleep") == true { return false }
-        return preview || mode == "locked" || mode == "idle"
+        let state = activity?.lowercased() ?? ""
+        if ["inactive", "sleep", "hidden", "suspended"].contains(where: state.contains) { return false }
+        // presentationMode describes the host surface, not its visibility.
+        // Real lock-screen acquisitions also arrive as "default". Only an
+        // explicit inactive state, sleep or invalidation may freeze the clock.
+        return true
     }
 }

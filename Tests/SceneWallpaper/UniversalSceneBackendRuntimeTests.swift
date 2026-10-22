@@ -22,6 +22,8 @@ private final class FakeSceneBackendTransport: SceneBackendSessionTransport {
     var fps = 30
     var fill = true
     var fpsCalls = [Int]()
+    var holdNextRender = false
+    var heldRender: CheckedContinuation<Void, Never>?
     let instanceID = UUID()
     var statusValue: SceneBackendProcessStatus {
         .init(helperPID: Self.helperPID, instanceID: instanceID,
@@ -49,6 +51,10 @@ private final class FakeSceneBackendTransport: SceneBackendSessionTransport {
     func render(_ input: SceneFrameInput) async throws -> (SceneFrameToken, IOSurface) {
         guard let configuration else { throw UniversalSceneBackendError.notReady }
         renders.append(input)
+        if holdNextRender {
+            holdNextRender = false
+            await withCheckedContinuation { heldRender = $0 }
+        }
         let bytesPerRow = (configuration.width * 4 + 255) & ~255
         guard let surface = IOSurface(properties: [
             .width: configuration.width, .height: configuration.height, .bytesPerElement: 4,
@@ -228,6 +234,17 @@ private final class FakeSceneBackendTransport: SceneBackendSessionTransport {
         try check(runtime.activeRuntime > pausedTime && runtime.activeRuntime < pausedTime + 0.25 &&
                   runtime.frameCount > beforePause,
                   "resume continues from active time without adding paused duration")
+        fake.holdNextRender = true
+        for _ in 0..<100 where fake.heldRender == nil { try await Task.sleep(for: .milliseconds(5)) }
+        try check(fake.heldRender != nil, "pause/resume regression holds a real in-flight frame request")
+        runtime.setPaused(true)
+        runtime.setPaused(false)
+        for _ in 0..<100 where runtime.state != .ready || fake.pauses.last != false { try await Task.sleep(for: .milliseconds(5)) }
+        let rapidResumeCount = runtime.frameCount
+        let pendingFrame = fake.heldRender; fake.heldRender = nil; pendingFrame?.resume()
+        try await Task.sleep(for: .milliseconds(180))
+        try check(runtime.state == .ready && runtime.frameCount > rapidResumeCount + 1,
+                  "resume while a cancelled frame is still draining restarts the continuous Scene loop")
         runtime.setSceneSound(enabled: true, volume: 0.5)
         for _ in 0..<100 where fake.sounds.last?.enabled != true { try await Task.sleep(for: .milliseconds(5)) }
         for _ in 0..<100 where runtime.processStatus?.soundEnabled != true { try await Task.sleep(for: .milliseconds(5)) }
