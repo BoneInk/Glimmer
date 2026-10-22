@@ -1169,7 +1169,11 @@ final class SelfTestRunner {
 
         let gitignorePath = sourceRoot.appendingPathComponent(".gitignore")
         let ignoreText = (try? String(contentsOf: gitignorePath, encoding: .utf8)) ?? ""
-        let patterns = Set(ignoreText.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) })
+        // Anchored rules (/build/) match at the repository root too; compare
+        // without the leading slash so either spelling satisfies the check.
+        let patterns = Set(ignoreText.split(separator: "\n").map {
+            $0.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "^/", with: "", options: .regularExpression)
+        })
         let required = ["build/", "dist/", "*.app", "*.dmg"]
         let missing = required.filter { !patterns.contains($0) }
         results.append(TestResult(
