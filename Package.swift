@@ -6,10 +6,14 @@ import PackageDescription
 
 let package = Package(
     name: "Glimmer",
-    platforms: [.macOS(.v26)],
+    platforms: [.macOS("26.0")],
+    dependencies: [
+        .package(path: "Vendor/OpenWallpaperEngine/Vendor/Sparkle")
+    ],
     targets: [
         .executableTarget(
             name: "Glimmer",
+            dependencies: [.product(name: "Sparkle", package: "Sparkle")],
             path: "Sources/Glimmer"
         )
     ]

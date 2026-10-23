@@ -10,6 +10,9 @@
 | `scripts/build-app.sh` | 编译全部模块、生成 `.app`、拷贝资源；完整 Scene 构建需要有效证书签名身份 |
 | `scripts/make-dmg.sh` | 生成压缩 DMG、Applications 符号链接、SHA-256 与 manifest；默认保留源 App 的有效签名，可显式选择 Developer ID 重签与公证 |
 | `scripts/package-release.sh` | 打包入口：可先构建再打包；`--verify` 校验已有 DMG |
+| `scripts/package-update.sh` | 为应用内更新生成签名 ZIP、SHA-256 与签名清单，不上传 |
+
+应用内更新采用「弹窗提醒 → 用户确认 → 应用内下载与安装」，设置中可关闭提醒。首次接入、私钥保管及后续发布清单的步骤见 [应用内更新](docs/auto-updates.md)。DMG 继续用于首次安装。
 
 `scripts/build-app.sh --dmg` 会在构建完成后自动调用 `scripts/make-dmg.sh`（无参数，使用默认路径）。
 

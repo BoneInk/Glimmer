@@ -19,6 +19,7 @@
 - Supports native animated lock screens on macOS.
 - Imports local live wallpapers.
 - Smooth, pleasing transition animations.
+- New-version prompts with in-app download and installation after confirmation; reminders can be disabled under Settings → Software Update.
 - Additional wallpaper sources and features are in development.
 
 ## Installation
@@ -30,6 +31,8 @@ Requires an **Apple Silicon Mac (M-series chip) running macOS 26 or later**. The
 3. Launch Glimmer from **Applications**.
 
 The current development preview is **signed with Apple Development and has not been notarized by Apple**. macOS may block it when first opened on another Mac. Check the corresponding release notes and accompanying `manifest.json` for the package's signing status.
+
+In-app updates require a version that includes this feature; existing users must upgrade manually once. Future updates appear in a prompt and are downloaded and installed within the app after confirmation, without opening a web page. Manual update checks remain available when reminders are disabled. Maintainer signing and publishing steps are documented in the [in-app update guide](docs/auto-updates.md) (Chinese).
 
 ## Getting Started
 

@@ -25,6 +25,7 @@ import UniformTypeIdentifiers
 // ```
 struct GWSettingsView: View {
     @Environment(\.workspaceContentTopInset) private var contentTopInset
+    @Environment(\.appUpdater) private var appUpdater
     let coordinator: GWSettingsCoordinator
     let cleanup: GWStorageCleanupController
     let loginItem: GWLoginItemService
@@ -52,6 +53,7 @@ struct GWSettingsView: View {
                 performanceCard
                 LockScreenExportSettingsSection(coordinator: coordinator)
                 launchCard
+                if let appUpdater { GWAppUpdatesSection(updater: appUpdater) }
                 if let policy { GWPolicySettingsView(controller: policy, showsResetButton: false) }
                 if let playlist { playlistEntry(playlist) }
                 DisclosureGroup("存储与高级工具", isExpanded: $maintenanceExpanded) {

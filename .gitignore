@@ -30,6 +30,7 @@ xcuserdata/
 !.env.example
 *.p12
 *.pfx
+*.ed25519.key
 *.mobileprovision
 *.provisionprofile
 

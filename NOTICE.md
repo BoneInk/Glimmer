@@ -13,6 +13,10 @@ Glimmer 原创源码以 [MIT](LICENSE) 许可发布。仓库同时包含第三�
 
 主程序通过 IPC 与独立 helper 通信，不直接链接该 framework。App 包含 GPL 后端及其第三方依赖；`scripts/embed-scene-backend.sh` 将对应许可、来源记录和包含修改的源码归档放入 `Contents/Resources/SceneBackend*`。打包和分发时应一并保留这些文件。
 
+## 自动更新
+
+主程序直接链接 Sparkle **2.10.0**（MIT，含组件各自声明），用于检查、下载、验证和安装更新。复用 `Vendor/OpenWallpaperEngine/Vendor/Sparkle/` 中的原版框架，许可随 App 分发为 `Contents/Resources/Sparkle-LICENSE.txt`。更新私钥仅由发布者保存，不进入源码、App 或安装包。
+
 ## SceneScript 语法与模块分析
 
 | 组件 | 固定版本 | 许可 | 源码及许可位置 |

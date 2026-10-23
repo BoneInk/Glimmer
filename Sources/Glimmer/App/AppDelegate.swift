@@ -36,6 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var startupProgressWindow: NSWindow?
     private var startupProgressIndicator: NSProgressIndicator?
     private var startupStatusLabel: NSTextField?
+    let updater = GWAppUpdater()
 
     var isReady: Bool { store != nil }
 
@@ -277,6 +278,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuBar.openLibraryHandler = { [weak self] in self?.showLibraryWindow() }
         menuBar.quitHandler = { [weak self] in self?.requestQuit() }
         menuBar.previewHandler = { [weak self] in self?.showPreviewWindow() }
+        menuBar.checkForUpdatesHandler = { [weak self] in self?.updater.checkForUpdates() }
+        menuBar.canCheckForUpdatesProvider = { [weak self] in self?.updater.canCheckForUpdates == true }
         menuBar.policyStatusProvider = { [weak self] in
             guard let self, self.policy.isPolicyBlockingPlayback else { return nil }
             return self.policy.status.reasonListText
@@ -307,6 +310,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         closeStartupProgress()
         showLibraryWindow()
         workshop.prepareIfNeeded()
+        updater.start()
     }
 
     private func showStartupProgress() {
@@ -476,6 +480,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         .environment(\.lockScreenActions, lockScreenActions)
         .environment(\.wallpaperDeletionAction, wallpaperDeletionAction)
+        .environment(\.appUpdater, updater)
         let window = WindowGlassBackdrop.makeWindow(rootView: root, hidesPageTitle: true)
         window.title = "Glimmer"
         window.titleVisibility = .hidden

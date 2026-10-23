@@ -4,7 +4,7 @@ import Observation
 /// 菜单栏控制器（F08）：打开素材库、播放/暂停、切换到壁纸、退出。
 @MainActor
 @Observable
-final class MenuBarController: NSObject, NSMenuDelegate {
+final class MenuBarController: NSObject, NSMenuDelegate, NSMenuItemValidation {
     private let store: VideoLibraryStore
     private let playback: DesktopPlaybackController
     private let importService: ImportService
@@ -17,6 +17,8 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     var quitHandler: (() -> Void)?
     /// 由 AppDelegate 注入：打开桌面预览窗口（不影响真实桌面）。
     var previewHandler: (() -> Void)?
+    var checkForUpdatesHandler: (() -> Void)?
+    var canCheckForUpdatesProvider: (() -> Bool)?
     /// 由 AppDelegate 注入：当前策略挂起原因（无挂起返回 nil）。
     var policyStatusProvider: (() -> String?)?
 
@@ -148,12 +150,27 @@ final class MenuBarController: NSObject, NSMenuDelegate {
 
         menu.addItem(.separator())
         let quitItem = NSMenuItem(title: "退出Glimmer", action: #selector(quit), keyEquivalent: "q")
+        let updateItem = NSMenuItem(title: "检查更新…", action: #selector(checkForUpdates), keyEquivalent: "")
+        updateItem.target = self
+        menu.addItem(updateItem)
+        menu.addItem(.separator())
         quitItem.target = self
         menu.addItem(quitItem)
     }
 
     @objc private func openLibrary() {
         openLibraryHandler?()
+    }
+
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if menuItem.action == #selector(checkForUpdates) {
+            return canCheckForUpdatesProvider?() == true
+        }
+        return true
+    }
+
+    @objc private func checkForUpdates() {
+        checkForUpdatesHandler?()
     }
 
     @objc private func openPreview() {

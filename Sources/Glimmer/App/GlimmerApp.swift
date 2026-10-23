@@ -9,6 +9,12 @@ struct GlimmerApp: App {
         Settings {
             SettingsSceneRoot(delegate: appDelegate)
         }
+        .commands {
+            CommandGroup(after: .appInfo) {
+                Button("检查更新…") { appDelegate.updater.checkForUpdates() }
+                    .disabled(!appDelegate.updater.canCheckForUpdates)
+            }
+        }
     }
 }
 
@@ -38,6 +44,7 @@ struct SettingsSceneRoot: View {
                 onOpenPlaylist: { delegate.showPlaylistWindow() }
             )
             .environment(\.lockScreenActions, delegate.lockScreenActions)
+            .environment(\.appUpdater, delegate.updater)
         } else {
             ProgressView("正在准备设置…")
                 .frame(width: 420, height: 300)

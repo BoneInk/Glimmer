@@ -370,6 +370,10 @@ if [ "$MODE" = "developer-id" ] || [ "$MODE" = "release" ]; then
       --entitlements "$EXTENSION_ENTITLEMENTS" "$WALLPAPER_EXTENSION" \
       || die "动态锁屏扩展 Developer ID 签名失败。"
   fi
+  if [ -d "$TARGET_APP/Contents/Frameworks/Sparkle.framework" ]; then
+    GW_SIGNING_IDENTITY="$SIGN_IDENTITY" bash "$ROOT/scripts/embed-app-updater.sh" "$TARGET_APP" --developer-id \
+      || die "自动更新组件 Developer ID 签名失败。"
+  fi
   if ! codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$TARGET_APP"; then
     die "Developer ID 签名失败。请确认证书有效且私钥可用（security find-identity -v -p codesigning）。"
   fi

@@ -20,7 +20,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="Glimmer"
 BUNDLE_ID="com.boneinkzhong.glimmer"
 VERSION="0.17.0"
-BUILD_NUMBER="42"
+BUILD_NUMBER="45"
 CONFIG="${CONFIG:-release}"
 SDK="$(xcrun --show-sdk-path --sdk macosx)"
 DEPLOY_TARGET="arm64-apple-macos26.0"
@@ -29,6 +29,8 @@ OUT="${GW_OUT_DIR:-$ROOT/build}"
 APP="$OUT/$APP_NAME.app"
 SWIFT_SOURCES_ROOT="${GW_SWIFT_SOURCES_ROOT:-$ROOT/Sources}"
 SRC="$SWIFT_SOURCES_ROOT/Glimmer"
+SPARKLE_DIR="$ROOT/Vendor/OpenWallpaperEngine/Vendor/Sparkle/Sparkle.xcframework/macos-arm64_x86_64"
+SPARKLE_FLAGS=(-F "$SPARKLE_DIR" -framework Sparkle)
 . "$ROOT/scripts/signing-identity.sh"
 SIGN_IDENTITY="$(gw_resolve_signing_identity)"
 export GW_SIGNING_IDENTITY="$SIGN_IDENTITY"
@@ -50,7 +52,7 @@ done
 # UI/Workshop/、UI/Policies/），用于在没有并行模块干扰的情况下验证本地功能。
 # 正式交付必须使用默认 full 范围。
 SCOPE="${GW_SCOPE:-full}"
-LOCAL_DIRS_DEFAULT="App Desktop Display Import LockScreen Media Model SelfTest Store Support UI"
+LOCAL_DIRS_DEFAULT="App Desktop Display Import LockScreen Media Model SelfTest Store Support Updates UI"
 PRUNE_PATHS_DEFAULT="$SRC/Steam $SRC/Policies $SRC/Playlist $SRC/Settings $SRC/UI/Workshop $SRC/UI/Policies"
 
 collect_sources() {
@@ -108,6 +110,7 @@ if [ "$DO_TYPECHECK" = "1" ]; then
     -typecheck \
     -target "$DEPLOY_TARGET" \
     -sdk "$SDK" \
+    "${SPARKLE_FLAGS[@]}" \
     "${SOURCES[@]}"
   echo "类型检查通过"
   exit 0
@@ -129,6 +132,7 @@ swiftc \
   -target "$DEPLOY_TARGET" \
   -sdk "$SDK" \
   -framework AppKit -framework SwiftUI -framework AVFoundation -framework CoreGraphics \
+  "${SPARKLE_FLAGS[@]}" -Xlinker -rpath -Xlinker '@executable_path/../Frameworks' \
   -o "$APP/Contents/MacOS/$APP_NAME" \
   "${SOURCES[@]}"
 
@@ -157,6 +161,20 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
+
+python3 - "$ROOT/Resources/UpdateConfiguration.plist" "$APP/Contents/Info.plist" <<'PY'
+import base64, plistlib, sys
+from urllib.parse import urlsplit
+from pathlib import Path
+config = plistlib.loads(Path(sys.argv[1]).read_bytes())
+feed = urlsplit(config['SUFeedURL'])
+assert feed.scheme == 'https' and feed.hostname and not feed.username and not feed.password
+assert len(base64.b64decode(config['SUPublicEDKey'], validate=True)) == 32
+target = Path(sys.argv[2])
+info = plistlib.loads(target.read_bytes())
+info.update(config)
+target.write_bytes(plistlib.dumps(info))
+PY
 
 echo "== 生成图标 =="
 if [ ! -f "$ROOT/Resources/AppIcon.icns" ] \
@@ -202,6 +220,9 @@ if [ "$SCOPE" = "full" ]; then
   bash "$ROOT/scripts/embed-scene-backend.sh" "$APP"
   bash "$ROOT/scripts/embed-lock-screen-scene-backend.sh" "$APP"
 fi
+
+echo "== 嵌入自动更新组件 =="
+bash "$ROOT/scripts/embed-app-updater.sh" "$APP"
 
 echo "== 代码签名（$(gw_signing_description "$SIGN_IDENTITY")）=="
 # Helpers/extensions have their own signatures and required entitlements.
