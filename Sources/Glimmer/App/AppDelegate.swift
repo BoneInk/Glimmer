@@ -4,7 +4,7 @@ import SwiftUI
 /// 应用委托：管理窗口、状态栏与退出生命周期，并持有全部子系统。
 ///
 /// 设计要点：
-/// - 标准应用窗口支持 Dock/Command-Tab，菜单栏保留快捷控制。
+/// - 主窗口打开时显示 Dock/Command-Tab；关闭后仅保留状态栏入口。
 /// - 关闭管理窗口不会停止桌面播放；预览播放器随窗口关闭而释放。
 /// - 退出时停止所有会话、计时器与助手进程并落盘；不会修改系统桌面图片。
 @MainActor
@@ -41,8 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var isReady: Bool { store != nil }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Standard application windows remain discoverable through Dock/Cmd-Tab;
-        // closing them still leaves desktop playback and the menu bar running.
+        // Show Dock/Cmd-Tab during startup and while the main window is open.
         NSApp.setActivationPolicy(.regular)
         beginStorageMigration()
     }
@@ -448,6 +447,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func showLibraryWindow() {
         guard isReady else { return }
+        NSApp.setActivationPolicy(.regular)
         if libraryWindow == nil {
             libraryWindow = makeLibraryWindow()
         }
@@ -579,6 +579,8 @@ extension AppDelegate: NSWindowDelegate {
             // 关闭管理窗口：真实桌面播放继续；窗口内的预览播放器随视图层级销毁。
             window.contentViewController = nil
             libraryWindow = nil
+            // 主窗口关闭后仅保留状态栏入口，桌面播放继续运行。
+            NSApp.setActivationPolicy(.accessory)
         }
     }
 }
