@@ -30,9 +30,6 @@ struct GWAppUpdatesSection: View {
                 set: { updater.setAutomaticallyChecksForUpdates($0) }))
                 .toggleStyle(.switch)
                 .disabled(!updater.isStarted)
-            Text("启动时及每隔 24 小时检查新版本，发现更新后弹窗提醒。确认后直接在应用内下载、安装并重新启动。关闭提醒后仍可手动检查更新。")
-                .font(.caption)
-                .foregroundStyle(.secondary)
             GWSettingsFootnote(text: updater.statusMessage, isError: updater.hasError)
             if let lastCheck = updater.lastUpdateCheckDate {
                 Text("上次检查：\(GWSettingsFormat.dateTime(lastCheck))")

@@ -92,8 +92,6 @@ struct LockScreenMaintenanceSection: View {
         if let actions {
             VStack(alignment:.leading,spacing:10) {
                 Label("动态锁屏（实验性）",systemImage:"lock.rectangle").font(.callout.weight(.medium))
-                Text("会同时更新系统锁屏和桌面底图；恢复可还原此前配置。")
-                    .font(.caption).foregroundStyle(.secondary)
                 Button("恢复此前锁屏配置") {error=actions.restorePrevious()}
                     .buttonStyle(.glass).disabled(actions.isBusy || !actions.coordinator.canRestorePrevious)
                 LockScreenOperationStatus(actions:actions)

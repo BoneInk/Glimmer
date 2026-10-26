@@ -35,7 +35,6 @@ struct GWPolicySettingsView: View {
                     hint: "任一屏幕上有应用窗口铺满菜单栏与 Dock 之间的可用区域时，暂停全部桌面壁纸。",
                     identifier: "gw.policy.toggle.maximizedWindow"
                 )
-                GWSettingsFootnote(text: "通过辅助功能事件监听窗口变化，无定时检测。窗口铺满菜单栏与 Dock 之间的可用区域时暂停，移开后按恢复设置继续播放。")
                 if controller.settings.pauseOnMaximizedWindow && !controller.isWindowAccessibilityAuthorized {
                     GWSettingsFootnote(text: "需要辅助功能权限；授权前这项自动暂停策略不生效。")
                     Button("授权辅助功能") { controller.requestWindowAccessibilityPermission() }
