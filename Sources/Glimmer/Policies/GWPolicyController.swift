@@ -1,4 +1,5 @@
 import AppKit
+@preconcurrency import ApplicationServices
 import Foundation
 import IOKit.ps
 import Observation
@@ -11,6 +12,7 @@ import Observation
 //   系统未公开文档但为业界通行做法；不可用时其他来源仍然生效）。
 // - NotificationCenter：低电量模式变化（NSProcessInfoPowerStateDidChange）。
 // - IOKit 电源通知源 + 周期轮询：电池供电与电量阈值（仅阈值策略开启时轮询）。
+// - AXObserver 窗口事件：窗口最大化策略（需要辅助功能授权，无窗口状态轮询）。
 //
 // 接入 API（主控后续连接 B01 播放控制器）：
 // ```
@@ -49,6 +51,14 @@ final class GWPolicyController {
     private var defaultCenterTokens: [NSObjectProtocol] = []
     private var powerSourceRunLoopSource: CFRunLoopSource?
     private var environmentTask: Task<Void, Never>?
+    private var windowCheckTask: Task<Void, Never>?
+    private var windowSettleTask: Task<Void, Never>?
+    private(set) var isWindowMonitoring = false
+    private(set) var isWindowAccessibilityAuthorized: Bool
+    private(set) var windowMonitoringIssue: String?
+    @ObservationIgnored private let windowEvents: any GWWindowEventMonitoring
+    @ObservationIgnored private let windowAccessCheck: () -> Bool
+    @ObservationIgnored private let maximizedWindowQuery: () -> Bool
     private var saveTask: Task<Void, Never>?
     private var lastTransitionSummary: String?
 
@@ -61,10 +71,17 @@ final class GWPolicyController {
         userIntent: GWPlaybackIntent = .playing,
         paths: GWPersistencePaths = GWPersistencePaths(),
         persistenceEnabled: Bool = true,
-        autoStartMonitoring: Bool = false
+        autoStartMonitoring: Bool = false,
+        windowEvents: any GWWindowEventMonitoring = GWAccessibilityWindowMonitor(),
+        windowAccessCheck: @escaping () -> Bool = { AXIsProcessTrusted() },
+        maximizedWindowQuery: @escaping () -> Bool = { GWMaximizedWindowDetector.hasMaximizedWindow() }
     ) {
         self.paths = paths
         self.persistenceEnabled = persistenceEnabled
+        self.windowEvents = windowEvents
+        self.windowAccessCheck = windowAccessCheck
+        self.maximizedWindowQuery = maximizedWindowQuery
+        self.isWindowAccessibilityAuthorized = windowAccessCheck()
 
         var initialSettings = settings
         var loadError: String?
@@ -80,6 +97,14 @@ final class GWPolicyController {
         }
         self.core = GWPolicyCore(settings: initialSettings ?? .default, userIntent: userIntent)
         self.lastErrorMessage = loadError
+        windowEvents.onChange = { [weak self] requiresSettling in
+            self?.scheduleWindowCheck(requiresSettling: requiresSettling)
+        }
+        windowEvents.onIssue = { [weak self] issue in
+            guard let self, self.isWindowMonitoring else { return }
+            self.windowMonitoringIssue = issue
+            self.refreshWindowAccessibilityAuthorization()
+        }
         refreshStatus()
         if autoStartMonitoring {
             startMonitoring()
@@ -146,8 +171,33 @@ final class GWPolicyController {
         )
 
         installPowerSourceListener()
+        for name in [NSWorkspace.didActivateApplicationNotification, NSWorkspace.didLaunchApplicationNotification,
+                     NSWorkspace.didHideApplicationNotification,
+                     NSWorkspace.didUnhideApplicationNotification, NSWorkspace.didTerminateApplicationNotification,
+                     NSWorkspace.activeSpaceDidChangeNotification] {
+            workspaceTokens.append(observe(center: workspaceCenter, name: name) { controller in
+                controller.refreshWindowEventEnvironment()
+            })
+        }
+        defaultCenterTokens.append(observe(
+            center: NotificationCenter.default, name: NSApplication.didChangeScreenParametersNotification
+        ) { controller in
+            controller.refreshWindowEventEnvironment()
+        })
+        defaultCenterTokens.append(observe(
+            center: NotificationCenter.default, name: NSApplication.didBecomeActiveNotification
+        ) { controller in
+            controller.refreshWindowEventEnvironment()
+        })
+        // “显示桌面”可能保持同一应用/Space，只改变本应用窗口是否被系统遮挡。
+        for name in [NSApplication.didChangeOcclusionStateNotification, NSWindow.didChangeOcclusionStateNotification] {
+            defaultCenterTokens.append(observe(center: NotificationCenter.default, name: name) { controller in
+                controller.scheduleWindowCheck(requiresSettling: true)
+            })
+        }
         refreshEnvironmentNow()
         updateEnvironmentTask()
+        updateWindowMonitoring()
         refreshStatus()
     }
 
@@ -177,6 +227,7 @@ final class GWPolicyController {
         }
         environmentTask?.cancel()
         environmentTask = nil
+        stopWindowMonitoring()
         refreshStatus()
     }
 
@@ -197,6 +248,9 @@ final class GWPolicyController {
         for token in defaultCenterTokens { NotificationCenter.default.removeObserver(token) }
         if let powerSourceRunLoopSource { CFRunLoopSourceInvalidate(powerSourceRunLoopSource) }
         environmentTask?.cancel()
+        windowEvents.stop()
+        windowCheckTask?.cancel()
+        windowSettleTask?.cancel()
         saveTask?.cancel()
     }
 
@@ -205,6 +259,10 @@ final class GWPolicyController {
     /// 用户显式请求播放（播放按钮/菜单命令）。
     func userRequestedPlay() {
         handle(.userRequestedPlay)
+        // 停止监听期间窗口可能已缩小。重启监听的首次快照不应覆盖这次显式播放请求。
+        if core.isResumeSuppressed && core.activePauseReasons.isEmpty {
+            handle(.userRequestedPlay)
+        }
     }
 
     /// 用户显式请求暂停。该意图会被保存，唤醒/解锁不会覆盖它。
@@ -227,6 +285,7 @@ final class GWPolicyController {
     func updateSettings(_ body: (inout GWPolicySettings) -> Void) {
         var updated = core.settings
         body(&updated)
+        if updated.pauseOnMaximizedWindow { isWindowAccessibilityAuthorized = windowAccessCheck() }
         handle(.policySettingsChanged(updated.normalized()))
         scheduleSave()
         updateEnvironmentTask()
@@ -258,6 +317,7 @@ final class GWPolicyController {
         if let transition {
             onPolicyChanged?(transition)
         }
+        updateWindowMonitoring()
         return transition
     }
 
@@ -292,6 +352,9 @@ final class GWPolicyController {
     func diagnosticsLines() -> [String] {
         var lines: [String] = []
         lines.append("策略监控: \(isMonitoring ? "运行中" : "已停止")")
+        lines.append("窗口检测: \(isWindowMonitoring ? "辅助功能事件监听（无定时检测）" : "已停止")")
+        lines.append("辅助功能权限: \(isWindowAccessibilityAuthorized ? "已授权" : "未授权")")
+        if let windowMonitoringIssue { lines.append("窗口监听提示: \(windowMonitoringIssue)") }
         lines.append("用户意图: \(core.userIntent.displayName)")
         lines.append("有效播放: \(core.effectiveIsPlaying ? "是" : "否")")
         lines.append("暂停原因: \(status.reasonListText)")
@@ -305,6 +368,94 @@ final class GWPolicyController {
     }
 
     // MARK: - 内部
+
+    private var shouldMonitorWindows: Bool {
+        isMonitoring && core.settings.pauseOnMaximizedWindow && core.userIntent == .playing
+            && !core.isSystemAsleep && !core.areDisplaysAsleep && !core.isScreenLocked && core.isSessionActive
+            && !core.isResumeSuppressed && core.activePauseReasons.subtracting([.maximizedWindow]).isEmpty
+    }
+
+    /// 权限检查只在启用、应用激活、设置页出现及用户操作时进行，没有授权状态轮询。
+    func refreshWindowAccessibilityAuthorization() {
+        isWindowAccessibilityAuthorized = windowAccessCheck()
+        updateWindowMonitoring()
+        if !isWindowAccessibilityAuthorized, core.hasMaximizedWindow {
+            handle(.maximizedWindowMonitoringUnavailable)
+        }
+    }
+
+    func requestWindowAccessibilityPermission() {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        _ = AXIsProcessTrustedWithOptions(options)
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+            NSWorkspace.shared.open(url)
+        }
+        refreshWindowAccessibilityAuthorization()
+    }
+
+    private var windowApplicationPIDs: Set<pid_t> {
+        Set(NSWorkspace.shared.runningApplications.filter {
+            $0.activationPolicy == .regular && !$0.isTerminated
+        }.map(\.processIdentifier))
+    }
+
+    private func refreshWindowEventEnvironment() {
+        refreshWindowAccessibilityAuthorization()
+        guard isWindowMonitoring else { return }
+        windowEvents.synchronize(applicationPIDs: windowApplicationPIDs, refreshWindows: true)
+        scheduleWindowCheck(requiresSettling: true)
+    }
+
+    /// 等事件安静 250ms 后读取一次快照，避免拖动期间反复检查；这不是周期轮询。
+    private func scheduleWindowCheck(requiresSettling: Bool = false) {
+        guard isWindowMonitoring else { return }
+        windowCheckTask?.cancel()
+        windowCheckTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(250), tolerance: .milliseconds(50))
+            guard !Task.isCancelled, let self else { return }
+            self.windowCheckTask = nil
+            // 撤销权限后也会有 AX 错误/应用激活事件；不继续使用过期的覆盖状态。
+            self.refreshWindowAccessibilityAuthorization()
+            self.refreshMaximizedWindowNow()
+        }
+        // 桌面切换事件可能先于合成器动画结束；只补一次收尾快照，不自行续订。
+        // 普通窗口缩放事件不会取消待执行的桌面收尾检查。
+        if requiresSettling {
+            windowSettleTask?.cancel()
+            windowSettleTask = Task { [weak self] in
+                try? await Task.sleep(for: .milliseconds(1200), tolerance: .milliseconds(100))
+                guard !Task.isCancelled, let self else { return }
+                self.windowSettleTask = nil
+                self.refreshWindowAccessibilityAuthorization()
+                self.refreshMaximizedWindowNow()
+            }
+        }
+    }
+
+    private func refreshMaximizedWindowNow() {
+        guard isWindowMonitoring else { return }
+        let present = maximizedWindowQuery()
+        if present != core.hasMaximizedWindow { handle(.maximizedWindowChanged(present)) }
+    }
+
+    private func updateWindowMonitoring() {
+        guard shouldMonitorWindows, isWindowAccessibilityAuthorized else { stopWindowMonitoring(); return }
+        guard !isWindowMonitoring else { return }
+        isWindowMonitoring = true
+        windowMonitoringIssue = nil
+        windowEvents.synchronize(applicationPIDs: windowApplicationPIDs, refreshWindows: true)
+        refreshMaximizedWindowNow()
+    }
+
+    private func stopWindowMonitoring() {
+        if isWindowMonitoring { windowEvents.stop() }
+        isWindowMonitoring = false
+        windowCheckTask?.cancel()
+        windowCheckTask = nil
+        windowSettleTask?.cancel()
+        windowSettleTask = nil
+        windowMonitoringIssue = nil
+    }
 
     private func refreshStatus() {
         status = GWPolicyStatusSnapshot(

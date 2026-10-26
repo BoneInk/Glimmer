@@ -46,6 +46,8 @@ enum GWPolicyPauseReason: String, Codable, Sendable, CaseIterable, Identifiable,
     case lowPowerMode
     /// 电池供电且电量低于用户阈值（IOKit 电源快照）。
     case batteryThreshold
+    /// 有普通应用窗口覆盖整块屏幕的可用桌面区域。
+    case maximizedWindow
 
     var id: String { rawValue }
 
@@ -57,6 +59,7 @@ enum GWPolicyPauseReason: String, Codable, Sendable, CaseIterable, Identifiable,
         case .displaySleep: return "显示器睡眠"
         case .lowPowerMode: return "低电量模式"
         case .batteryThreshold: return "电池电量不足"
+        case .maximizedWindow: return "窗口最大化"
         }
     }
 
@@ -68,12 +71,14 @@ enum GWPolicyPauseReason: String, Codable, Sendable, CaseIterable, Identifiable,
         case .displaySleep: return "display"
         case .lowPowerMode: return "battery.25"
         case .batteryThreshold: return "battery.0"
+        case .maximizedWindow: return "rectangle.inset.filled"
         }
     }
 
     /// 稳定的展示顺序（状态文本与 UI 使用）。
     static let displayOrder: [GWPolicyPauseReason] = [
-        .systemSleep, .screenLocked, .sessionInactive, .displaySleep, .lowPowerMode, .batteryThreshold
+        .systemSleep, .screenLocked, .sessionInactive, .displaySleep, .lowPowerMode, .batteryThreshold,
+        .maximizedWindow
     ]
 }
 
@@ -91,6 +96,8 @@ struct GWPolicySettings: Codable, Equatable, Sendable {
     var pauseOnDisplaySleep: Bool
     /// 低电量模式开启时暂停。
     var pauseOnLowPowerMode: Bool
+    /// 任一屏幕上有应用窗口铺满可用区域时，临时暂停全部桌面壁纸。
+    var pauseOnMaximizedWindow: Bool
     /// 电池供电且低于阈值时暂停。
     var pauseOnBatteryBelowThreshold: Bool
     /// 电量阈值（百分比）。
@@ -104,6 +111,7 @@ struct GWPolicySettings: Codable, Equatable, Sendable {
         pauseOnSessionInactive: Bool = true,
         pauseOnDisplaySleep: Bool = true,
         pauseOnLowPowerMode: Bool = true,
+        pauseOnMaximizedWindow: Bool = false,
         pauseOnBatteryBelowThreshold: Bool = false,
         batteryThresholdPercentage: Int = 20,
         resumeWhenPolicyLifts: Bool = true
@@ -113,6 +121,7 @@ struct GWPolicySettings: Codable, Equatable, Sendable {
         self.pauseOnSessionInactive = pauseOnSessionInactive
         self.pauseOnDisplaySleep = pauseOnDisplaySleep
         self.pauseOnLowPowerMode = pauseOnLowPowerMode
+        self.pauseOnMaximizedWindow = pauseOnMaximizedWindow
         self.pauseOnBatteryBelowThreshold = pauseOnBatteryBelowThreshold
         self.batteryThresholdPercentage = batteryThresholdPercentage
         self.resumeWhenPolicyLifts = resumeWhenPolicyLifts
@@ -144,6 +153,7 @@ struct GWPolicySettings: Codable, Equatable, Sendable {
         pauseOnSessionInactive = try container.decodeIfPresent(Bool.self, forKey: .pauseOnSessionInactive) ?? defaults.pauseOnSessionInactive
         pauseOnDisplaySleep = try container.decodeIfPresent(Bool.self, forKey: .pauseOnDisplaySleep) ?? defaults.pauseOnDisplaySleep
         pauseOnLowPowerMode = try container.decodeIfPresent(Bool.self, forKey: .pauseOnLowPowerMode) ?? defaults.pauseOnLowPowerMode
+        pauseOnMaximizedWindow = try container.decodeIfPresent(Bool.self, forKey: .pauseOnMaximizedWindow) ?? defaults.pauseOnMaximizedWindow
         pauseOnBatteryBelowThreshold = try container.decodeIfPresent(Bool.self, forKey: .pauseOnBatteryBelowThreshold) ?? defaults.pauseOnBatteryBelowThreshold
         batteryThresholdPercentage = try container.decodeIfPresent(Int.self, forKey: .batteryThresholdPercentage) ?? defaults.batteryThresholdPercentage
         resumeWhenPolicyLifts = try container.decodeIfPresent(Bool.self, forKey: .resumeWhenPolicyLifts) ?? defaults.resumeWhenPolicyLifts
@@ -187,6 +197,8 @@ enum GWPolicyEvent: Equatable, Sendable {
     case displaysWoke
     case lowPowerModeChanged(Bool)
     case batteryStateUpdated(GWBatterySnapshot)
+    case maximizedWindowChanged(Bool)
+    case maximizedWindowMonitoringUnavailable
     case policySettingsChanged(GWPolicySettings)
 
     var displayText: String {
@@ -203,6 +215,8 @@ enum GWPolicyEvent: Equatable, Sendable {
         case .displaysWoke: return "显示器已唤醒"
         case .lowPowerModeChanged(let enabled): return enabled ? "低电量模式已开启" : "低电量模式已关闭"
         case .batteryStateUpdated: return "电源状态已刷新"
+        case .maximizedWindowChanged(let present): return present ? "检测到最大化窗口" : "最大化窗口已移开"
+        case .maximizedWindowMonitoringUnavailable: return "窗口事件监听不可用"
         case .policySettingsChanged: return "电源策略设置已更新"
         }
     }
@@ -234,6 +248,7 @@ struct GWPolicyCore: Equatable, Sendable {
     private(set) var isSessionActive = true
     private(set) var areDisplaysAsleep = false
     private(set) var isLowPowerMode = false
+    private(set) var hasMaximizedWindow = false
     private(set) var battery: GWBatterySnapshot = .unknown
     /// 「策略解除后不自动恢复」的一次性抑制标记：唤醒时按设置置位，用户显式播放后清除。
     private(set) var isResumeSuppressed = false
@@ -251,6 +266,7 @@ struct GWPolicyCore: Equatable, Sendable {
         if settings.pauseOnSessionInactive && !isSessionActive { reasons.insert(.sessionInactive) }
         if settings.pauseOnDisplaySleep && areDisplaysAsleep { reasons.insert(.displaySleep) }
         if settings.pauseOnLowPowerMode && isLowPowerMode { reasons.insert(.lowPowerMode) }
+        if settings.pauseOnMaximizedWindow && hasMaximizedWindow { reasons.insert(.maximizedWindow) }
         if settings.pauseOnBatteryBelowThreshold,
            battery.isOnBattery,
            let percentage = battery.percentage,
@@ -319,6 +335,14 @@ struct GWPolicyCore: Equatable, Sendable {
             isLowPowerMode = enabled
         case .batteryStateUpdated(let snapshot):
             battery = snapshot
+        case .maximizedWindowChanged(let present):
+            if hasMaximizedWindow, !present, settings.pauseOnMaximizedWindow,
+               !settings.resumeWhenPolicyLifts {
+                isResumeSuppressed = true
+            }
+            hasMaximizedWindow = present
+        case .maximizedWindowMonitoringUnavailable:
+            hasMaximizedWindow = false
         case .policySettingsChanged(let newSettings):
             settings = newSettings.normalized()
         }
