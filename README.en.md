@@ -34,6 +34,18 @@ The current development preview is **signed with Apple Development and has not b
 
 In-app updates require a version that includes this feature; existing users must upgrade manually once. Future updates appear in a prompt and are downloaded and installed within the app after confirmation, without opening a web page. Manual update checks remain available when reminders are disabled. Maintainer signing and publishing steps are documented in the [in-app update guide](docs/auto-updates.md) (Chinese).
 
+### Pause for Maximized Windows and Accessibility Permission
+
+**Pause when a window is maximized** is off by default. When enabled, an app window filling the usable desktop area between the menu bar and Dock on any display temporarily pauses all desktop wallpapers.
+
+1. In Glimmer, open **Settings → Power and Sleep Policies** and enable **Pause when a window is maximized**.
+2. Select **Authorize Accessibility** to open macOS **System Settings → Privacy & Security → Accessibility**.
+3. Enable Glimmer. If it is missing, select **+**, add `/Applications/Glimmer.app`, and return to Glimmer.
+
+This permission lets Glimmer observe changes to window size, position and visibility, reducing unnecessary checks. The feature uses Accessibility events and system notifications without periodic window polling. Without permission, or after permission is revoked, this pause policy is inactive; other wallpaper features remain available.
+
+Moving or shrinking the window, or using **Click wallpaper to reveal desktop**, allows playback to resume according to the automatic-resume setting. Manually paused wallpapers stay paused.
+
 ## Getting Started
 
 ### Using Local Files
