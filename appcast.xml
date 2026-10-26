@@ -1,13 +1,28 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><!-- sparkle-sign-warning:
+<?xml version="1.0" standalone="yes"?><!-- sparkle-sign-warning:
 IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
 --><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
-  <channel>
-    <title>Glimmer 更新</title>
-    <link>https://github.com/BoneInk/Glimmer/releases</link>
-    <description>Glimmer 的签名更新。发布新版后由 scripts/package-update.sh 生成此文件。</description>
-    <language>zh-cn</language>
-  </channel>
+    <channel>
+        <title>Glimmer</title>
+        <item>
+            <title>0.18.0</title>
+            <pubDate>Mon, 26 Oct 2026 12:23:01 +0800</pubDate>
+            <sparkle:version>46</sparkle:version>
+            <sparkle:shortVersionString>0.18.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description sparkle:format="plain-text"><![CDATA[Glimmer 0.18.0（构建 46）
+
+新增：窗口铺满桌面可用区域时暂停壁纸，可在设置中开启，需要辅助功能权限。
+使用辅助功能事件监听，取消周期性窗口扫描。
+修复点击桌面显示壁纸后返回应用时的暂停恢复判断。
+新增签名应用内更新，可关闭提醒或手动检查；确认后才下载安装。
+
+Apple Silicon，macOS 26 或更高版本。Apple Development 签名，未公证。
+]]></description>
+            <enclosure url="https://github.com/BoneInk/Glimmer/releases/download/v0.18.0/Glimmer-0.18.0-arm64.zip" length="344341513" type="application/octet-stream" sparkle:edSignature="M2wuSi+bajslHodKdO4w0T0Hs1eagDg5f7mP51rBHfs4bUAVI+a9m13GSCJKXCqgdXZUiJmB+x7MIAm5U5D9Dg=="></enclosure>
+        </item>
+    </channel>
 </rss><!-- sparkle-signatures:
-edSignature: /suwAMX/tG8bv7/kpNM61ad0HPrWAh4U4IddkI8l3wz4c+2HzZitqXACW1xm9fu5rB9C5g19eGK+JQvgWx7SDw==
-length: 657
+edSignature: msHQGmB/6EhfSGa0wLeKzjLPziNZr+ILLMi6KQz4R+Ba8SHIz5RebcMstkoZh3zw6TocUfnyquDs+gRI/cHqAQ==
+length: 1661
 -->
