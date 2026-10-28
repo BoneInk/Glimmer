@@ -1,5 +1,6 @@
 import AppKit
 import AVFoundation
+import CoreImage
 import CoreMedia
 import CoreVideo
 import IOSurface
@@ -50,7 +51,7 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
     private let preparedRecipe: LiveWallpaperRecipe?
     private var client: SceneBackendXPCClient?
     private var lease: Int?
-    private let sessionID = UUID()
+    private var sessionID = UUID()
     private var sequence: UInt64 = 0
     private var framePool: CVPixelBufferPool?
     private let device: MTLDevice
@@ -59,6 +60,15 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
     private var startup: ((Bool) -> Void)?
     private var stopped = false
     private var sleeping = false
+    private var helperDisconnected = false
+    private var recoveryAttempts = 0
+    private var recoveryExhausted = false
+    private let imageContext = CIContext(options: [.cacheIntermediates: false])
+    private var lastPresentationTime = CACurrentMediaTime()
+    private(set) var recoveryCount = 0
+#if GW_DIAGNOSTIC_ENTRY
+    var preparationFailuresForTesting = 0
+#endif
     private var sleepObservers = [NSObjectProtocol]()
 
     init(config: GWConfiguration, directory: URL, request: GWRequest, recipe: LiveWallpaperRecipe? = nil) throws {
@@ -70,6 +80,7 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
         self.directory = directory; self.request = request; assetID = config.assetID
         preparedRecipe = recipe
         root.backgroundColor = NSColor.black.cgColor
+        root.contentsGravity = config.gravity == "fit" ? .resizeAspect : .resizeAspectFill
         layer.videoGravity = config.gravity == "fit" ? .resizeAspect : .resizeAspectFill
         root.addSublayer(layer); context.layer = root
         update(request)
@@ -98,33 +109,7 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
                 guard recipe.assetID == assetID, recipe.kind == .scene, !stopped else { throw GWError(51, "Scene wallpaper revision changed") }
                 self.recipe = recipe
                 try createFramePool(recipe)
-                try await prepareScene(recipe)
-                var lastTick: ContinuousClock.Instant?, elapsed = 0.0, sentPaused: Bool?
-                while !stopped, !Task.isCancelled {
-                    let playing = request.shouldPlay && !sleeping
-                        && (request.displayID.map { CGDisplayIsAsleep($0) == 0 } ?? true)
-                    let paused = frameCount > 0 && !playing
-                    if sentPaused != paused {
-                        try await client?.setPaused(paused)
-                        sentPaused = paused
-                        lastTick = nil
-                    }
-                    if !paused {
-                        let now = ContinuousClock.now
-                        if let lastTick { elapsed += Self.seconds(lastTick.duration(to: now)) }
-                        lastTick = now
-                        let buffer: CVPixelBuffer
-                        guard let client else { throw GWError(52, "Live Scene helper is unavailable") }
-                        buffer = try await sceneFrame(client, recipe: recipe, elapsed: elapsed)
-                        guard !stopped, !Task.isCancelled else { break }
-                        if frameCount > 0, !request.shouldPlay || sleeping { continue }
-                        if present(buffer) {
-                            frameCount += 1
-                            if let completion = startup { startup = nil; completion(true) }
-                        }
-                    }
-                    try await Task.sleep(for: paused ? .milliseconds(100) : .seconds(1 / Double(recipe.fps)))
-                }
+                try await renderFrames(recipe)
             } catch is CancellationError { }
             catch {
                 lastError = error.localizedDescription
@@ -135,11 +120,89 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
         }
     }
 
+    private var wantsPlayback: Bool {
+        request.shouldPlay && !sleeping && (request.displayID.map { CGDisplayIsAsleep($0) == 0 } ?? true)
+    }
+
+    private func renderFrames(_ recipe: LiveWallpaperRecipe) async throws {
+        var lastTick: ContinuousClock.Instant?, elapsed = 0.0, sentPaused: Bool?
+        while !stopped, !Task.isCancelled {
+            do {
+                if helperDisconnected { throw UniversalSceneBackendError.interrupted }
+                // Retire a failed helper while asleep, but wait for visibility
+                // before allocating another process or using the GPU again.
+                if client == nil, (frameCount > 0 && !wantsPlayback) || recoveryExhausted {
+                    try await Task.sleep(for: .milliseconds(100))
+                    continue
+                }
+                if client == nil {
+                    try await prepareScene(recipe)
+                    try Task.checkCancellation()
+                    guard !stopped else { return }
+                    sentPaused = nil; lastTick = nil
+                }
+                // Preparation can span a sleep/visibility transition.
+                let paused = frameCount > 0 && !wantsPlayback
+                if sentPaused != paused {
+                    if paused { holdLastFrame() }
+                    try await client?.setPaused(paused)
+                    sentPaused = paused
+                    lastTick = nil
+                }
+                if !paused {
+                    guard !stopped, !Task.isCancelled else { break }
+                    // Playback intent may change while the deadline is asleep.
+                    if frameCount > 0, !wantsPlayback { continue }
+                    let now = ContinuousClock.now
+                    if let lastTick { elapsed += Self.seconds(lastTick.duration(to: now)) }
+                    lastTick = now
+                    guard let client else { throw GWError(52, "Live Scene helper is unavailable") }
+                    let buffer = try await sceneFrame(client, recipe: recipe, elapsed: elapsed)
+                    guard !stopped, !Task.isCancelled else { break }
+                    if frameCount > 0, !wantsPlayback { continue }
+                    if CACurrentMediaTime() - lastPresentationTime > 3 { restorePresentation() }
+                    if present(buffer) {
+                        frameCount += 1
+                        lastError = nil; failureDetail = nil
+                        if let completion = startup { startup = nil; completion(true) }
+                    }
+                }
+                try await Task.sleep(for: paused ? .milliseconds(100) : .seconds(1 / Double(recipe.fps)))
+            } catch is CancellationError { return }
+            catch {
+                guard !stopped, !Task.isCancelled else { return }
+                lastError = error.localizedDescription
+                failureDetail = (error as? SceneBackendWireFailure)?.detail
+                GWLog("live wallpaper failed: \(error.localizedDescription)")
+                guard frameCount > 0 else { throw error }
+                holdLastFrame()
+                restorePresentation()
+                await retireScene().value
+                helperDisconnected = false; sentPaused = nil; lastTick = nil
+                guard !stopped, !Task.isCancelled else { return }
+                guard wantsPlayback else { continue }
+                guard recoveryAttempts < 3 else { recoveryExhausted = true; continue }
+                recoveryAttempts += 1; recoveryCount += 1
+                GWLog("recovering Scene context=\(context.contextId) attempt=\(recoveryAttempts)")
+                try await Task.sleep(for: .milliseconds(500 * (1 << (recoveryAttempts - 1))))
+            }
+        }
+    }
+
     private func prepareScene(_ recipe: LiveWallpaperRecipe) async throws {
+#if GW_DIAGNOSTIC_ENTRY
+        if preparationFailuresForTesting > 0 {
+            preparationFailuresForTesting -= 1
+            throw GWError(98, "Injected Scene preparation failure")
+        }
+#endif
+        sessionID = UUID(); sequence = 0; helperDisconnected = false
         let acquired = try Self.pool.acquire(); lease = acquired.0
         let connection = SceneBackendXPCClient(serviceName: acquired.1)
         client = connection
         let status = try await connection.status()
+        try Task.checkCancellation()
+        guard !stopped, client === connection else { throw CancellationError() }
         guard status.ownsSession else { throw GWError(52, "Live Scene helper is already owned") }
         helperPID = status.helperPID
         // The helper has its own identity and cannot use another app's private
@@ -154,15 +217,17 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
             generation: 1, roots: roots, width: recipe.width, height: recipe.height,
             framesPerSecond: recipe.fps, properties: recipe.sceneProperties)
         let ready = try await connection.prepare(configuration)
+        try Task.checkCancellation()
+        guard !stopped, client === connection else { throw CancellationError() }
         guard ready.isStrictlyReady, ready.sessionID == sessionID, ready.generation == 1,
               ready.projectDigest == recipe.projectDigest, ready.assetsManifestDigest == recipe.assetsManifestDigest else {
             throw GWError(53, "Live Scene did not complete strict preparation")
         }
         try await connection.setSceneSound(enabled: false, volume: 0)
         try await connection.setAspectFill(true)
-        connection.invalidationHandler = { [weak self] in
-            guard let self, !stopped else { return }
-            lastError = "Live Scene helper disconnected"; stop()
+        connection.invalidationHandler = { [weak self, weak connection] in
+            guard let self, let connection, !stopped, client === connection else { return }
+            helperDisconnected = true
         }
     }
 
@@ -227,33 +292,72 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
         if layer.sampleBufferRenderer.requiresFlushToResumeDecoding { layer.sampleBufferRenderer.flush() }
         guard layer.sampleBufferRenderer.isReadyForMoreMediaData else { return false }
         layer.sampleBufferRenderer.enqueue(sample)
-        lastBuffer = buffer; CATransaction.flush(); return true
+        lastBuffer = buffer; lastPresentationTime = CACurrentMediaTime()
+        CATransaction.flush(); return true
     }
 
     func update(_ request: GWRequest) {
+        guard !stopped else { return }
+        let wasPlaying = wantsPlayback
         self.request = request
+        if !wasPlaying, wantsPlayback { resetRecovery(); restorePresentation() }
+        if wasPlaying, !wantsPlayback { holdLastFrame() }
         CATransaction.begin(); CATransaction.setDisableActions(true)
         root.frame = .init(origin: .zero, size: request.size); root.contentsScale = request.scale
         layer.frame = root.bounds
         CATransaction.commit(); CATransaction.flush()
     }
-    func setSleeping(_ value: Bool) { sleeping = value }
-    func stop() {
+    func setSleeping(_ value: Bool) {
         guard !stopped else { return }
-        stopped = true; loop?.cancel(); loop = nil
-        for observer in sleepObservers { NSWorkspace.shared.notificationCenter.removeObserver(observer) }
-        sleepObservers.removeAll()
+        let changed = sleeping != value
+        sleeping = value
+        if value {
+            if changed { holdLastFrame() }
+        } else { resetRecovery(); restorePresentation() }
+    }
+
+    private func resetRecovery() {
+        recoveryAttempts = 0; recoveryExhausted = false
+    }
+
+    private func holdLastFrame() {
+        guard let lastBuffer, let image = imageContext.createCGImage(CIImage(cvPixelBuffer: lastBuffer),
+            from: CGRect(x: 0, y: 0, width: CVPixelBufferGetWidth(lastBuffer), height: CVPixelBufferGetHeight(lastBuffer))) else { return }
+        CATransaction.begin(); CATransaction.setDisableActions(true)
+        root.contents = image
+        CATransaction.commit(); CATransaction.flush()
+    }
+
+    private func restorePresentation() {
+        layer.sampleBufferRenderer.flush(removingDisplayedImage: true)
+        if let lastBuffer { _ = present(lastBuffer) }
+        CATransaction.flush()
+    }
+
+    @discardableResult
+    private func retireScene() -> Task<Void, Never> {
         let client = client, lease = lease, pid = helperPID, session = sessionID
-        self.client = nil; self.lease = nil
+        self.client = nil; self.lease = nil; helperPID = nil
         client?.invalidationHandler = nil
-        Task { @MainActor in
+        return Task { @MainActor in
             await client?.close(sessionID: session, generation: 1)
             await client?.invalidateAndWait()
             let reusable = if let pid { await SceneBackendProcessExit.wait(pid: pid) } else { client == nil }
             if let lease { Self.pool.release(lease, reusable: reusable) }
         }
+    }
+
+#if GW_DIAGNOSTIC_ENTRY
+    func interruptHelperForTesting() { client?.invalidate() }
+#endif
+    func stop() {
+        guard !stopped else { return }
+        stopped = true; loop?.cancel(); loop = nil
+        for observer in sleepObservers { NSWorkspace.shared.notificationCenter.removeObserver(observer) }
+        sleepObservers.removeAll()
+        retireScene()
         layer.sampleBufferRenderer.flush(removingDisplayedImage: true)
-        layer.removeFromSuperlayer(); context.layer = nil; lastBuffer = nil; framePool = nil
+        layer.removeFromSuperlayer(); root.contents = nil; context.layer = nil; lastBuffer = nil; framePool = nil
         let completion = startup; startup = nil; completion?(false)
         CATransaction.flush()
     }

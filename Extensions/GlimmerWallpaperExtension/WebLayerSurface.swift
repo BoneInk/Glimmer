@@ -24,6 +24,12 @@ final class GWWebLayerSurface: GWNativeWallpaperSurface {
     private var document = UUID()
     private var cachedImage: CGImage?
     private var renderingActivity: NSObjectProtocol?
+    private var recoveryAttempts = 0
+    private var recoveryExhausted = false
+    private(set) var recoveryCount = 0
+#if GW_DIAGNOSTIC_ENTRY
+    var preparationFailuresForTesting = 0
+#endif
     private(set) var lastBuffer: CVPixelBuffer?
     private(set) var runtime: WebWallpaperRuntime?
     private(set) var host: GWWebRenderHost?
@@ -31,7 +37,7 @@ final class GWWebLayerSurface: GWNativeWallpaperSurface {
     private(set) var snapshotCount = 0
     private(set) var documentCount = 0
     var isReady: Bool { lastBuffer != nil && lastError == nil }
-    var isPlaying: Bool { documentReady && runtime != nil && host?.isExported == true && wantsPlayback }
+    var isPlaying: Bool { documentReady && runtime?.state == .ready && host?.isExported == true && wantsPlayback }
     var isReconciling: Bool { operation != nil }
     private var wantsPlayback: Bool {
         request.shouldPlay && !sleeping && (request.displayID.map { CGDisplayIsAsleep($0) == 0 } ?? true)
@@ -70,15 +76,25 @@ final class GWWebLayerSurface: GWNativeWallpaperSurface {
 
     func update(_ request: GWRequest) {
         guard !stopped else { return }
+        let wasPlaying = wantsPlayback
         self.request = request
+        if !wasPlaying, wantsPlayback { resetRecovery() }
         layout()
         reconcile()
     }
 
     func setSleeping(_ value: Bool) {
-        guard !stopped, sleeping != value else { return }
+        guard !stopped else { return }
         sleeping = value
+        // A system/dark wake can precede display wake. Always reconcile the
+        // latter even if both notifications carry the same awake value.
+        if !value { resetRecovery() }
         reconcile()
+    }
+
+    private func resetRecovery() {
+        recoveryAttempts = 0
+        recoveryExhausted = false
     }
 
     private func layout() {
@@ -103,9 +119,13 @@ final class GWWebLayerSurface: GWNativeWallpaperSurface {
         operation = Task { @MainActor [weak self] in
             guard let self else { return }
             defer { operation = nil }
-            do {
-                while !stopped {
+            while !stopped, !Task.isCancelled {
+                do {
+                    if recoveryExhausted, wantsPlayback { return }
                     let current = revision
+                    if let runtime, runtime.state == .failed {
+                        throw GWError(89, runtime.lastError ?? "Web content process failed")
+                    }
                     // The OS also needs an initial held frame for an inactive
                     // acquisition. Prepare it once, then release the document.
                     if wantsPlayback || lastBuffer == nil {
@@ -121,20 +141,40 @@ final class GWWebLayerSurface: GWNativeWallpaperSurface {
                     if let completion = startup, isReady {
                         startup = nil; completion(true)
                     }
-                    if current == revision { break }
+                    if current == revision { return }
+                } catch is CancellationError { return }
+                catch {
+                    guard !stopped, !Task.isCancelled else { return }
+                    lastError = error.localizedDescription
+                    GWLog("Web layer failed: \(error.localizedDescription)")
+                    // Remove the failed live tree immediately to expose the
+                    // retained image, without invalidating the remote context.
+                    releaseDocument()
+                    guard lastBuffer != nil else {
+                        let completion = startup; startup = nil; completion?(false)
+                        return
+                    }
+                    guard wantsPlayback else { return }
+                    guard recoveryAttempts < 3 else { recoveryExhausted = true; return }
+                    recoveryAttempts += 1
+                    recoveryCount += 1
+                    GWLog("recovering Web layer context=\(context.contextId) attempt=\(recoveryAttempts)")
+                    do { try await Task.sleep(for: .milliseconds(500 * (1 << (recoveryAttempts - 1)))) }
+                    catch { return }
+                    // Recheck visibility after the delay; a sleep/update may
+                    // have arrived while this operation was waiting.
                 }
-            } catch is CancellationError { }
-            catch {
-                guard !stopped else { return }
-                lastError = error.localizedDescription
-                GWLog("Web layer failed: \(error.localizedDescription)")
-                releaseDocument()
-                let completion = startup; startup = nil; completion?(false)
             }
         }
     }
 
     private func prepareDocument() async throws {
+#if GW_DIAGNOSTIC_ENTRY
+        if preparationFailuresForTesting > 0 {
+            preparationFailuresForTesting -= 1
+            throw GWError(98, "Injected Web preparation failure")
+        }
+#endif
         // The remotely visible layer has no ordered AppKit window. Tell the
         // OS that this process is doing visible work, while still allowing
         // normal idle system sleep. End the activity with the document.
@@ -146,6 +186,10 @@ final class GWWebLayerSurface: GWNativeWallpaperSurface {
             allowHTTPS: recipe.allowHTTPS, mutedPlayback: true, toleratesBlockedHTTPS: true,
             animationFrameRateLimit: recipe.fps, remoteLayerRendering: true)
         self.runtime = runtime
+        runtime.failureHandler = { [weak self, weak runtime] _ in
+            guard let self, let runtime, self.runtime === runtime, !self.stopped else { return }
+            self.reconcile()
+        }
         document = UUID(); let token = document
         documentCount += 1
         runtime.webView.frame = CGRect(origin: .zero, size: request.size)
@@ -170,6 +214,7 @@ final class GWWebLayerSurface: GWNativeWallpaperSurface {
         try host.export(to: root)
         _ = try await snapshot()
         guard !stopped, document == token, host.isExported else { throw CancellationError() }
+        guard runtime.state != .failed else { throw GWError(89, runtime.lastError ?? "Web content process failed") }
         // A remote compositor layer covers the held backing as soon as it is
         // ready; that backing remains available for OS snapshots and teardown.
         lastError = nil
@@ -225,6 +270,7 @@ final class GWWebLayerSurface: GWNativeWallpaperSurface {
         captureTask?.cancel(); captureTask = nil
         let runtime = runtime
         self.runtime = nil
+        runtime?.failureHandler = nil
         host?.close(); host = nil
         runtime?.dispose()
         if let runtime { GWCloseWebPage(runtime.webView) }

@@ -28,7 +28,8 @@ FIXTURES="$(python3 "$ROOT/Tests/LiveLockScreenFixtureBuilder.py" "$PROFILE" "$W
 GW_CONFIGURED_EXPORT_APP="$APP" GW_LIVE_PROBE_FIXTURES="$FIXTURES" GW_SCENE_EXPORT_ASSET_PROFILE="$PROFILE" \
   bash "$ROOT/scripts/test-live-lock-screen-preparation.sh" > "$OUT/preparation.log" 2>&1
 for kind in scene web web-network prepared-scene prepared-web; do
-  "$WORK/Probe.bundle/Contents/MacOS/GlimmerWallpaperExtension" --isolated-live-probe "$FIXTURES/$kind" > "$OUT/$kind.json" 2> "$OUT/$kind.stderr"
+  python3 "$ROOT/Tests/NativeWallpaperRecoveryDriver.py" \
+    "$WORK/Probe.bundle/Contents/MacOS/GlimmerWallpaperExtension" "$FIXTURES/$kind" "$OUT/$kind"
 done
 python3 - "$OUT" <<'PY'
 import pathlib,json,sys
@@ -41,7 +42,12 @@ for kind in ['scene','web','web-network','prepared-scene','prepared-web']:
     assert value['ownedHelperExited'] and value['releasedContextAndFrames'], value
     assert value['defaultModePlayback'] and value['sleepFrameHeld'] and value['wakeResumedSameContext'], value
     assert value['contextXPCTransport'] and value['snapshotXPCTransport'], value
+    assert value['boundedRecoveryPreservesImage'] and value['wakeResetsRecoveryBudget'], value
+    if 'web' not in kind:
+        assert value['lostHelperWhileAsleepHoldsImage'] and value['wakeRebuildsLostHelper'], value
+        assert value['activeHelperDisconnectRecovers'], value
     if 'web' in kind:
+        assert value['contentProcessTerminationRecovers'] and value['recoveredClockCurrent'] and value['stopCancelsRecovery'], value
         assert value['currentWallClockAfterPause'] and value['hiddenWebDocumentReleased'], value
         assert value['videoPlayingAfterWake'] and value['pageAudioMuted'] and value['noPeriodicSnapshots'], value
         assert value['measurement']['snapshotsDuringPlayback']==0 and value['resumedMeasurement']['snapshotsDuringPlayback']==0, value

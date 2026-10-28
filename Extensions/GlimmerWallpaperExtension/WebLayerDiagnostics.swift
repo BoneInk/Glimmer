@@ -176,6 +176,27 @@ final class GWWebLayerDiagnostics {
             let sleepHeld = surface.runtime == nil && surface.lastBuffer != nil
             try await resume(sleep:true)
             result["videoPlayingAfterWake"] = try await metrics()["videoPaused"] as? Bool == false
+            let failedRuntime = surface.runtime
+            surface.preparationFailuresForTesting = 2
+            try terminateWebProcess()
+            try await wait { self.surface.isPlaying && self.surface.runtime !== failedRuntime && !self.surface.isReconciling }
+            try await installCounter(); try await waitForVideo()
+            result["contentProcessTerminationRecovers"] = surface.context.contextId == contextID
+                && surface.recoveryCount == 3 && surface.lastError == nil
+            try await pause(); try await resume()
+            let retries = surface.recoveryCount
+            surface.preparationFailuresForTesting = 10
+            try terminateWebProcess()
+            try await wait { self.surface.runtime == nil && !self.surface.isReconciling }
+            result["boundedRecoveryPreservesImage"] = surface.recoveryCount == retries + 3
+                && surface.lastBuffer != nil && surface.root.contents != nil && surface.context.layer === surface.root
+            surface.preparationFailuresForTesting = 0
+            NSWorkspace.shared.notificationCenter.post(name: NSWorkspace.screensDidWakeNotification, object: nil)
+            try await wait { self.surface.isPlaying && !self.surface.isReconciling }
+            try await installCounter(); try await waitForVideo()
+            result["wakeResetsRecoveryBudget"] = surface.isPlaying && surface.context.contextId == contextID
+            let recoveredClock = try await metrics()["clock"] as? String ?? ""
+            result["recoveredClockCurrent"] = Double(recoveredClock).map { abs($0/1000-Date().timeIntervalSince1970) < 3 } ?? false
             let response = createRemoteContextXPC(contextId: contextID)
             let snapshot = GWSnapshot(latest)
             result["contextXPCTransport"] = response.map { GWXPCObjectRoundTrip($0,3) } ?? false
@@ -191,18 +212,40 @@ final class GWWebLayerDiagnostics {
             result["snapshotCount"] = surface.snapshotCount
             result["frameCount"] = surface.snapshotCount // retained diagnostic compatibility; not playback FPS
             result["ownedHelperExited"] = true
+            surface.preparationFailuresForTesting = 10
+            try terminateWebProcess()
+            try await wait { self.surface.runtime == nil && self.surface.isReconciling }
             surface.stop()
+            let stoppedCount = surface.recoveryCount
+            try await Task.sleep(for: .seconds(1))
+            result["stopCancelsRecovery"] = surface.runtime == nil && surface.recoveryCount == stoppedCount
             result["releasedContextAndFrames"] = surface.context.layer == nil && surface.lastBuffer == nil && surface.host == nil
             let keys = ["noPeriodicSnapshots","resumedChangingFrames","currentWallClockAfterPause","videoPlayingAfterWake",
                         "contextXPCTransport","snapshotXPCTransport","webRenderHostUnshown","pageAudioMuted",
                         "defaultModePlayback","pausedFrameHeld","hiddenWebDocumentReleased","sleepFrameHeld",
                         "wakeResumedSameContext","releasedContextAndFrames"]
-            result["success"] = keys.allSatisfy { result[$0] as? Bool == true } && GWSandboxIsActive()
+            let recoveryKeys = ["contentProcessTerminationRecovers","boundedRecoveryPreservesImage",
+                                "wakeResetsRecoveryBudget","recoveredClockCurrent","stopCancelsRecovery"]
+            result["success"] = (keys + recoveryKeys).allSatisfy { result[$0] as? Bool == true } && GWSandboxIsActive()
             emit(result); exit(result["success"] as? Bool == true ? 0:1)
         } catch {
             surface.stop(); result["success"] = false; result["error"] = error.localizedDescription
             emit(result); exit(1)
         }
+    }
+
+    private func terminateWebProcess() throws {
+        let selector = NSSelectorFromString("_webProcessIdentifier")
+        guard let web = surface.runtime?.webView, web.responds(to: selector) else {
+            throw GWError(99, "WebKit process termination diagnostic unavailable")
+        }
+        guard let pid = (web.value(forKey: "_webProcessIdentifier") as? NSNumber)?.int32Value, pid > 1 else {
+            throw GWError(99, "No owned WebKit content process")
+        }
+        // The unsandboxed test driver terminates only this exact owned process.
+        // WebKit's private intentional-kill API suppresses the crash delegate
+        // callback, so it cannot exercise real process-loss recovery.
+        fputs("GW_RECOVERY_KILL_WEB_PROCESS=\(pid)\n", stderr); fflush(stderr)
     }
 
     func serve() async throws {

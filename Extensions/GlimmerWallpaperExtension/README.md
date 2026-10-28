@@ -112,6 +112,15 @@ ownership transfers on re-acquire so an old connection cannot tear down a surfac
 already re-owned by a new connection. No unsupported downloads, migration or
 shuffle operation claims success as an implemented feature.
 
+Video surfaces also observe workspace system/display sleep and wake events.
+Before pausing they retain an image backing beneath the video layer; on resume
+they flush and republish the held frame, reconnect the video output and rebuild
+a lost player when needed. A visible surface that stops producing frames for
+three seconds retries decoder creation at most three times, retaining its last
+image and remote context. Inactive surfaces keep no frame timer. The isolated
+video probe covers workspace events, lost decoder/compositor resources and a
+silent frame stall; it does not establish real long-sleep lock-screen visuals.
+
 ## Source provenance
 
 Private interface declarations, Codable settings shapes, and guarded runtime XPC
@@ -159,6 +168,13 @@ HTTP, external navigation, child frames and native resource grants stay closed.
 Weather requires a compatible service and author configuration. Hidden pages
 are destroyed, retaining the last native frame; resume creates a current page.
 Scene sessions pause and owned helpers terminate when their surface is released.
+After a Scene helper disconnect or a Web content-process failure, the surface
+keeps its last image and remote context while rebuilding the owned renderer.
+Recovery retries after 0.5, 1 and 2 seconds, then holds the image until the next
+wake or inactive-to-active transition resets that budget. No new renderer is
+created while asleep. Repeated awake notifications are reconciled because system
+wake can precede display wake. Scene also republishes its held sample after wake;
+failed Web layer trees are removed to expose the image during recreation.
 Source size/FPS limits apply during preparation. Author/settings
 changes apply when the wallpaper is prepared and submitted again.
 
@@ -174,6 +190,13 @@ pause and resource release. `scripts/build-web-layer-receiver.sh` builds a
 separate CALayerHost receiver for visual cross-process checks against the
 production diagnostic's `--web-layer-producer` mode. These isolated tests do not establish visual
 acceptance by the actual system lock-screen host or FileVault/startup support.
+
+Recovery checks disconnect real owned Scene XPC helpers and use
+`Tests/NativeWallpaperRecoveryDriver.py` to terminate only the content PIDs
+reported by the probe's own WKWebViews. Diagnostic-only preparation faults
+exercise transient failures, exhausted retry budgets and a later display wake;
+stopping a Web surface during backoff must cancel recreation. The diagnostic
+fault controls and process-PID requests are excluded from production builds.
 
 
 ### Current experiment boundary (macOS 27.0.1, 2026-10-22)

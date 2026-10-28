@@ -12,9 +12,12 @@ final class GWVideoSurface: GWNativeWallpaperSurface {
     let context: CAContext
     let root = CALayer()
     let layer = AVSampleBufferDisplayLayer()
-    let player: AVQueuePlayer
+    private let backing = CALayer()
+    private let imageContext = CIContext(options: [.cacheIntermediates: false])
+    private let video: URL
+    private(set) var player: AVQueuePlayer
     let assetID: UUID
-    private let template: AVPlayerItem
+    private var template: AVPlayerItem
     private var looper: AVPlayerLooper?
     private var output: AVPlayerItemVideoOutput?
     private weak var outputItem: AVPlayerItem?
@@ -27,6 +30,10 @@ final class GWVideoSurface: GWNativeWallpaperSurface {
     private var wantsPlayback: Bool
     private var sleeping = false
     private var stopped = false
+    private var playing = false
+    private var lastFrameTime = CACurrentMediaTime()
+    private var recoveryAttempts = 0
+    private var sleepObservers = [NSObjectProtocol]()
     private var orientation = CGAffineTransform.identity
 
     init(config: GWConfiguration, video: URL, request: GWRequest) throws {
@@ -36,6 +43,7 @@ final class GWVideoSurface: GWNativeWallpaperSurface {
         guard let remote = raw as? CAContext, remote.contextId != 0 else { throw GWError(21, "Could not create wallpaper remote context") }
         context = remote
         assetID = config.assetID
+        self.video = video
         template = AVPlayerItem(url: video)
         player = AVQueuePlayer()
         player.isMuted = true
@@ -47,15 +55,31 @@ final class GWVideoSurface: GWNativeWallpaperSurface {
         root.backgroundColor = NSColor.black.cgColor
         layer.frame = root.bounds
         layer.videoGravity = config.gravity == "fit" ? .resizeAspect : .resizeAspectFill
+        backing.contentsGravity = config.gravity == "fit" ? .resizeAspect : .resizeAspectFill
+        root.addSublayer(backing)
         root.addSublayer(layer)
         context.layer = root
         CATransaction.flush()
         looper = AVPlayerLooper(player: player, templateItem: template)
+        applyGeometry()
+        for name in [NSWorkspace.willSleepNotification, NSWorkspace.screensDidSleepNotification] {
+            sleepObservers.append(NSWorkspace.shared.notificationCenter.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.setSleeping(true) }
+            })
+        }
+        for name in [NSWorkspace.didWakeNotification, NSWorkspace.screensDidWakeNotification] {
+            sleepObservers.append(NSWorkspace.shared.notificationCenter.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.setSleeping(false) }
+            })
+        }
     }
 
     func start(completion: @escaping (Bool) -> Void) {
+        guard !stopped, startup == nil, timer == nil else { completion(false); return }
         startup = completion
         deadline = Date().addingTimeInterval(5)
+        playing = wantsPlayback && !sleeping
+        lastFrameTime = CACurrentMediaTime()
         // A frozen desktop still needs its first real frame. Pause immediately after it lands.
         player.play()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
@@ -91,31 +115,55 @@ final class GWVideoSurface: GWNativeWallpaperSurface {
             let callback = startup; startup = nil
             callback?(false)
             stop()
+            return
+        }
+        // AVPlayer/VideoOutput can remain nominally ready after the media
+        // services lose their decoder during a long sleep. Recover even when
+        // no failure notification arrives, with bounded retries while visible.
+        if startup == nil, playing, CACurrentMediaTime() - lastFrameTime > 3, recoveryAttempts < 3 {
+            recoveryAttempts += 1
+            lastFrameTime = CACurrentMediaTime()
+            holdLastFrame()
+            restorePresentation()
+            rebuildPlayer()
+            player.play()
+            GWLog("recovering stalled video context=\(context.contextId) attempt=\(recoveryAttempts)")
         }
     }
 
-    private func present(_ buffer: CVPixelBuffer) {
+    @discardableResult
+    private func enqueue(_ buffer: CVPixelBuffer) -> Bool {
         var description: CMVideoFormatDescription?
         guard CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: buffer, formatDescriptionOut: &description) == noErr,
-              let description else { return }
+              let description else { return false }
         var timing = CMSampleTimingInfo(duration: .invalid, presentationTimeStamp: .zero, decodeTimeStamp: .invalid)
         var sample: CMSampleBuffer?
         guard CMSampleBufferCreateReadyWithImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: buffer,
-                formatDescription: description, sampleTiming: &timing, sampleBufferOut: &sample) == noErr, let sample else { return }
+                formatDescription: description, sampleTiming: &timing, sampleBufferOut: &sample) == noErr, let sample else { return false }
         if let attachments = CMSampleBufferGetSampleAttachmentsArray(sample, createIfNecessary: true) {
             let dictionary = unsafeBitCast(CFArrayGetValueAtIndex(attachments, 0), to: CFMutableDictionary.self)
             CFDictionarySetValue(dictionary, Unmanaged.passUnretained(kCMSampleAttachmentKey_DisplayImmediately).toOpaque(), Unmanaged.passUnretained(kCFBooleanTrue).toOpaque())
         }
         if layer.sampleBufferRenderer.requiresFlushToResumeDecoding { layer.sampleBufferRenderer.flush() }
-        guard layer.sampleBufferRenderer.isReadyForMoreMediaData else { return }
+        guard layer.sampleBufferRenderer.isReadyForMoreMediaData else { return false }
         layer.sampleBufferRenderer.enqueue(sample)
+        return true
+    }
+
+    private func present(_ buffer: CVPixelBuffer) {
+        guard enqueue(buffer) else { return }
         lastBuffer = buffer
+        lastFrameTime = CACurrentMediaTime()
+        recoveryAttempts = 0
         frameCount += 1
         if sampledSignatures.count < 12 { sampledSignatures.insert(Self.signature(buffer)) }
         CATransaction.flush()
         if let callback = startup {
             startup = nil
-            if !wantsPlayback || sleeping { player.pause(); timer?.invalidate(); timer = nil }
+            if !wantsPlayback || sleeping {
+                holdLastFrame()
+                player.pause(); timer?.invalidate(); timer = nil
+            }
             callback(true)
         }
     }
@@ -131,13 +179,30 @@ final class GWVideoSurface: GWNativeWallpaperSurface {
     }
 
     func setSleeping(_ value: Bool) {
+        guard !stopped, sleeping != value else { return }
         sleeping = value
+        if !value {
+            // The compositor may discard its displayed image during sleep.
+            // Republish a retained frame even if the host is still inactive.
+            restorePresentation()
+        }
         reconcilePlayback()
     }
 
     private func reconcilePlayback() {
         guard !stopped else { return }
-        if wantsPlayback && !sleeping {
+        let shouldPlay = wantsPlayback && !sleeping
+        let resuming = shouldPlay && !playing
+        let pausing = !shouldPlay && playing
+        playing = shouldPlay
+        if shouldPlay {
+            if resuming {
+                lastFrameTime = CACurrentMediaTime()
+                recoveryAttempts = 0
+                restorePresentation()
+                detachOutput()
+                if player.currentItem == nil || player.status == .failed { rebuildPlayer() }
+            }
             player.play()
             if timer == nil {
                 timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
@@ -146,8 +211,41 @@ final class GWVideoSurface: GWNativeWallpaperSurface {
                 if let timer { RunLoop.main.add(timer, forMode: .common) }
             }
         } else if startup == nil {
+            if pausing || backing.contents == nil { holdLastFrame() }
             player.pause(); timer?.invalidate(); timer = nil
         }
+    }
+
+    private func holdLastFrame() {
+        guard let lastBuffer, let image = imageContext.createCGImage(CIImage(cvPixelBuffer: lastBuffer),
+            from: CGRect(x: 0, y: 0, width: CVPixelBufferGetWidth(lastBuffer), height: CVPixelBufferGetHeight(lastBuffer))) else { return }
+        // A normal image backing survives a video-renderer flush. Capture only
+        // at lifecycle transitions/recovery, never on the per-frame path.
+        CATransaction.begin(); CATransaction.setDisableActions(true)
+        backing.contents = image
+        CATransaction.commit(); CATransaction.flush()
+    }
+
+    private func restorePresentation() {
+        layer.sampleBufferRenderer.flush(removingDisplayedImage: true)
+        if let lastBuffer { enqueue(lastBuffer) }
+        CATransaction.flush()
+    }
+
+    private func detachOutput() {
+        if let output, let outputItem { outputItem.remove(output) }
+        output = nil; outputItem = nil
+    }
+
+    private func rebuildPlayer() {
+        player.pause()
+        detachOutput()
+        looper?.disableLooping()
+        player.removeAllItems()
+        template = AVPlayerItem(url: video)
+        player = AVQueuePlayer()
+        player.isMuted = true; player.volume = 0
+        looper = AVPlayerLooper(player: player, templateItem: template)
     }
 
     private func applyGeometry() {
@@ -155,25 +253,29 @@ final class GWVideoSurface: GWNativeWallpaperSurface {
         // AVPlayerItemVideoOutput pixels carry natural track orientation. Rotate the display
         // layer for quarter-turn tracks without stretching its aspect-fill content.
         let quarterTurn = abs(orientation.b) > 0.5 && abs(orientation.c) > 0.5
-        layer.setAffineTransform(.identity)
-        layer.bounds = CGRect(origin: .zero, size: quarterTurn ? CGSize(width: root.bounds.height, height: root.bounds.width) : root.bounds.size)
-        layer.position = CGPoint(x: root.bounds.midX, y: root.bounds.midY)
-        layer.setAffineTransform(CGAffineTransform(a: orientation.a, b: orientation.b, c: orientation.c, d: orientation.d, tx: 0, ty: 0))
+        for output in [backing, layer] {
+            output.setAffineTransform(.identity)
+            output.bounds = CGRect(origin: .zero, size: quarterTurn ? CGSize(width: root.bounds.height, height: root.bounds.width) : root.bounds.size)
+            output.position = CGPoint(x: root.bounds.midX, y: root.bounds.midY)
+            output.setAffineTransform(CGAffineTransform(a: orientation.a, b: orientation.b, c: orientation.c, d: orientation.d, tx: 0, ty: 0))
+        }
         CATransaction.commit()
     }
 
     func stop() {
         guard !stopped else { return }
         stopped = true
+        sleepObservers.forEach { NSWorkspace.shared.notificationCenter.removeObserver($0) }
+        sleepObservers.removeAll()
         timer?.invalidate(); timer = nil
         player.pause()
-        if let output, let outputItem { outputItem.remove(output) }
-        output = nil; outputItem = nil
+        detachOutput()
         looper?.disableLooping(); looper = nil
         player.removeAllItems()
         layer.sampleBufferRenderer.flush(removingDisplayedImage: true)
         layer.removeFromSuperlayer()
         context.layer = nil
+        backing.contents = nil
         lastBuffer = nil
         let callback = startup; startup = nil
         callback?(false)

@@ -110,11 +110,45 @@ struct GWExtensionDiagnostics {
                     RunLoop.main.run(until: Date().addingTimeInterval(0.02))
                 }
                 let resumed = surface.frameCount >= pausedCount + 2
+                // Deliver the same workspace events as a real sleep. Invalidate
+                // decoder/compositor resources to exercise long-sleep recovery
+                // without putting the user's computer to sleep.
+                let contextID = surface.context.contextId
+                let workspace = NSWorkspace.shared.notificationCenter
+                workspace.post(name: NSWorkspace.willSleepNotification, object: nil)
+                let sleepCount = surface.frameCount
+                RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+                let sleepPaused = surface.player.rate == 0 && surface.frameCount == sleepCount && surface.lastBuffer != nil
+                surface.layer.sampleBufferRenderer.flush(removingDisplayedImage: true)
+                surface.player.removeAllItems()
+                surface.update(GWRequest(PausedRequest()))
+                workspace.post(name: NSWorkspace.didWakeNotification, object: nil)
+                workspace.post(name: NSWorkspace.screensDidWakeNotification, object: nil)
+                let inactiveWakeHeld = surface.player.rate == 0 && surface.lastBuffer != nil
+                    && surface.root.sublayers?.first?.contents != nil
+                surface.update(GWRequest(ProbeRequest()))
+                let wakeCount = surface.frameCount
+                let wakeDeadline = Date().addingTimeInterval(7)
+                while Date() < wakeDeadline && surface.frameCount < wakeCount + 3 {
+                    RunLoop.main.run(until: Date().addingTimeInterval(0.02))
+                }
+                let wakeRecovered = surface.frameCount >= wakeCount + 3 && surface.context.contextId == contextID
+                // A decoder can also stop delivering frames without a sleep
+                // event or a failed AVPlayerItem status. It must self-recover.
+                surface.player.pause()
+                let stalledCount = surface.frameCount
+                let stallDeadline = Date().addingTimeInterval(7)
+                while Date() < stallDeadline && surface.frameCount < stalledCount + 3 {
+                    RunLoop.main.run(until: Date().addingTimeInterval(0.02))
+                }
+                let stallRecovered = surface.frameCount >= stalledCount + 3
                 var result: [String: Any] = ["started": started, "remoteContextIDNonzero": surface.context.contextId != 0,
                     "remoteContextSecureRoundTrip": response.map { GWRoundTripObject($0) } ?? false,
                     "decodedFramesEnqueued": surface.frameCount, "differentFrameSignatures": surface.sampledSignatures.count,
                     "sampleRendererStatus": surface.layer.sampleBufferRenderer.status.rawValue,
                     "desktopModePausesWithoutFrameLoop": paused, "previewOrLockedModeResumes": resumed,
+                    "workspaceSleepPausesVideo": sleepPaused, "inactiveWakeHoldsBackingImage": inactiveWakeHeld,
+                    "wakeRebuildsLostDecoderInSameContext": wakeRecovered, "stalledDecoderRecovers": stallRecovered,
                     "muted": surface.player.isMuted, "volume": surface.player.volume,
                     "uid": getuid(), "sandboxActive": GWSandboxIsActive(),
                     "snapshotObjectCreated": snapshot != nil,
@@ -125,6 +159,7 @@ struct GWExtensionDiagnostics {
                     "scope": "isolated sandbox process reads same-user staged demo, private CAContext + real video decoding/sample-layer enqueue; NOT system-host/lock-screen visual proof"]
                 var success = started && surface.frameCount >= 8 && surface.sampledSignatures.count >= 2 && response != nil
                     && snapshotTransport && contextTransport && GWSandboxIsActive() && paused && resumed
+                    && sleepPaused && inactiveWakeHeld && wakeRecovered && stallRecovered
                 surface.stop()
                 let released = surface.player.currentItem == nil && surface.player.rate == 0 && surface.context.layer == nil && surface.lastBuffer == nil
                 result["stopReleasesPlayerContextAndBuffer"] = released
@@ -190,7 +225,44 @@ struct GWExtensionDiagnostics {
             live.setSleeping(false)
             try await waitForFrames(live, after: sleepingFrames)
             let wakeResumed = live.frameCount > sleepingFrames + 1 && live.context.contextId == contextID
+            let workspace = NSWorkspace.shared.notificationCenter
+            workspace.post(name: NSWorkspace.willSleepNotification, object: nil)
+            try await Task.sleep(for: .milliseconds(300))
+            let heldAtSleep = live.lastBuffer, lostPID = live.helperPID, lostCount = live.frameCount
+            live.interruptHelperForTesting()
+            try await waitForScene { live.helperPID == nil }
+            try await Task.sleep(for: .milliseconds(300))
+            let lostWhileAsleepHeld = live.lastBuffer === heldAtSleep && live.frameCount == lostCount
+                && live.root.contents != nil && live.context.layer === live.root && live.helperPID == nil
+            await live.layer.sampleBufferRenderer.flush(removingDisplayedImage: true)
+            workspace.post(name: NSWorkspace.screensDidWakeNotification, object: nil)
+            try await waitForFrames(live, after: lostCount)
+            let helperRebuiltAfterWake = live.helperPID != nil && live.helperPID != lostPID
+                && live.context.contextId == contextID && live.lastError == nil
+            let oldHelperExited = if let lostPID { await SceneBackendProcessExit.wait(pid: lostPID) } else { false }
+            let activePID = live.helperPID, activeCount = live.frameCount
+            live.interruptHelperForTesting()
+            try await waitForScene { live.helperPID != nil && live.helperPID != activePID && live.frameCount > activeCount + 1 }
+            let activeHelperRecovered = live.context.contextId == contextID && live.lastError == nil
+            let activeHelperExited = if let activePID { await SceneBackendProcessExit.wait(pid: activePID) } else { false }
+            live.setSleeping(true); live.setSleeping(false)
+            let retries = live.recoveryCount
+            live.preparationFailuresForTesting = 10
+            live.interruptHelperForTesting()
+            try await waitForScene { live.recoveryCount >= retries + 3 && live.helperPID == nil }
+            try await Task.sleep(for: .seconds(3))
+            let boundedRecovery = live.recoveryCount == retries + 3 && live.root.contents != nil && live.lastBuffer != nil
+            live.preparationFailuresForTesting = 0
+            let exhaustedCount = live.frameCount
+            workspace.post(name: NSWorkspace.screensDidWakeNotification, object: nil)
+            try await waitForFrames(live, after: exhaustedCount)
+            let wakeRestartsRecovery = live.context.contextId == contextID && live.lastError == nil
             let pid = live.helperPID
+            result["lostHelperWhileAsleepHoldsImage"] = lostWhileAsleepHeld
+            result["wakeRebuildsLostHelper"] = helperRebuiltAfterWake && oldHelperExited
+            result["activeHelperDisconnectRecovers"] = activeHelperRecovered && activeHelperExited
+            result["boundedRecoveryPreservesImage"] = boundedRecovery
+            result["wakeResetsRecoveryBudget"] = wakeRestartsRecovery
             result["defaultModePlayback"] = count > 2 && advanced
             result["sleepFrameHeld"] = sleepHeld
             result["wakeResumedSameContext"] = wakeResumed
@@ -200,6 +272,8 @@ struct GWExtensionDiagnostics {
             result["helperPID"] = pid
             result["lastError"] = live.lastError
             let success = advanced && held && sleepHeld && wakeResumed && live.lastError == nil
+                && lostWhileAsleepHeld && helperRebuiltAfterWake && oldHelperExited
+                && activeHelperRecovered && activeHelperExited && boundedRecovery && wakeRestartsRecovery
                 && result["contextXPCTransport"] as? Bool == true && result["snapshotXPCTransport"] as? Bool == true
             live.stop()
             let exited = if let pid { await SceneBackendProcessExit.wait(pid: pid) } else { true }
@@ -220,11 +294,17 @@ struct GWExtensionDiagnostics {
     }
 
     @MainActor private static func waitForFrames(_ surface: GWLiveSurface, after count: Int) async throws {
-        let deadline = ContinuousClock.now + .seconds(10)
-        while surface.frameCount <= count + 1, surface.lastError == nil, ContinuousClock.now < deadline {
+        let deadline = ContinuousClock.now + .seconds(30)
+        while surface.frameCount <= count + 1, ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(50))
         }
         guard surface.frameCount > count + 1 else { throw GWError(73, surface.lastError ?? "Live frames did not resume") }
+    }
+
+    @MainActor private static func waitForScene(_ condition: () -> Bool) async throws {
+        let deadline = ContinuousClock.now + .seconds(30)
+        while !condition(), ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(50)) }
+        guard condition() else { throw GWError(74, "Scene recovery timed out") }
     }
 
     private static func frameSignature(_ buffer: CVPixelBuffer) -> UInt64 {

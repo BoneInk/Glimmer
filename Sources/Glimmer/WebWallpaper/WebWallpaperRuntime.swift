@@ -12,6 +12,8 @@ final class WebWallpaperRuntime: NSObject {
     let capabilities: WebWallpaperCapabilities
     private(set) var state: State = .idle
     private(set) var lastError: String?
+    /// Owners of remote layers recreate failed documents while keeping their backing.
+    @ObservationIgnored var failureHandler: (@MainActor (String) -> Void)?
     private(set) var unsupportedPropertyKeys: [String]
     private(set) var propertyDeliveryCount = 0
     private(set) var lastDeliveredPropertyKeys: [String] = []
@@ -210,6 +212,7 @@ final class WebWallpaperRuntime: NSObject {
 
     func dispose() {
         guard state != .disposed else { return }
+        failureHandler = nil
         finishPropertyWaiter(throwing: WebWallpaperFailure(message: "Web wallpaper runtime was disposed."))
         finishResourceWaiter(throwing: WebWallpaperFailure(message: "Web wallpaper runtime was disposed."))
         resourceSnapshot = nil; lastConsumedDirectoriesJSON = nil; lastConsumedDirectoriesRevision = -1
@@ -292,8 +295,7 @@ final class WebWallpaperRuntime: NSObject {
             guard let json = body["directoriesJSON"] as? String else { return }
             if json == (resourceSnapshot?.directoriesJSON ?? "{}") {
                 let message = body["message"] as? String ?? "Wallpaper directory callback failed."
-                lastError = message; state = .failed
-                finishResourceWaiter(throwing: WebWallpaperFailure(message: message))
+                fail(message)
             }
         case "propertiesError":
             guard let rawJSON = body["propertiesJSON"] as? String,
@@ -360,9 +362,11 @@ final class WebWallpaperRuntime: NSObject {
     }
 
     private func fail(_ message: String) {
+        let wasFailed = state == .failed
         lastError = String(message.prefix(2048)); state = .failed
         finishPropertyWaiter(throwing: WebWallpaperFailure(message: lastError!))
         finishResourceWaiter(throwing: WebWallpaperFailure(message: lastError!))
+        if !wasFailed { failureHandler?(lastError!) }
     }
 }
 

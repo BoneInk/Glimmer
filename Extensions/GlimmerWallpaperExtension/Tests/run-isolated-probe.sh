@@ -57,7 +57,9 @@ assert v['sandboxActive'] and v['decodedFramesEnqueued']>=8 and v['differentFram
 assert v['snapshotXPCTransportRoundTrip'] and v['remoteContextXPCTransportRoundTrip']
 assert v['muted'] and v['volume']==0 and not v['systemWallpaperModified']
 assert v['desktopModePausesWithoutFrameLoop'] and v['previewOrLockedModeResumes'] and v['stopReleasesPlayerContextAndBuffer']
-print('PASS: sandbox/private-runtime/settings, real changing video frames in remote CAContext, snapshot/context XPC transport, 5 unsafe staging cases rejected; no registration or wallpaper changes.')
+assert v['workspaceSleepPausesVideo'] and v['inactiveWakeHoldsBackingImage']
+assert v['wakeRebuildsLostDecoderInSameContext'] and v['stalledDecoderRecovers']
+print('PASS: sandbox/private-runtime/settings, changing video frames, workspace sleep/wake, decoder/compositor loss and silent decoder stall recovery, snapshot/context XPC transport, 5 unsafe staging cases rejected; no registration or wallpaper changes.')
 PY
 # Preserve only the signed package, never the staged demo/config or captured frames.
 mkdir -p "$OUT/GlimmerWallpaperExtension.appex"
