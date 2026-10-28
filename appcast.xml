@@ -4,25 +4,28 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <channel>
         <title>Glimmer</title>
         <item>
-            <title>0.18.0</title>
-            <pubDate>Mon, 26 Oct 2026 12:23:01 +0800</pubDate>
-            <sparkle:version>46</sparkle:version>
-            <sparkle:shortVersionString>0.18.0</sparkle:shortVersionString>
+            <title>0.18.1</title>
+            <pubDate>Wed, 28 Oct 2026 10:33:13 +0800</pubDate>
+            <sparkle:version>47</sparkle:version>
+            <sparkle:shortVersionString>0.18.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description sparkle:format="plain-text"><![CDATA[Glimmer 0.18.0（构建 46）
+            <description sparkle:format="plain-text"><![CDATA[Glimmer 0.18.1（构建 47）
 
-新增：窗口铺满桌面可用区域时暂停壁纸，可在设置中开启，需要辅助功能权限。
-使用辅助功能事件监听，取消周期性窗口扫描。
-修复点击桌面显示壁纸后返回应用时的暂停恢复判断。
-新增签名应用内更新，可关闭提醒或手动检查；确认后才下载安装。
+修复动态锁屏在长时间熄屏后可能纯黑或停止播放的恢复缺口：
+- 视频：补上系统与显示器睡眠、唤醒监听，重新提交保留画面，解码停止出帧后自动重建。
+- Scene：渲染助手断开后保留最后一帧与锁屏显示上下文，亮屏后重建助手并恢复渲染。
+- Web：内容进程异常或页面重建失败后自动恢复；恢复期间显示保留画面，恢复后的时钟使用当前时间。
+- Scene/Web 连续失败时最多重试三次，下一次亮屏或重新激活后可再次尝试；兼容系统先唤醒、显示器后亮屏的通知顺序。
 
-Apple Silicon，macOS 26 或更高版本。Apple Development 签名，未公证。
+已验证进程断开、WebKit 内容进程终止、加载失败及视频回归。真实长时间熄屏的锁屏画面仍需实际使用验证。
+
+Apple Silicon，macOS 26+。Apple Development 签名，未经过 Apple 公证。
 ]]></description>
-            <enclosure url="https://github.com/BoneInk/Glimmer/releases/download/v0.18.0/Glimmer-0.18.0-arm64.zip" length="344341513" type="application/octet-stream" sparkle:edSignature="M2wuSi+bajslHodKdO4w0T0Hs1eagDg5f7mP51rBHfs4bUAVI+a9m13GSCJKXCqgdXZUiJmB+x7MIAm5U5D9Dg=="></enclosure>
+            <enclosure url="https://github.com/BoneInk/Glimmer/releases/download/v0.18.1/Glimmer-0.18.1-arm64.zip" length="344354099" type="application/octet-stream" sparkle:edSignature="Y1oe/vkaTmBUKksttKL2Od8USh18qaGXLkfiOl4kcyO9ijB4LLlO2Ogf4x22Vx4IH0ZSwP4rUN7eBvJlCW2AAA=="></enclosure>
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: msHQGmB/6EhfSGa0wLeKzjLPziNZr+ILLMi6KQz4R+Ba8SHIz5RebcMstkoZh3zw6TocUfnyquDs+gRI/cHqAQ==
-length: 1661
+edSignature: z97V/+IWIPLBA4cKwB1en/CY6uihvQcC1TDnWphYTI229rbxCiQLOZIUtOdQkmHAWzFeMR82WNk0N4De36srDg==
+length: 2091
 -->
