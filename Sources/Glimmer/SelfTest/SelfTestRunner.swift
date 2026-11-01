@@ -1174,12 +1174,13 @@ final class SelfTestRunner {
         let patterns = Set(ignoreText.split(separator: "\n").map {
             $0.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "^/", with: "", options: .regularExpression)
         })
-        let required = ["build/", "dist/", "*.app", "*.dmg"]
-        let missing = required.filter { !patterns.contains($0) }
+        let required = ["build/", "dist/", "*.dmg"]
+        var missing = required.filter { !patterns.contains($0) }
+        if !patterns.contains("*.app") && !patterns.contains("*.app/") { missing.append("/*.app/") }
         results.append(TestResult(
             name: "构建产物目录被忽略",
             passed: missing.isEmpty,
-            detail: missing.isEmpty ? "build/、dist/、*.app、*.dmg 均已忽略" : "缺少忽略规则：\(missing.joined(separator: ", "))"
+            detail: missing.isEmpty ? "build/、dist/、根目录 .app 与 .dmg 均已忽略" : "缺少忽略规则：\(missing.joined(separator: ", "))"
         ))
     }
 
@@ -1599,12 +1600,33 @@ final class SelfTestRunner {
             let pausedDisplay = GWPlaybackConfiguration.DisplaySettings(
                 isPaused: true, isMuted: true, volume: 1, rate: 1, gravity: .fit
             )
+            let otherDisplayIDs = playback.sessions.keys.filter { $0 != displayID }
+            let otherSettings = Dictionary(uniqueKeysWithValues: otherDisplayIDs.map { ($0, store.settings(for: $0)) })
             let pausedURL = storage.root.appendingPathComponent("config-paused.json")
             try GWConfigurationTransfer.writeExport(
                 GWConfigurationEnvelope(exportedAt: Date(), appVersion: nil, preferences: nil, playback: GWPlaybackConfiguration(displays: [displayID: pausedDisplay])),
                 to: pausedURL
             )
             try settingsCoordinator.commitImport(try settingsCoordinator.validateImport(contentsOf: pausedURL))
+            let anyStillWantsPlay = playback.sessions.keys.contains { !store.settings(for: $0).isPaused }
+            check(
+                "导入单屏暂停保留其他显示器的播放意图",
+                store.settings(for: displayID).isPaused && playback.session(for: displayID)?.isPlaying == false
+                    && otherDisplayIDs.allSatisfy { id in
+                        store.settings(for: id) == otherSettings[id]
+                            && playback.session(for: id)?.isPlaying == !(otherSettings[id]?.isPaused ?? true)
+                    }
+                    && policy.userIntent == (anyStillWantsPlay ? .playing : .paused)
+                    && playlist.isSuspended == !anyStillWantsPlay,
+                "其他显示器=\(otherDisplayIDs.count)，意图=\(policy.userIntent.displayName)，轮播挂起=\(playlist.isSuspended)"
+            )
+            let allPausedURL = storage.root.appendingPathComponent("config-all-paused.json")
+            let allPaused = Dictionary(uniqueKeysWithValues: playback.sessions.keys.map { ($0, pausedDisplay) })
+            try GWConfigurationTransfer.writeExport(
+                GWConfigurationEnvelope(exportedAt: Date(), appVersion: nil, preferences: nil,
+                    playback: GWPlaybackConfiguration(displays: allPaused)), to: allPausedURL
+            )
+            try settingsCoordinator.commitImport(try settingsCoordinator.validateImport(contentsOf: allPausedURL))
             check(
                 "导入整体暂停后意图/轮播/会话一致暂停",
                 policy.userIntent == .paused
@@ -1625,7 +1647,8 @@ final class SelfTestRunner {
             try settingsCoordinator.commitImport(try settingsCoordinator.validateImport(contentsOf: playingURL))
             check(
                 "导入恢复播放意图后真实会话恢复",
-                policy.userIntent == .playing && playback.session(for: displayID)?.isPlaying == true,
+                policy.userIntent == .playing && playback.session(for: displayID)?.isPlaying == true
+                    && otherDisplayIDs.allSatisfy { store.settings(for: $0).isPaused && playback.session(for: $0)?.isPlaying == false },
                 "意图=\(policy.userIntent.displayName)，isPlaying=\(playback.session(for: displayID)?.isPlaying ?? false)"
             )
         } catch {
