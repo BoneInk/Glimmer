@@ -6,8 +6,7 @@ import SwiftUI
 // ```
 // let policy = GWPolicyController(autoStartMonitoring: true)
 // policy.onPolicyChanged = { transition in
-//     // 连接 B01 播放控制器：transition.effectiveIsPlaying ? resumeAll() : pauseAll()
-//     // 并调用 playlist.setTimerSuspended(!transition.effectiveIsPlaying, reason: transition.summary)
+//     // 通过 AppPlaybackIntegration 按显示器应用策略，并同步轮播计时。
 // }
 // GWPolicySettingsView(controller: policy)
 // ```
@@ -32,7 +31,7 @@ struct GWPolicySettingsView: View {
                     "窗口最大化时暂停",
                     systemImage: "rectangle.inset.filled",
                     isOn: bind(\.pauseOnMaximizedWindow),
-                    hint: "任一屏幕上有应用窗口铺满菜单栏与 Dock 之间的可用区域时，暂停全部桌面壁纸。",
+                    hint: "应用窗口全屏或铺满某台显示器的可用区域时，仅暂停该显示器的桌面壁纸。",
                     identifier: "gw.policy.toggle.maximizedWindow"
                 )
                 if controller.settings.pauseOnMaximizedWindow && !controller.isWindowAccessibilityAuthorized {

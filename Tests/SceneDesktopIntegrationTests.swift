@@ -89,11 +89,18 @@ import Foundation
         playback.setWallpaperFPS(24)
         defer { playback.tearDownAll() }
         try check(playback.apply(item: video, to: nil) == nil, "real AV video initially occupies both virtual displays")
+        playback.applyPolicyState(isBlocked: false, suspendedDisplayIDs: ["A"], displayShouldPlay: { _ in true })
+        try check(!playback.session(for: "A")!.isPlaying && playback.session(for: "B")!.isPlaying,
+                  "per-display policy pauses A video while B video continues")
+        playback.setVolume(0.4, displayID: "A")
+        try check(!playback.session(for: "A")!.isPlaying, "volume changes cannot bypass A's scoped video pause")
         let oldB = playback.session(for: "B")!
         try check(await playback.applyAndWait(item: scene, to: ["A"]) == nil, "explicit Scene apply waits for actual render completion")
         guard let first = playback.session(for: "A"), let firstRuntime = first.sceneRuntime else { throw SceneWallpaperFailure(message: "Missing Scene host") }
         try check(firstRuntime.frameRateLimit == 24, "new desktop Scene inherits the global FPS cap")
-        try check(firstRuntime.state == .ready && (try white(firstRuntime.posterImage)), "applied Scene host already has real default pixels")
+        try check(firstRuntime.state == .paused && (try white(firstRuntime.posterImage)), "Scene replacement on covered display starts paused with real default pixels")
+        try check(playback.session(for: "B")!.isPlaying, "asynchronous Scene replacement on paused A preserves playing B")
+        playback.applyPolicyState(isBlocked: false, displayShouldPlay: { _ in true })
         try check(first.player == nil && first.window == nil && firstRuntime.hostView !== oldB.hostView, "Scene uses native image host without AVPlayer or desktop window")
         try check(playback.session(for: "B") === oldB && store.assignments["B"] == video.id && store.assignments["A"] == sceneID,
             "target A apply preserves B player and persisted assignment")
@@ -129,6 +136,17 @@ import Foundation
         try await services.applySavedSettings(project: project, itemID: sceneID, storage: storage)
         try check(all.allSatisfy { $0.state == .paused } && !playback.session(for: "A")!.isPlaying, "author updates preserve active policy suspension")
         playback.applyPolicyState(isBlocked: false, displayShouldPlay: { _ in true })
+        playback.applyPolicyState(isBlocked: false, suspendedDisplayIDs: ["B"], displayShouldPlay: { _ in true })
+        playback.setVolume(0.6, displayID: "B")
+        playback.applyStoredSettingsToSessions()
+        try check(playback.session(for: "A")!.isPlaying && !playback.session(for: "B")!.isPlaying,
+                  "Scene scoped suspension survives settings refresh while the other renderer runs")
+        store.updateSettings(for: "A") { $0.isPaused = true }
+        playback.applyPolicyState(isBlocked: false, displayShouldPlay: { !store.settings(for: $0).isPaused })
+        try check(!playback.session(for: "A")!.isPlaying && playback.session(for: "B")!.isPlaying,
+                  "uncovering B preserves manual pause on A")
+        store.updateSettings(for: "A") { $0.isPaused = false }
+        playback.applyPolicyState(isBlocked: false, displayShouldPlay: { _ in true })
         store.updateAppSettings { $0.autoApplyOnLaunch = true }; store.flush()
         let savedAssignments = store.assignments
         playback.tearDownAll()
@@ -158,7 +176,10 @@ import Foundation
         guard case .imported(let brokenID) = await importer.importLocalSceneProject(brokenSource), let broken = store.item(withID: brokenID) else { throw SceneWallpaperFailure(message: "Broken-source fixture setup failed") }
         let brokenScene = broken.fileURL.deletingLastPathComponent().appendingPathComponent("scene.json")
         var invalid = try JSONSerialization.jsonObject(with: Data(contentsOf: brokenScene)) as! [String: Any]
-        var general = invalid["general"] as! [String: Any]; general["bloom"] = true; invalid["general"] = general
+        // Bloom is supported by the current renderer; perspective remains unsupported.
+        var objects = invalid["objects"] as! [[String: Any]]
+        objects[0]["perspective"] = true
+        invalid["objects"] = objects
         try json(invalid).write(to: brokenScene)
         let previousA = playback.session(for: "A"), previousB = playback.session(for: "B"), previousAssignments = store.assignments
         try check(await playback.applyAndWait(item: broken, to: nil) != nil, "unsupported live Scene content rejects actual multi-host preparation")

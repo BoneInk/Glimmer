@@ -17,32 +17,47 @@ enum GWMaximizedWindowGeometry {
             && window.minY <= visibleFrame.minY + tolerance
             && window.maxY >= visibleFrame.maxY - tolerance
     }
+
+    static func coveredDisplays(frames: [String: CGRect], windows: [CGRect]) -> Set<String> {
+        Set(frames.compactMap { id, frame in
+            windows.contains { covers(frame, window: $0) } ? id : nil
+        })
+    }
 }
 
 @MainActor
 enum GWMaximizedWindowDetector {
     static func hasMaximizedWindow() -> Bool {
+        !maximizedDisplayIDs().isEmpty
+    }
+
+    static func maximizedDisplayIDs() -> Set<String> {
         let screens = NSScreen.screens
         guard let primary = screens.first,
               let windows = CGWindowListCopyWindowInfo(
                 [.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID
-              ) as? [[String: Any]] else { return false }
+              ) as? [[String: Any]] else { return [] }
 
         // visibleFrame 每次重读，跟随 Dock 位置、自动隐藏、菜单栏及显示器布局变化。
-        let frames = screens.map {
-            GWMaximizedWindowGeometry.quartzRect($0.visibleFrame, primaryScreenTop: primary.frame.maxY)
-        }
+        let identifiers = Dictionary(uniqueKeysWithValues: DisplayRegistry.enumerate().map { ($0.displayID, $0.id) })
+        let frames = Dictionary(uniqueKeysWithValues: screens.compactMap { screen -> (String, CGRect)? in
+            guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber,
+                  let identifier = identifiers[number.uint32Value] else { return nil }
+            return (identifier,
+                    GWMaximizedWindowGeometry.quartzRect(screen.visibleFrame, primaryScreenTop: primary.frame.maxY))
+        })
         let applicationPIDs = Set(NSWorkspace.shared.runningApplications.filter {
             $0.activationPolicy == .regular && !$0.isHidden && !$0.isTerminated
         }.map(\.processIdentifier))
 
-        return windows.contains { info in
+        let bounds = windows.compactMap { info -> CGRect? in
             guard let layer = info[kCGWindowLayer as String] as? Int, layer == 0,
                   let alpha = info[kCGWindowAlpha as String] as? Double, alpha > 0,
                   let pid = info[kCGWindowOwnerPID as String] as? Int32, applicationPIDs.contains(pid),
                   let bounds = info[kCGWindowBounds as String] as? [String: Any],
-                  let rect = CGRect(dictionaryRepresentation: bounds as CFDictionary) else { return false }
-            return frames.contains { GWMaximizedWindowGeometry.covers($0, window: rect) }
+                  let rect = CGRect(dictionaryRepresentation: bounds as CFDictionary) else { return nil }
+            return rect
         }
+        return GWMaximizedWindowGeometry.coveredDisplays(frames: frames, windows: bounds)
     }
 }

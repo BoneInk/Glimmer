@@ -11,7 +11,7 @@ func GWSettingsResponse() -> AnyObject? {
     let choice = ChoiceID(id: GWChoiceID, descriptor: descriptor)
     let item = SettingsItem(id: choice, localizedName: "Glimmer", thumbnail: .image(url: thumbnail),
         choice: ChoiceDescriptor(id: choice, provider: provider, identifier: GWChoiceID, name: "Glimmer",
-                                 localizedDescription: "Live Scene / Web or video; choose wallpaper in Glimmer", thumbnail: .image(url: thumbnail), isDownloaded: (try? GWConfiguration.load()) != nil, options: []),
+                                 localizedDescription: "Live Scene / Web or video; choose wallpaper in Glimmer", thumbnail: .image(url: thumbnail), isDownloaded: (try? GWConfiguration.load(allowPreviewFallback: true)) != nil, options: []),
         contentBadge: .video, showInTopLevel: true, sortOrder: 0, disposability: .none, contextMenu: nil)
     let group = SettingsGroup(id: GroupID(id: "native-video"), items: [item], localizedName: "Glimmer",
         disposability: .none, sortOrder: 0, sortID: GroupSortID(id: "native-video"), allChoiceID: nil, shouldHideItemLabels: false, contextMenu: nil, thumbnail: nil)

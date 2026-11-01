@@ -45,7 +45,7 @@ struct TransientToast: Equatable {
     var showsStatus: Bool { isBusy || feedback != nil || coordinator.lastError != nil }
     var statusText: String { feedback ?? coordinator.lastError ?? "" }
 
-    func startApply(item: WallpaperItem) -> String? { nil }
+    func startApply(item: WallpaperItem, displayIDs: [String]? = nil) -> String? { nil }
     func cancelPreparation() { cancellationCount += 1 }
     func restorePrevious() -> String? { nil }
 }

@@ -38,6 +38,34 @@ import Foundation
             "Displays": ["display-a": node], "Spaces": ["space-x": ["Displays": ["display-b": node]]],
             "UnknownRoot": Data([9, 8, 7]), "UnknownObject": ["Desktop": ["foo": "bar"]]]
         let original = try PropertyListSerialization.data(fromPropertyList: fixture, format: .binary, options: 0)
+        let displayA = "11111111-1111-1111-1111-111111111111"
+        let displayB = "22222222-2222-2222-2222-222222222222"
+        let perDisplayFixture: [String: Any] = ["SystemDefault": node, "AllSpacesAndDisplays": [:],
+            "Displays": [displayA: node, displayB: node], "Spaces": ["space-a": ["Displays": [displayA: node, displayB: node]]],
+            "UnknownRoot": Data([9, 8, 7])]
+        let perDisplayData = try PropertyListSerialization.data(fromPropertyList: perDisplayFixture, format: .binary, options: 0)
+        let perDisplayOutput = try LockScreenStorePatcher.patch(perDisplayData, displayIDs: [displayA], onlineDisplayIDs: [displayA, displayB])
+        let perDisplayObject = try PropertyListSerialization.propertyList(from: perDisplayOutput, format: nil) as! [String: Any]
+        let displayNodes = perDisplayObject["Displays"] as! [String: Any]
+        check(NSDictionary(dictionary: displayNodes[displayB] as! [String: Any]).isEqual(to: node), "targeted patch preserves B's complete wallpaper node")
+        check(NSDictionary(dictionary: perDisplayObject["SystemDefault"] as! [String: Any]).isEqual(to: node), "targeted patch preserves default selection")
+        let scopedDesktop = (displayNodes[displayA] as! [String: Any])["Desktop"] as! [String: Any]
+        let scopedChoice = (scopedDesktop["Content"] as! [String: Any])["Choices"] as! [[String: Any]]
+        check(scopedChoice.first?["Provider"] as? String == LockScreenStorePatcher.provider, "targeted patch applies native provider only to A")
+        let scopedSpaces = perDisplayObject["Spaces"] as! [String: Any]
+        let spaceNodes = (scopedSpaces["space-a"] as! [String: Any])["Displays"] as! [String: Any]
+        check(NSDictionary(dictionary: spaceNodes[displayB] as! [String: Any]).isEqual(to: node), "targeted patch preserves B across Spaces")
+        check(perDisplayObject["UnknownRoot"] as? Data == Data([9, 8, 7]), "targeted patch retains opaque root metadata")
+        let inheritedData = try PropertyListSerialization.data(fromPropertyList: ["AllSpacesAndDisplays": node,
+            "SystemDefault": node, "Displays": [:], "Spaces": ["new-space": [String: Any]()]], format: .binary, options: 0)
+        let inheritedObject = try PropertyListSerialization.propertyList(from: LockScreenStorePatcher.patch(inheritedData,
+            displayIDs: [displayA], onlineDisplayIDs: [displayA, displayB]), format: nil) as! [String: Any]
+        let inheritedDisplays = inheritedObject["Displays"] as! [String: Any]
+        check((inheritedObject["AllSpacesAndDisplays"] as? [String: Any])?.isEmpty == true, "individual setting splits the all-displays selection")
+        check(NSDictionary(dictionary: inheritedDisplays[displayB] as! [String: Any]).isEqual(to: node), "splitting shared selection retains B's inherited desktop and screen saver")
+        check(NSDictionary(dictionary: ((inheritedDisplays[displayA] as! [String: Any])["Idle"] as! [String: Any])).isEqual(to: node["Idle"] as! [String: Any]), "selected A also retains its screen saver")
+        do { _ = try LockScreenStorePatcher.patch(original, displayIDs: []); preconditionFailure("empty target became global") } catch { checks += 1 }
+        do { _ = try LockScreenStorePatcher.patch(original, displayIDs: ["session-display:temporary"]); preconditionFailure("unstable target accepted") } catch { checks += 1 }
         let patched = try LockScreenStorePatcher.patch(original)
         let object = try PropertyListSerialization.propertyList(from: patched, format: nil) as! [String: Any]
         let system = object["SystemDefault"] as! [String: Any]

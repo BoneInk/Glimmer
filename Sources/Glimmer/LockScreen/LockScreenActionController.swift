@@ -49,10 +49,14 @@ import Observation
     }
     private var submittedText: String { "锁屏配置已更新。" + (coordinator.lastError.map {" " + $0} ?? "") }
     private var restoredText: String { "此前锁屏配置已恢复。" + (coordinator.lastError.map {" " + $0} ?? "") }
-    @discardableResult func startApply(item: WallpaperItem) -> String? {
+    @discardableResult func startApply(item: WallpaperItem, displayIDs: [String]? = nil) -> String? {
         guard !isBusy else { return "正在处理「\(itemTitle ?? "锁屏配置")」，请等待完成或取消准备。" }
         guard item.isVideoWallpaper || item.isWebWallpaper || item.isSceneWallpaper else {
             return "动态锁屏目前支持视频、Web 动画和 Scene。"
+        }
+        let targets = displayIDs.map { Set($0.map { $0.uppercased() }) }
+        if let targets, targets.isEmpty || !targets.allSatisfy({ UUID(uuidString: $0) != nil }) {
+            return "该显示器没有稳定标识，无法独立设置锁屏。"
         }
         let ticket=UUID();generation=ticket;itemID=item.id;itemTitle=item.displayTitle
         phase = .preparing;completion = .none;feedback=nil
@@ -61,7 +65,7 @@ import Observation
             defer { if self.generation == ticket {self.phase = .idle;self.operation=nil} }
             await self.beforePreparation?()
             guard !Task.isCancelled, self.generation == ticket else { self.finishCancelled();return }
-            await self.coordinator.prepare(item:item)
+            await self.coordinator.prepare(item:item, displayID: targets?.sorted().first)
             guard !Task.isCancelled, self.generation == ticket else { self.finishCancelled();return }
             guard self.coordinator.state == .prepared, self.coordinator.preparedAsset?.itemID == item.id else {
                 self.completion = .failed;self.feedback=self.coordinator.lastError ?? "本次素材准备未完成，未提交新的锁屏配置。";return
@@ -73,7 +77,7 @@ import Observation
                   self.coordinator.preparedAsset?.itemID == item.id else {
                 self.completion = .failed;self.feedback="准备素材已改变，未提交新的锁屏配置。";return
             }
-            await self.coordinator.applyPrepared()
+            await self.coordinator.applyPrepared(to: targets)
             self.completion=self.coordinator.state == .applied ? .submitted:.failed
             self.feedback=self.completion == .submitted ? self.submittedText:self.coordinator.statusText
         }

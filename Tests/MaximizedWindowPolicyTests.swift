@@ -34,6 +34,11 @@ enum MaximizedWindowPolicyTests {
         let quartz = GWMaximizedWindowGeometry.quartzRect(upperScreen, primaryScreenTop: 982)
         try check(quartz == CGRect(x: -1920, y: -1080, width: 1920, height: 1080), "secondary screen above and left converts to WindowServer coordinates")
         try check(GWMaximizedWindowGeometry.covers(quartz, window: quartz), "negative-coordinate display can pause")
+        let frames = ["screen-a": visible, "screen-b": quartz]
+        try check(GWMaximizedWindowGeometry.coveredDisplays(frames: frames, windows: [visible]) == ["screen-a"],
+                  "a full-screen window covers only its own display")
+        try check(GWMaximizedWindowGeometry.coveredDisplays(frames: frames, windows: [visible, quartz]) == ["screen-a", "screen-b"],
+                  "multiple covering windows pause their respective displays")
 
         let legacy = try JSONDecoder().decode(GWPolicySettings.self, from: Data("{}".utf8))
         try check(!legacy.pauseOnMaximizedWindow, "existing configurations keep the new policy disabled")
@@ -43,29 +48,29 @@ enum MaximizedWindowPolicyTests {
         try check(restored == settings, "new setting survives JSON round trip")
 
         var core = GWPolicyCore(settings: settings)
-        let blocked = core.handle(.maximizedWindowChanged(true))
+        let blocked = core.handle(.maximizedDisplaysChanged(["screen-a"]))
         try check(blocked?.effectiveIsPlaying == false && core.activePauseReasons == [.maximizedWindow], "maximized window blocks playback with a visible pause reason")
-        try check(core.handle(.maximizedWindowChanged(true)) == nil, "unchanged sampling does not repeat playback callbacks")
-        core.handle(.maximizedWindowChanged(false))
+        try check(core.handle(.maximizedDisplaysChanged(["screen-a"])) == nil, "unchanged sampling does not repeat playback callbacks")
+        core.handle(.maximizedDisplaysChanged([]))
         try check(core.effectiveIsPlaying, "shrinking or removing window restores playback")
-        core.handle(.maximizedWindowChanged(true))
+        core.handle(.maximizedDisplaysChanged(["screen-a"]))
         core.handle(.userRequestedPause)
-        core.handle(.maximizedWindowChanged(false))
+        core.handle(.maximizedDisplaysChanged([]))
         try check(!core.effectiveIsPlaying && core.userIntent == .paused, "uncovering desktop preserves manual pause")
         core.handle(.userRequestedPlay)
         core.handle(.screenLocked)
-        core.handle(.maximizedWindowChanged(true))
-        core.handle(.maximizedWindowChanged(false))
+        core.handle(.maximizedDisplaysChanged(["screen-a"]))
+        core.handle(.maximizedDisplaysChanged([]))
         try check(core.activePauseReasons == [.screenLocked] && !core.effectiveIsPlaying, "removing maximization preserves other pause policies")
         core.handle(.screenUnlocked)
-        core.handle(.maximizedWindowChanged(true))
+        core.handle(.maximizedDisplaysChanged(["screen-a"]))
         core.handle(.policySettingsChanged(legacy))
         try check(core.effectiveIsPlaying, "disabling new setting immediately removes its block")
 
         settings.resumeWhenPolicyLifts = false
         core = GWPolicyCore(settings: settings)
-        core.handle(.maximizedWindowChanged(true))
-        core.handle(.maximizedWindowChanged(false))
+        core.handle(.maximizedDisplaysChanged(["screen-a"]))
+        core.handle(.maximizedDisplaysChanged([]))
         try check(!core.effectiveIsPlaying && core.isResumeSuppressed, "automatic resume preference is respected")
         core.handle(.userRequestedPlay)
         try check(core.effectiveIsPlaying, "explicit play clears resume suppression")
@@ -73,12 +78,31 @@ enum MaximizedWindowPolicyTests {
         let controller = GWPolicyController(settings: settings, persistenceEnabled: false)
         var transitions: [GWPolicyTransition] = []
         controller.onPolicyChanged = { transitions.append($0) }
-        controller.handle(.maximizedWindowChanged(true))
-        try check(!controller.shouldPlayOnDisplay(userIsPaused: false), "controller blocks displays through existing integration API")
+        controller.handle(.maximizedDisplaysChanged(["screen-a"]))
+        try check(!controller.shouldPlayOnDisplay("screen-a", userIsPaused: false), "controller blocks displays through existing integration API")
         controller.updateSettings { $0.pauseOnMaximizedWindow = false }
-        try check(controller.shouldPlayOnDisplay(userIsPaused: false), "toggle applies immediately through controller")
-        try check(!controller.shouldPlayOnDisplay(userIsPaused: true), "display manual pause is never overridden")
+        try check(controller.shouldPlayOnDisplay("screen-a", userIsPaused: false), "toggle applies immediately through controller")
+        try check(!controller.shouldPlayOnDisplay("screen-a", userIsPaused: true), "display manual pause is never overridden")
         try check(transitions.count == 2, "controller emits pause and resume callbacks")
+
+        var scoped = GWPolicyCore(settings: GWPolicySettings(pauseOnMaximizedWindow: true))
+        scoped.handle(.maximizedDisplaysChanged(["screen-a"]))
+        try check(!scoped.shouldPlay(on: "screen-a", userIsPaused: false)
+                  && scoped.shouldPlay(on: "screen-b", userIsPaused: false), "covering A leaves B playing")
+        try check(scoped.handle(.maximizedDisplaysChanged(["screen-b"])) != nil
+                  && scoped.shouldPlay(on: "screen-a", userIsPaused: false)
+                  && !scoped.shouldPlay(on: "screen-b", userIsPaused: false),
+                  "moving a full-screen window between displays emits a transition even with the same pause reason")
+        try check(!scoped.shouldPlay(on: "screen-a", userIsPaused: true), "uncovered display retains its manual pause")
+        scoped.handle(.screenLocked)
+        try check(!scoped.shouldPlay(on: "screen-a", userIsPaused: false), "system lock still blocks uncovered displays")
+        scoped.handle(.screenUnlocked)
+        scoped.handle(.policySettingsChanged(GWPolicySettings(pauseOnMaximizedWindow: true, resumeWhenPolicyLifts: false)))
+        scoped.handle(.maximizedDisplaysChanged([]))
+        try check(scoped.resumeSuppressedDisplayIDs == ["screen-b"]
+                  && scoped.shouldPlay(on: "screen-a", userIsPaused: false), "manual-resume preference suppresses only the previously covered display")
+        scoped.handle(.maximizedWindowMonitoringUnavailable)
+        try check(scoped.shouldPlay(on: "screen-b", userIsPaused: false), "permission loss clears scoped suppression without blocking other screens")
 
         try await eventDrivenChecks()
         if CommandLine.arguments.contains("--live") { try await liveWindowCheck() }
@@ -102,7 +126,7 @@ enum MaximizedWindowPolicyTests {
         let controller = GWPolicyController(
             settings: GWPolicySettings(pauseOnLowPowerMode: false, pauseOnMaximizedWindow: true),
             persistenceEnabled: false, autoStartMonitoring: true, windowEvents: events,
-            windowAccessCheck: { trusted }, maximizedWindowQuery: { queries += 1; return covered }
+            windowAccessCheck: { trusted }, maximizedWindowQuery: { queries += 1; return covered ? ["screen-a"] : [] }
         )
         defer { controller.stopMonitoring() }
         try check(queries == 0 && events.synchronizations == 0 && !controller.isWindowMonitoring,
@@ -238,8 +262,8 @@ enum MaximizedWindowPolicyTests {
                 settings: GWPolicySettings(pauseOnMaximizedWindow: true), persistenceEnabled: false,
                 autoStartMonitoring: true,
                 maximizedWindowQuery: {
-                    guard !window.isMiniaturized, window.isVisible, let bounds = try? actualBounds() else { return false }
-                    return GWMaximizedWindowGeometry.covers(visible, window: bounds)
+                    guard !window.isMiniaturized, window.isVisible, let bounds = try? actualBounds() else { return [] }
+                    return GWMaximizedWindowGeometry.covers(visible, window: bounds) ? ["screen-a"] : []
                 }
             )
             defer { controller.stopMonitoring() }

@@ -141,6 +141,16 @@ manifest records every regular file's size and SHA-256; both processes reject
 links, unexpected files, mutations and unsafe permissions. Existing schema 1
 video configurations remain supported.
 
+Schema 3 stores `displayConfigurations`, keyed by stable uppercase display UUID,
+and an optional `defaultConfiguration` containing a schema 1 or 2 entry. Acquire
+resolves the host request's `directDisplayID` to its UUID before loading media.
+An unassigned display uses the previous global configuration when present;
+another display's assignment is used only for an explicit settings preview.
+Applying to all displays replaces the individual overrides. Applying to one
+display splits the system store's shared role while retaining other displays'
+effective desktop and screen-saver choices. The same compare-and-swap snapshot
+restores both the store and the complete previous configuration manifest.
+
 The extension presents live content through the existing remote CAContext.
 Scene sessions use sample-buffer composition and eight independently identified,
 same-team authenticated nested XPC services, isolated from desktop renderers.

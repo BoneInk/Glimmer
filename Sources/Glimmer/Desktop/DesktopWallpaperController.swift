@@ -551,9 +551,14 @@ final class DesktopPlaybackController {
     /// 该标志只影响真实会话的播放/暂停，绝不写入用户保存的 `isPaused`；
     /// 挂起期间应用/切换素材、调整静音/音量/倍速都必须保持暂停。
     private(set) var isPolicySuspended = false
+    private(set) var policySuspendedDisplayIDs: Set<String> = []
+
+    func isPolicySuspended(on displayID: String) -> Bool {
+        isPolicySuspended || policySuspendedDisplayIDs.contains(displayID)
+    }
     /// 用户显式播放/暂停操作完成后的回调（用于同步全局策略意图）。
     /// 策略自动暂停/恢复不触发该回调，避免与全局意图形成反馈循环。
-    var onUserPlaybackCommand: (() -> Void)?
+    var onUserPlaybackCommand: ((Set<String>) -> Void)?
 
     private let store: VideoLibraryStore
     private let displayRegistry: DisplayRegistry
@@ -648,7 +653,7 @@ final class DesktopPlaybackController {
             }
         }
         if writesToLibrary { store.flush() }
-        onUserPlaybackCommand?()
+        onUserPlaybackCommand?(Set(targets.map(\.id)))
 
         if problems.isEmpty {
             lastMessage = targets.count == 1
@@ -683,7 +688,7 @@ final class DesktopPlaybackController {
             wallpaperFPS: wallpaperFPS,
             authorStorage: storage
         )
-        if let error = session.start(policySuspended: isPolicySuspended) {
+        if let error = session.start(policySuspended: isPolicySuspended(on: display.id)) {
             session.tearDown()
             problems.append("\(display.localizedName)：\(error)")
             return
@@ -731,7 +736,7 @@ final class DesktopPlaybackController {
                 sceneRequestTickets[display.id] = ticket
                 pendingSceneSessions[display.id] = session
                 staged.append((display, session, ticket))
-                if let error = session.start(policySuspended: isPolicySuspended) {
+                if let error = session.start(policySuspended: isPolicySuspended(on: display.id)) {
                     throw SceneWallpaperFailure(message: error)
                 }
             }
@@ -740,7 +745,7 @@ final class DesktopPlaybackController {
             guard staged.allSatisfy({ sceneRequestTickets[$0.display.id] == $0.ticket && displayRegistry.descriptor(for: $0.display.id) != nil }),
                   store.item(withID: item.id)?.filePath == item.filePath else { throw CancellationError() }
             for entry in staged {
-                entry.session.apply(settings: effectiveSettings(for: item.id, displayID: entry.display.id), allowPlay: !isPolicySuspended)
+                entry.session.apply(settings: effectiveSettings(for: item.id, displayID: entry.display.id), allowPlay: !isPolicySuspended(on: entry.display.id))
                 sessions[entry.display.id]?.tearDown()
                 sessions[entry.display.id] = entry.session
                 suspendedAssignments[entry.display.id] = nil
@@ -750,7 +755,7 @@ final class DesktopPlaybackController {
             if persist { store.markPlayed(id: item.id); store.flush() }
             lastError = nil
             lastMessage = "已应用 Scene 壁纸"
-            onUserPlaybackCommand?()
+            onUserPlaybackCommand?(Set(targets.map(\.id)))
             return nil
         } catch {
             let message = error is CancellationError ? "Scene 准备已取消，原桌面保持不变" : error.localizedDescription
@@ -790,7 +795,7 @@ final class DesktopPlaybackController {
             lastMessage = "已停止桌面播放"
         }
         if writesToLibrary { store.flush() }
-        onUserPlaybackCommand?()
+        onUserPlaybackCommand?([])
     }
 
     /// Release players after a library deletion has already committed its document.
@@ -804,7 +809,7 @@ final class DesktopPlaybackController {
         }
         suspendedAssignments = suspendedAssignments.filter { !itemIDs.contains($0.value) }
         lastMessage = "已停止已删除壁纸的桌面播放"
-        onUserPlaybackCommand?()
+        onUserPlaybackCommand?([])
     }
 
     /// 启动时恢复上次的分配（F06 持久化）。
@@ -899,16 +904,19 @@ final class DesktopPlaybackController {
         store.updateSettings(for: displayID) { $0.isPaused = willPause }
         if willPause {
             session.pause()
-        } else if !isPolicySuspended {
+        } else if !isPolicySuspended(on: displayID) {
             session.play()
         }
         store.flush()
-        onUserPlaybackCommand?()
+        onUserPlaybackCommand?(willPause ? [] : [displayID])
     }
 
     func pauseAll() {
         guard writesToLibrary else {
-            for (_, session) in sessions { session.pause() }
+            for (id, session) in sessions {
+                var settings = session.settings; settings.isPaused = true
+                session.apply(settings: settings, allowPlay: !isPolicySuspended(on: id))
+            }
             lastMessage = "已暂停所有预览"
             return
         }
@@ -917,24 +925,27 @@ final class DesktopPlaybackController {
             store.updateSettings(for: id) { $0.isPaused = true }
         }
         store.flush()
-        onUserPlaybackCommand?()
+        onUserPlaybackCommand?([])
         lastMessage = "已暂停所有桌面播放"
     }
 
     func resumeAll() {
         guard writesToLibrary else {
-            for (_, session) in sessions { session.play() }
+            for (id, session) in sessions {
+                var settings = session.settings; settings.isPaused = false
+                session.apply(settings: settings, allowPlay: !isPolicySuspended(on: id))
+            }
             lastMessage = "已恢复所有预览"
             return
         }
         for (id, session) in sessions {
             store.updateSettings(for: id) { $0.isPaused = false }
-            if !isPolicySuspended {
+            if !isPolicySuspended(on: id) {
                 session.play()
             }
         }
         store.flush()
-        onUserPlaybackCommand?()
+        onUserPlaybackCommand?(Set(sessions.keys))
         lastMessage = isPolicySuspended ? "已记录播放意图，策略挂起解除后自动恢复" : "已恢复所有桌面播放"
     }
 
@@ -960,7 +971,7 @@ final class DesktopPlaybackController {
         for (displayID, session) in sessions where session.item.id == itemID {
             var settings = effectiveSettings(for: itemID, displayID: displayID)
             if !writesToLibrary { settings.isPaused = !session.isPlaying }
-            session.apply(settings: settings, allowPlay: !isPolicySuspended)
+            session.apply(settings: settings, allowPlay: !isPolicySuspended(on: displayID))
         }
     }
 
@@ -969,13 +980,13 @@ final class DesktopPlaybackController {
         if writesToLibrary {
             store.updateSettings(for: displayID) { body(&$0) }
             if let session = sessions[displayID] {
-                session.apply(settings: effectiveSettings(for: session.item.id, displayID: displayID), allowPlay: !isPolicySuspended)
+                session.apply(settings: effectiveSettings(for: session.item.id, displayID: displayID), allowPlay: !isPolicySuspended(on: displayID))
             }
         } else {
             guard let session = sessions[displayID] else { return }
             var updated = session.settings
             body(&updated)
-            session.apply(settings: effectiveSettings(for: session.item.id, displayID: displayID, defaults: updated), allowPlay: !isPolicySuspended)
+            session.apply(settings: effectiveSettings(for: session.item.id, displayID: displayID, defaults: updated), allowPlay: !isPolicySuspended(on: displayID))
         }
     }
 
@@ -1023,11 +1034,11 @@ final class DesktopPlaybackController {
         if writesToLibrary {
             store.resetSettings(for: displayID)
             if let session = sessions[displayID] {
-                session.apply(settings: effectiveSettings(for: session.item.id, displayID: displayID), allowPlay: !isPolicySuspended)
+                session.apply(settings: effectiveSettings(for: session.item.id, displayID: displayID), allowPlay: !isPolicySuspended(on: displayID))
             }
         } else {
             if let session = sessions[displayID] {
-                session.apply(settings: effectiveSettings(for: session.item.id, displayID: displayID, defaults: .default), allowPlay: !isPolicySuspended)
+                session.apply(settings: effectiveSettings(for: session.item.id, displayID: displayID, defaults: .default), allowPlay: !isPolicySuspended(on: displayID))
             }
         }
     }
@@ -1048,7 +1059,7 @@ final class DesktopPlaybackController {
                     current.gravity = settings.gravity
                     current.isPaused = settings.isPaused
                 }
-                session.apply(settings: effectiveSettings(for: session.item.id, displayID: id), allowPlay: !isPolicySuspended)
+                session.apply(settings: effectiveSettings(for: session.item.id, displayID: id), allowPlay: !isPolicySuspended(on: id))
             } else {
                 var updated = session.settings
                 updated.isMuted = settings.isMuted
@@ -1056,7 +1067,7 @@ final class DesktopPlaybackController {
                 updated.rate = settings.rate
                 updated.gravity = settings.gravity
                 updated.isPaused = settings.isPaused
-                session.apply(settings: effectiveSettings(for: session.item.id, displayID: id, defaults: updated), allowPlay: !isPolicySuspended)
+                session.apply(settings: effectiveSettings(for: session.item.id, displayID: id, defaults: updated), allowPlay: !isPolicySuspended(on: id))
             }
         }
         if writesToLibrary { store.flush() }
@@ -1067,7 +1078,7 @@ final class DesktopPlaybackController {
     /// 不改变任何用户暂停意图；策略挂起期间保持暂停。
     func applyStoredSettingsToSessions() {
         for (id, session) in sessions {
-            session.apply(settings: effectiveSettings(for: session.item.id, displayID: id), allowPlay: !isPolicySuspended)
+            session.apply(settings: effectiveSettings(for: session.item.id, displayID: id), allowPlay: !isPolicySuspended(on: id))
         }
     }
 
@@ -1079,10 +1090,14 @@ final class DesktopPlaybackController {
     /// - 只暂停/恢复会话，绝不写 `DisplayPlaybackSettings.isPaused`（该字段始终是用户意图）；
     /// - `displayShouldPlay` 的逐屏判断由调用方给出（用户的每屏暂停永远优先）；
     /// - 策略解除后按每屏保存的意图恢复，不会唤醒手动暂停的显示器。
-    func applyPolicyState(isBlocked: Bool, displayShouldPlay: (String) -> Bool) {
+    func applyPolicyState(isBlocked: Bool, suspendedDisplayIDs: Set<String> = [], displayShouldPlay: (String) -> Bool) {
         isPolicySuspended = isBlocked
+        policySuspendedDisplayIDs = suspendedDisplayIDs
+        for (id, session) in pendingSceneSessions {
+            session.apply(settings: session.settings, allowPlay: !isPolicySuspended(on: id) && displayShouldPlay(id))
+        }
         for (id, session) in sessions {
-            if isBlocked || !displayShouldPlay(id) {
+            if isPolicySuspended(on: id) || !displayShouldPlay(id) {
                 session.pause()
             } else {
                 session.play()

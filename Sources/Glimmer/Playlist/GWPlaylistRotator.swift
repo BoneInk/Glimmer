@@ -11,10 +11,7 @@ import Observation
 //     guard let item = store.item(withID: id) else { return }
 //     playback.apply(item: item, to: nil)
 // }
-// // 与 F09 策略联动（暂停期间停止计时）：
-// policy.onPolicyChanged = { transition in
-//     playlist.setTimerSuspended(!transition.effectiveIsPlaying, reason: transition.summary)
-// }
+// // AppPlaybackIntegration 按各屏有效状态联动：所有活动屏幕都不能播放时停止计时。
 // ```
 // 计时只在本类内部维护：任何变更都先取消旧任务再创建新任务，杜绝重复计时。
 @MainActor

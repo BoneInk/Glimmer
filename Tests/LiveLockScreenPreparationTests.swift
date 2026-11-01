@@ -47,7 +47,7 @@ enum LiveLockScreenPreparationTests {
                 wallpaperWidth: 640, wallpaperHeight: 400, wallpaperFPS: 12)
             // Capture mutable settings in a main-actor box used by the production entry point.
             let preferences = Preferences(configuration)
-            let coordinator = ExperimentalLockScreenCoordinator(storage: storage, environment: environment, exportConfiguration: { _ in preferences.value })
+            let coordinator = ExperimentalLockScreenCoordinator(storage: storage, environment: environment, exportConfiguration: { _, _ in preferences.value })
             await coordinator.prepare(item: item)
             guard let first = coordinator.preparedAsset, let recipe = first.liveRecipe else { throw Failure(message: coordinator.lastError ?? "No live recipe") }
             try check(recipe.width <= 640 && recipe.height <= 400 && recipe.fps == 12, "\(kind) live settings respect desktop and source limits")

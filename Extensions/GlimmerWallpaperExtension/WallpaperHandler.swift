@@ -56,8 +56,8 @@ final class GWWallpaperHandler: NSObject, WallpaperExtensionXPCProtocol {
             let registry = GWSurfaces.shared
             let key = registry.key(id)
             do {
-                let (config, url) = try GWConfiguration.load()
                 let info = GWRequest(request)
+                let (config, url) = try GWConfiguration.load(displayID: info.displayID, allowPreviewFallback: info.preview)
                 if let existing = registry.get(key), existing.assetID == config.assetID,
                    let response = createRemoteContextXPC(contextId: existing.context.contextId) {
                     registry.claim(key, owner: owner)
@@ -129,7 +129,7 @@ final class GWWallpaperHandler: NSObject, WallpaperExtensionXPCProtocol {
         }
     }
     func selectedChoicesDidChange(for id: Any?, reply: @escaping (Error?) -> Void) { reply(nil) }
-    func isChoiceDownloaded(with choiceID: Any?, reply: @escaping (NSNumber?, Error?) -> Void) { reply(NSNumber(value: (try? GWConfiguration.load()) != nil), nil) }
+    func isChoiceDownloaded(with choiceID: Any?, reply: @escaping (NSNumber?, Error?) -> Void) { reply(NSNumber(value: (try? GWConfiguration.load(allowPreviewFallback: true)) != nil), nil) }
     func handleNotification(withNamed name: Any?, reply: @escaping (Error?) -> Void) {
         let text = String(describing: name ?? "").lowercased()
         let callback = GWBox(value: reply)

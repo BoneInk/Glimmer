@@ -15,9 +15,13 @@ enum LockScreenStorePatcher {
     /// The lock screen renders the system desktop role, not Idle (screen saver).
     /// Individual nodes use Desktop; linked nodes are split while retaining their
     /// former shared surface as Idle, so applying a lock screen does not change it.
-    static func patch(_ bytes: Data, date: Date = Date()) throws -> Data {
+    static func patch(_ bytes: Data, date: Date = Date(), displayIDs: Set<String>? = nil,
+                      onlineDisplayIDs: Set<String> = []) throws -> Data {
         guard let root = try PropertyListSerialization.propertyList(from: bytes, format: nil) as? [String: Any] else {
             throw ExperimentalLockScreenFailure(message: "系统壁纸配置格式无法识别，未作修改。")
+        }
+        if let displayIDs {
+            return try patchDisplays(root, targets: displayIDs, online: onlineDisplayIDs, date: date)
         }
         var changed = 0
         func visit(_ object: Any, mapping: Bool = false) throws -> Any {
@@ -62,6 +66,65 @@ enum LockScreenStorePatcher {
         }
         let output = try visit(root)
         guard changed > 0 else { throw ExperimentalLockScreenFailure(message: "找不到可设置的系统桌面／锁屏角色，未作修改。") }
+        return try PropertyListSerialization.data(fromPropertyList: output, format: .binary, options: 0)
+    }
+
+    /// Split a shared selection into inherited per-display nodes before changing
+    /// selected UUIDs. Other displays retain their effective Desktop and Idle.
+    private static func patchDisplays(_ root: [String: Any], targets: Set<String>, online: Set<String>, date: Date) throws -> Data {
+        guard !targets.isEmpty, targets.allSatisfy({ UUID(uuidString: $0) != nil }) else {
+            throw ExperimentalLockScreenFailure(message: "显示器锁屏标识无效，未作修改。")
+        }
+        let targets = Set(targets.map { $0.uppercased() })
+        func hasSurface(_ node: [String: Any]) -> Bool {
+            ["Desktop", "Linked"].contains { node[$0] is [String: Any] }
+        }
+        func patchedNode(_ node: [String: Any]) throws -> [String: Any] {
+            let data = try PropertyListSerialization.data(fromPropertyList: ["SystemDefault": node], format: .binary, options: 0)
+            let result = try PropertyListSerialization.propertyList(from: patch(data, date: date), format: nil) as! [String: Any]
+            return result["SystemDefault"] as! [String: Any]
+        }
+        func scoped(_ container: [String: Any], inherited: [String: Any], inheritedDisplays: [String: Any] = [:]) throws -> [String: Any] {
+            var output = container
+            let shared = container["AllSpacesAndDisplays"] as? [String: Any] ?? [:]
+            let fallback = hasSurface(shared) ? shared : hasSurface(container) ? container : inherited
+            var displays = container["Displays"] as? [String: Any] ?? [:]
+            // Store UUID spelling may differ; keep existing keys and other metadata.
+            let identifiers = Set(online.map { $0.uppercased() }).union(targets)
+            for id in identifiers {
+                let key = displays.keys.first { $0.uppercased() == id } ?? id
+                if displays[key] == nil {
+                    let inheritedKey = inheritedDisplays.keys.first { $0.uppercased() == id } ?? id
+                    displays[key] = hasSurface(shared) || hasSurface(container) ? fallback : inheritedDisplays[inheritedKey] ?? fallback
+                }
+            }
+            if hasSurface(shared) {
+                // The shared role overrides individual nodes until it is cleared.
+                for key in displays.keys { displays[key] = shared }
+                output["AllSpacesAndDisplays"] = [String: Any]()
+            }
+            for id in targets {
+                let key = displays.keys.first { $0.uppercased() == id } ?? id
+                guard let node = displays[key] as? [String: Any], hasSurface(node) else {
+                    throw ExperimentalLockScreenFailure(message: "无法解析该显示器的系统壁纸配置，未作修改。")
+                }
+                displays[key] = try patchedNode(node)
+            }
+            output["Displays"] = displays
+            return output
+        }
+        let shared = root["AllSpacesAndDisplays"] as? [String: Any] ?? [:]
+        let fallback = hasSurface(shared) ? shared : root["SystemDefault"] as? [String: Any] ?? [:]
+        var output = try scoped(root, inherited: fallback)
+        if hasSurface(shared) { output["SystemDefault"] = shared }
+        if let spaces = root["Spaces"] as? [String: Any] {
+            var result = spaces
+            for (key, value) in spaces {
+                guard let space = value as? [String: Any] else { continue }
+                result[key] = try scoped(space, inherited: fallback, inheritedDisplays: output["Displays"] as? [String: Any] ?? [:])
+            }
+            output["Spaces"] = result
+        }
         return try PropertyListSerialization.data(fromPropertyList: output, format: .binary, options: 0)
     }
 
@@ -189,7 +252,8 @@ struct LockScreenStoreTransaction {
     var write: (Data, URL) throws -> Void = { data, url in try data.write(to: url, options: .atomic) }
 
     func apply(configuration: Data, previousConfiguration: Data?, assetID: UUID,
-               sharedDirectory: URL? = nil) throws -> LockScreenStoreSnapshot {
+               sharedDirectory: URL? = nil, displayIDs: Set<String>? = nil,
+               onlineDisplayIDs: Set<String> = []) throws -> LockScreenStoreSnapshot {
         var originals: [String: Data] = [:]
         var outputs: [String: Data] = [:]
         for name in ["Index.plist", "Index2.plist"] {
@@ -199,7 +263,7 @@ struct LockScreenStoreTransaction {
                 throw ExperimentalLockScreenFailure(message: "系统壁纸配置是符号链接，未作修改。")
             }
             originals[name] = try Data(contentsOf: url)
-            outputs[name] = try LockScreenStorePatcher.patch(originals[name]!)
+            outputs[name] = try LockScreenStorePatcher.patch(originals[name]!, displayIDs: displayIDs, onlineDisplayIDs: onlineDisplayIDs)
         }
         guard !outputs.isEmpty else { throw ExperimentalLockScreenFailure(message: "没有找到当前用户的系统壁纸配置；不会新建或替换系统配置。") }
         try archivePreviousSnapshot()

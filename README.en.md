@@ -36,7 +36,7 @@ In-app updates require a version that includes this feature; existing users must
 
 ### Pause for Maximized Windows and Accessibility Permission
 
-**Pause when a window is maximized** is off by default. When enabled, an app window filling the usable desktop area between the menu bar and Dock on any display temporarily pauses all desktop wallpapers.
+**Pause when a window is maximized** is off by default. When enabled, a full-screen app or a window filling a display’s usable desktop area pauses only that display’s wallpaper. Other displays continue playing.
 
 1. In Glimmer, open **Settings → Power and Sleep Policies** and enable **Pause when a window is maximized**.
 2. Select **Authorize Accessibility** to open macOS **System Settings → Privacy & Security → Accessibility**.
@@ -77,6 +77,8 @@ Scene background music is integrated and muted by default. Integration audits fo
 The app displays diagnostics for missing resources, unsupported features, and runtime failures to help identify the cause.
 
 ### Experimental Lock Screen
+
+Select a display in wallpaper details, then click **Lock Screen** to set its wallpaper independently. Select **All Displays** to apply one wallpaper everywhere. Each display can use a different video, Scene or Web wallpaper.
 
 Scene and Web lock screens default to **live rendering**, so clocks, dates and scripts continue updating. Settings → Lock Screen Export also offers recorded playback. HTTPS access for lock-screen Web content is optional and off by default; weather services still need the wallpaper’s own author settings, service permissions and compatible CORS rules. Existing renderer compatibility limits apply. Hidden/sleeping surfaces pause; Web documents are released while the last native frame is retained and are recreated on resume. Reapply the lock screen after changing settings or author properties.
 

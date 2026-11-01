@@ -11,8 +11,7 @@ import SwiftUI
 //     availableItemsProvider: { store.items.map { ($0.id, $0.displayTitle) } }
 // )
 // ```
-// 策略与轮播的联动（暂停时停止计时）由主控接线：
-// `policy.onPolicyChanged = { playlist.setTimerSuspended(!$0.effectiveIsPlaying, reason: $0.summary) }`
+// AppPlaybackIntegration 在所有活动显示器都无法播放时挂起轮播计时。
 struct GWPolicyPlaylistSettingsSection: View {
     let policy: GWPolicyController
     let playlist: GWPlaylistRotator

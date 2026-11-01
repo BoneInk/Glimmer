@@ -96,7 +96,7 @@ struct GWPolicySettings: Codable, Equatable, Sendable {
     var pauseOnDisplaySleep: Bool
     /// 低电量模式开启时暂停。
     var pauseOnLowPowerMode: Bool
-    /// 任一屏幕上有应用窗口铺满可用区域时，临时暂停全部桌面壁纸。
+    /// 应用窗口全屏或铺满显示器可用区域时，仅临时暂停该显示器的壁纸。
     var pauseOnMaximizedWindow: Bool
     /// 电池供电且低于阈值时暂停。
     var pauseOnBatteryBelowThreshold: Bool
@@ -186,6 +186,7 @@ struct GWBatterySnapshot: Equatable, Sendable {
 /// 单元验证可通过同一入口注入事件，保证行为一致。
 enum GWPolicyEvent: Equatable, Sendable {
     case userRequestedPlay
+    case userRequestedPlayOnDisplays(Set<String>)
     case userRequestedPause
     case systemWillSleep
     case systemDidWake
@@ -197,13 +198,13 @@ enum GWPolicyEvent: Equatable, Sendable {
     case displaysWoke
     case lowPowerModeChanged(Bool)
     case batteryStateUpdated(GWBatterySnapshot)
-    case maximizedWindowChanged(Bool)
+    case maximizedDisplaysChanged(Set<String>)
     case maximizedWindowMonitoringUnavailable
     case policySettingsChanged(GWPolicySettings)
 
     var displayText: String {
         switch self {
-        case .userRequestedPlay: return "用户请求播放"
+        case .userRequestedPlay, .userRequestedPlayOnDisplays: return "用户请求播放"
         case .userRequestedPause: return "用户请求暂停"
         case .systemWillSleep: return "系统即将睡眠"
         case .systemDidWake: return "系统已唤醒"
@@ -215,7 +216,7 @@ enum GWPolicyEvent: Equatable, Sendable {
         case .displaysWoke: return "显示器已唤醒"
         case .lowPowerModeChanged(let enabled): return enabled ? "低电量模式已开启" : "低电量模式已关闭"
         case .batteryStateUpdated: return "电源状态已刷新"
-        case .maximizedWindowChanged(let present): return present ? "检测到最大化窗口" : "最大化窗口已移开"
+        case .maximizedDisplaysChanged(let ids): return ids.isEmpty ? "最大化窗口已移开" : "显示器窗口覆盖状态已更新"
         case .maximizedWindowMonitoringUnavailable: return "窗口事件监听不可用"
         case .policySettingsChanged: return "电源策略设置已更新"
         }
@@ -248,10 +249,13 @@ struct GWPolicyCore: Equatable, Sendable {
     private(set) var isSessionActive = true
     private(set) var areDisplaysAsleep = false
     private(set) var isLowPowerMode = false
-    private(set) var hasMaximizedWindow = false
+    private(set) var maximizedDisplayIDs: Set<String> = []
+    var hasMaximizedWindow: Bool { !maximizedDisplayIDs.isEmpty }
     private(set) var battery: GWBatterySnapshot = .unknown
     /// 「策略解除后不自动恢复」的一次性抑制标记：唤醒时按设置置位，用户显式播放后清除。
-    private(set) var isResumeSuppressed = false
+    private(set) var isGlobalResumeSuppressed = false
+    private(set) var resumeSuppressedDisplayIDs: Set<String> = []
+    var isResumeSuppressed: Bool { isGlobalResumeSuppressed || !resumeSuppressedDisplayIDs.isEmpty }
 
     init(settings: GWPolicySettings = .default, userIntent: GWPlaybackIntent = .playing) {
         self.settings = settings.normalized()
@@ -292,10 +296,22 @@ struct GWPolicyCore: Equatable, Sendable {
 
     /// 策略层当前是否阻断播放（与用户意图无关；包含「等待手动恢复」抑制状态）。
     ///
-    /// 主控逐屏集成用法：策略解除后对每台显示器判断
-    /// `!core.isPolicyBlockingPlayback && !displaySettings.isPaused` 才恢复播放。
+    /// 聚合状态供诊断使用；真实播放通过 shouldPlay(on:userIsPaused:) 逐屏判断。
     var isPolicyBlockingPlayback: Bool {
         !activePauseReasons.isEmpty || isResumeSuppressed
+    }
+
+    var isGloballyBlockingPlayback: Bool {
+        !activePauseReasons.subtracting([.maximizedWindow]).isEmpty || isGlobalResumeSuppressed
+    }
+
+    var policySuspendedDisplayIDs: Set<String> {
+        (settings.pauseOnMaximizedWindow ? maximizedDisplayIDs : []).union(resumeSuppressedDisplayIDs)
+    }
+
+    func shouldPlay(on displayID: String, userIsPaused: Bool) -> Bool {
+        !userIsPaused && userIntent == .playing && !isGloballyBlockingPlayback
+            && !policySuspendedDisplayIDs.contains(displayID)
     }
 
     /// 处理一个事件；返回 nil 表示有效状态与原因集合都没有变化。
@@ -303,11 +319,17 @@ struct GWPolicyCore: Equatable, Sendable {
     mutating func handle(_ event: GWPolicyEvent) -> GWPolicyTransition? {
         let beforePlaying = effectiveIsPlaying
         let beforeReasons = activePauseReasons
+        let beforeDisplays = policySuspendedDisplayIDs
 
         switch event {
         case .userRequestedPlay:
             userIntent = .playing
-            isResumeSuppressed = false
+            isGlobalResumeSuppressed = false
+            resumeSuppressedDisplayIDs.removeAll()
+        case .userRequestedPlayOnDisplays(let ids):
+            userIntent = .playing
+            isGlobalResumeSuppressed = false
+            resumeSuppressedDisplayIDs.subtract(ids)
         case .userRequestedPause:
             userIntent = .paused
         case .systemWillSleep:
@@ -317,7 +339,7 @@ struct GWPolicyCore: Equatable, Sendable {
             isSystemAsleep = false
             areDisplaysAsleep = false
             if !settings.resumeWhenPolicyLifts {
-                isResumeSuppressed = true
+                isGlobalResumeSuppressed = true
             }
         case .screenLocked:
             isScreenLocked = true
@@ -335,21 +357,25 @@ struct GWPolicyCore: Equatable, Sendable {
             isLowPowerMode = enabled
         case .batteryStateUpdated(let snapshot):
             battery = snapshot
-        case .maximizedWindowChanged(let present):
-            if hasMaximizedWindow, !present, settings.pauseOnMaximizedWindow,
-               !settings.resumeWhenPolicyLifts {
-                isResumeSuppressed = true
+        case .maximizedDisplaysChanged(let ids):
+            if settings.pauseOnMaximizedWindow && !settings.resumeWhenPolicyLifts {
+                resumeSuppressedDisplayIDs.formUnion(maximizedDisplayIDs.subtracting(ids))
             }
-            hasMaximizedWindow = present
+            maximizedDisplayIDs = ids
         case .maximizedWindowMonitoringUnavailable:
-            hasMaximizedWindow = false
+            maximizedDisplayIDs.removeAll()
+            resumeSuppressedDisplayIDs.removeAll()
         case .policySettingsChanged(let newSettings):
             settings = newSettings.normalized()
+            if !settings.pauseOnMaximizedWindow || settings.resumeWhenPolicyLifts {
+                resumeSuppressedDisplayIDs.removeAll()
+            }
         }
 
         let afterPlaying = effectiveIsPlaying
         let afterReasons = activePauseReasons
-        guard beforePlaying != afterPlaying || beforeReasons != afterReasons else { return nil }
+        guard beforePlaying != afterPlaying || beforeReasons != afterReasons
+                || beforeDisplays != policySuspendedDisplayIDs else { return nil }
 
         return GWPolicyTransition(
             trigger: event,
@@ -387,7 +413,7 @@ struct GWPolicyCore: Equatable, Sendable {
         if afterPlaying != beforePlaying {
             if afterPlaying {
                 switch event {
-                case .userRequestedPlay:
+                case .userRequestedPlay, .userRequestedPlayOnDisplays:
                     return "用户请求播放，已恢复。"
                 default:
                     return "\(event.displayText)，按用户播放意图恢复播放。"
@@ -427,6 +453,8 @@ struct GWPolicyStatusSnapshot: Equatable, Sendable {
     var isMonitoring: Bool
     var isResumeSuppressed: Bool
     var lastTransitionSummary: String?
+    var scopedPauseDisplayCount = 0
+    var hasGlobalPlaybackBlock = false
 
     static let initial = GWPolicyStatusSnapshot(
         userIntent: .playing,
@@ -443,6 +471,9 @@ struct GWPolicyStatusSnapshot: Equatable, Sendable {
     var headlineText: String {
         if effectiveIsPlaying { return "播放中" }
         if userIntent == .paused { return "已暂停（用户手动暂停）" }
+        if scopedPauseDisplayCount > 0 && !hasGlobalPlaybackBlock {
+            return "已暂停 \(scopedPauseDisplayCount) 台显示器（\(reasonListText)）"
+        }
         if !activePauseReasons.isEmpty {
             return "已临时暂停（\(activePauseReasons.map(\.displayName).joined(separator: "、"))）"
         }
@@ -451,6 +482,7 @@ struct GWPolicyStatusSnapshot: Equatable, Sendable {
     }
 
     var reasonListText: String {
-        activePauseReasons.isEmpty ? "无" : activePauseReasons.map(\.displayName).joined(separator: "、")
+        activePauseReasons.isEmpty ? (isResumeSuppressed ? "等待手动恢复" : "无")
+            : activePauseReasons.map(\.displayName).joined(separator: "、")
     }
 }

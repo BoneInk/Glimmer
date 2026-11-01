@@ -35,13 +35,15 @@ struct LockScreenOperationStatus: View {
 }
 struct LockScreenApplyControls: View {
     let item: WallpaperItem
+    var displayIDs: [String]? = nil
+    var hasDisplays = true
     var onFeedback: (TransientToast) -> Void = { _ in }
     @Environment(\.lockScreenActions) private var actions
     var body: some View {
         if let actions {
             VStack(alignment:.leading,spacing:8) {
                 Button {
-                    if let message = actions.startApply(item:item) {
+                    if let message = actions.startApply(item:item, displayIDs: displayIDs) {
                         onFeedback(TransientToast(message, tone: .error))
                     }
                 } label: {
@@ -49,7 +51,7 @@ struct LockScreenApplyControls: View {
                         busyTitle: actions.canCancelPreparation ? "准备中" : "设置中")
                 }
                 .buttonStyle(.glass)
-                .disabled(actions.isBusy || !(item.isVideoWallpaper || item.isWebWallpaper || item.isSceneWallpaper) || !item.fileExists)
+                .disabled(actions.isBusy || !hasDisplays || !(item.isVideoWallpaper || item.isWebWallpaper || item.isSceneWallpaper) || !item.fileExists)
                 .accessibilityIdentifier("apply-lock-screen-inline")
                 .help(lockScreenHelp)
                 .overlay(alignment: .trailing) {
@@ -76,13 +78,14 @@ struct LockScreenApplyControls: View {
     }
 
     private var lockScreenHelp: String {
+        let target = displayIDs == nil ? "应用到全部显示器。" : "仅应用到所选显示器。"
         if item.isSceneWallpaper {
-            return "按设置中的播放方式应用 Scene；实时渲染保留时间与脚本更新，录制模式播放已保存的视频"
+            return target + "按设置中的播放方式应用 Scene；实时渲染保留时间与脚本更新，录制模式播放已保存的视频"
         }
         if item.isWebWallpaper {
-            return "按设置中的播放方式应用网页；实时模式保留时间更新，天气联网需开启锁屏网页 HTTPS 访问"
+            return target + "按设置中的播放方式应用网页；实时模式保留时间更新，天气联网需开启锁屏网页 HTTPS 访问"
         }
-        return "设为动态锁屏，同时更新系统桌面底图"
+        return target + "设为动态锁屏，同时更新系统桌面底图"
     }
 }
 struct LockScreenMaintenanceSection: View {

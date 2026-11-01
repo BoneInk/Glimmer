@@ -56,6 +56,38 @@ import CryptoKit
         try check(actions.startApply(item:b)==nil,"next explicit item is accepted after previous operation completes")
         await actions.waitUntilIdle()
         try check(actions.completion == .submitted && coordinator.preparedAsset?.itemID==b.id && actions.itemID==b.id,"later B gets newly prepared matching material rather than stale A asset")
+        let displayA = "11111111-1111-1111-1111-111111111111", displayB = "22222222-2222-2222-2222-222222222222"
+        let scopedStorage = AppStorage(root: root.appendingPathComponent("PerDisplay"))
+        let scoped = LockScreenActionController(coordinator: .review(storage: scopedStorage))
+        let shared = ExperimentalLockScreenEnvironment.review(storage: scopedStorage).sharedDirectory.appendingPathComponent("config.json")
+        try check(scoped.startApply(item: a, displayIDs: []) != nil && !scoped.isBusy, "empty display selection never applies to all screens")
+        try check(scoped.startApply(item: a, displayIDs: ["session-display:temporary"]) != nil, "unstable display identity is rejected before preparation")
+        _ = scoped.startApply(item: a, displayIDs: [displayA]); await scoped.waitUntilIdle()
+        let firstManifest = try Data(contentsOf: shared)
+        let firstDocument = try JSONSerialization.jsonObject(with: firstManifest) as! [String: Any]
+        let firstDisplays = firstDocument["displayConfigurations"] as! [String: [String: Any]]
+        let firstAsset = firstDisplays[displayA]!["assetID"] as! String
+        try check(firstDocument["schemaVersion"] as? Int == 3 && firstDisplays.count == 1,
+                  "A-only action commits a per-display manifest with no global replacement")
+        try check(try provider(scopedStorage, "Desktop") == "review.desktop.unchanged", "A-only action preserves the system default provider")
+        _ = scoped.startApply(item: b, displayIDs: [displayB]); await scoped.waitUntilIdle()
+        let bothDocument = try JSONSerialization.jsonObject(with: Data(contentsOf: shared)) as! [String: Any]
+        let bothDisplays = bothDocument["displayConfigurations"] as! [String: [String: Any]]
+        try check(bothDisplays.count == 2 && bothDisplays[displayA]?["assetID"] as? String == firstAsset
+                  && bothDisplays[displayB]?["assetID"] as? String != firstAsset, "B gets a distinct asset while A retains its exact assignment")
+        let reopenedScoped = LockScreenActionController(coordinator: .review(storage: scopedStorage))
+        try check(reopenedScoped.coordinator.canRestorePrevious, "per-display assignments remain restorable after reopening")
+        _ = reopenedScoped.restorePrevious(); await reopenedScoped.waitUntilIdle()
+        try check(try Data(contentsOf: shared) == firstManifest, "restore recovers the exact previous per-display manifest")
+        _ = scoped.startApply(item: b); await scoped.waitUntilIdle()
+        let globalDocument = try JSONSerialization.jsonObject(with: Data(contentsOf: shared)) as! [String: Any]
+        try check(globalDocument["schemaVersion"] as? Int == 1 && globalDocument["displayConfigurations"] == nil,
+                  "explicit all-displays action replaces the individual assignments")
+        let defaultAsset = globalDocument["assetID"] as! String
+        _ = scoped.startApply(item: a, displayIDs: [displayA]); await scoped.waitUntilIdle()
+        let migrated = try JSONSerialization.jsonObject(with: Data(contentsOf: shared)) as! [String: Any]
+        try check((migrated["defaultConfiguration"] as? [String: Any])?["assetID"] as? String == defaultAsset,
+                  "migrating an existing global lock screen retains it as the fallback for other displays")
         let beforeFailure=try Data(contentsOf:index(storage)),corrupt=root.appendingPathComponent("corrupt.mp4")
         try Data("not a video".utf8).write(to:corrupt)
         try check(actions.startApply(item:WallpaperItem(title:"Corrupt",filePath:corrupt.path))==nil,"bad existing video enters genuine preparation rather than a fake success path")

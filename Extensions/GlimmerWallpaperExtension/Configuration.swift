@@ -1,4 +1,6 @@
 import Foundation
+import AppKit
+import CoreGraphics
 import Darwin
 import os
 
@@ -25,7 +27,9 @@ struct GWConfiguration: Codable, Sendable {
 
     /// This extension never accepts arbitrary host-provided files. Its only media source is
     /// a same-user 0700 staging directory with owned, non-symlink, 0600 files.
-    static func load(directory: URL = Self.directory, isolatedProbe: Bool = false) throws -> (GWConfiguration, URL) {
+    static func load(directory: URL = Self.directory, isolatedProbe: Bool = false,
+                     displayID: UInt32? = nil, displayUUID: String? = nil,
+                     allowPreviewFallback: Bool = false) throws -> (GWConfiguration, URL) {
         let directory = directory.standardizedFileURL
         if !isolatedProbe {
             let root = directory.deletingLastPathComponent()
@@ -44,7 +48,29 @@ struct GWConfiguration: Codable, Sendable {
         }
         let configURL = directory.appendingPathComponent("config.json")
         try validateFile(configURL, maximumBytes: 64 * 1024)
-        let config = try JSONDecoder().decode(Self.self, from: Data(contentsOf: configURL))
+        let bytes = try Data(contentsOf: configURL)
+        let header = try JSONSerialization.jsonObject(with: bytes) as? [String: Any]
+        let config: Self
+        if header?["schemaVersion"] as? Int == 3 {
+            let document = try JSONDecoder().decode(GWDisplayConfigurations.self, from: bytes)
+            guard document.displayConfigurations.count <= 128,
+                  document.displayConfigurations.keys.allSatisfy({ UUID(uuidString: $0) != nil }) else {
+                throw GWError(12, "Invalid display wallpaper configuration")
+            }
+            let identifier = displayUUID ?? displayID.flatMap { id -> String? in
+                guard let uuid = CGDisplayCreateUUIDFromDisplayID(id)?.takeRetainedValue() else { return nil }
+                return CFUUIDCreateString(nil, uuid) as String
+            }
+            let selected = identifier.flatMap { document.displayConfigurations[$0.uppercased()] }
+                ?? document.defaultConfiguration
+            let preview = allowPreviewFallback ? document.displayConfigurations.sorted(by: { $0.key < $1.key }).first?.value : nil
+            guard let resolved = selected ?? preview else {
+                throw GWError(12, "No wallpaper configured for this display")
+            }
+            config = resolved
+        } else {
+            config = try JSONDecoder().decode(Self.self, from: bytes)
+        }
         if config.schemaVersion == 2, let name = config.liveDirectoryName {
             guard name == "live-" + config.assetID.uuidString, ["fill", "fit"].contains(config.gravity), config.isMuted else {
                 throw GWError(12, "Invalid live wallpaper configuration")
@@ -79,6 +105,11 @@ struct GWConfiguration: Codable, Sendable {
               info.st_size > 0, info.st_size <= maximumBytes,
               url.resolvingSymlinksInPath() == url else { throw GWError(14, "Unsafe staged file") }
     }
+}
+
+private struct GWDisplayConfigurations: Decodable {
+    let defaultConfiguration: GWConfiguration?
+    let displayConfigurations: [String: GWConfiguration]
 }
 
 func GWField(_ name: String, in object: Any?, depth: Int = 0) -> Any? {

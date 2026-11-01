@@ -478,7 +478,7 @@ struct PlaylistPane: View {
                     availableItemsProvider: { store.items.map { (id: $0.id, title: $0.displayTitle) } }
                 )
 
-                if policy.isPolicyBlockingPlayback {
+                if policy.isPolicyBlockingPlayback && playlist.isSuspended {
                     Label("已因\(policy.status.reasonListText)暂停", systemImage: "pause.circle")
                         .font(.caption)
                         .foregroundStyle(.orange)

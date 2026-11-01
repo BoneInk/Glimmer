@@ -14,17 +14,8 @@ import Observation
 // - IOKit 电源通知源 + 周期轮询：电池供电与电量阈值（仅阈值策略开启时轮询）。
 // - AXObserver 窗口事件：窗口最大化策略（需要辅助功能授权，无窗口状态轮询）。
 //
-// 接入 API（主控后续连接 B01 播放控制器）：
-// ```
-// let policy = GWPolicyController(startMonitoring: true)
-// policy.onPolicyChanged = { [weak playback] transition in
-//     if transition.effectiveIsPlaying { playback?.resumeAll() } else { playback?.pauseAll() }
-// }
-// // 用户点击播放/暂停时：
-// policy.userRequestedPlay() / policy.userRequestedPause()
-// // 播放列表联动：
-// policy.onPolicyChanged = { playlist.setTimerSuspended(!$0.effectiveIsPlaying, reason: $0.summary) }
-// ```
+// AppPlaybackIntegration 将全局电源策略与逐屏窗口覆盖状态应用到真实会话；
+// 轮播仅在所有活动显示器都无法播放时挂起，不使用聚合状态暂停全部会话。
 // 手动暂停意图保存在状态机内部（userIntent），策略解除不会覆盖它。
 @MainActor
 @Observable
@@ -58,7 +49,7 @@ final class GWPolicyController {
     private(set) var windowMonitoringIssue: String?
     @ObservationIgnored private let windowEvents: any GWWindowEventMonitoring
     @ObservationIgnored private let windowAccessCheck: () -> Bool
-    @ObservationIgnored private let maximizedWindowQuery: () -> Bool
+    @ObservationIgnored private let maximizedWindowQuery: () -> Set<String>
     private var saveTask: Task<Void, Never>?
     private var lastTransitionSummary: String?
 
@@ -74,7 +65,7 @@ final class GWPolicyController {
         autoStartMonitoring: Bool = false,
         windowEvents: any GWWindowEventMonitoring = GWAccessibilityWindowMonitor(),
         windowAccessCheck: @escaping () -> Bool = { AXIsProcessTrusted() },
-        maximizedWindowQuery: @escaping () -> Bool = { GWMaximizedWindowDetector.hasMaximizedWindow() }
+        maximizedWindowQuery: @escaping () -> Set<String> = { GWMaximizedWindowDetector.maximizedDisplayIDs() }
     ) {
         self.paths = paths
         self.persistenceEnabled = persistenceEnabled
@@ -122,8 +113,8 @@ final class GWPolicyController {
 
     /// 逐屏集成辅助：给定该显示器保存的用户意图（B01 `DisplayPlaybackSettings.isPaused`），
     /// 返回现在是否应让它播放。用户保存的暂停意图为真时永远返回 false。
-    func shouldPlayOnDisplay(userIsPaused: Bool) -> Bool {
-        !userIsPaused && core.effectiveIsPlaying
+    func shouldPlayOnDisplay(_ displayID: String, userIsPaused: Bool) -> Bool {
+        core.shouldPlay(on: displayID, userIsPaused: userIsPaused)
     }
 
     /// 诊断用文件说明（已脱敏）。
@@ -257,11 +248,12 @@ final class GWPolicyController {
     // MARK: - 用户操作
 
     /// 用户显式请求播放（播放按钮/菜单命令）。
-    func userRequestedPlay() {
-        handle(.userRequestedPlay)
+    func userRequestedPlay(on displayIDs: Set<String>? = nil) {
+        let event = displayIDs.map { GWPolicyEvent.userRequestedPlayOnDisplays($0) } ?? .userRequestedPlay
+        handle(event)
         // 停止监听期间窗口可能已缩小。重启监听的首次快照不应覆盖这次显式播放请求。
         if core.isResumeSuppressed && core.activePauseReasons.isEmpty {
-            handle(.userRequestedPlay)
+            handle(event)
         }
     }
 
@@ -358,6 +350,7 @@ final class GWPolicyController {
         lines.append("用户意图: \(core.userIntent.displayName)")
         lines.append("有效播放: \(core.effectiveIsPlaying ? "是" : "否")")
         lines.append("暂停原因: \(status.reasonListText)")
+        lines.append("窗口覆盖显示器: \(core.maximizedDisplayIDs.sorted().joined(separator: ", "))")
         lines.append("系统睡眠: \(core.isSystemAsleep ? "是" : "否")，屏幕锁定: \(core.isScreenLocked ? "是" : "否")，会话活跃: \(core.isSessionActive ? "是" : "否")")
         lines.append("低电量模式: \(core.isLowPowerMode ? "开启" : "关闭")")
         lines.append("电源: \(core.battery.displayText)")
@@ -372,14 +365,14 @@ final class GWPolicyController {
     private var shouldMonitorWindows: Bool {
         isMonitoring && core.settings.pauseOnMaximizedWindow && core.userIntent == .playing
             && !core.isSystemAsleep && !core.areDisplaysAsleep && !core.isScreenLocked && core.isSessionActive
-            && !core.isResumeSuppressed && core.activePauseReasons.subtracting([.maximizedWindow]).isEmpty
+            && !core.isGlobalResumeSuppressed && core.activePauseReasons.subtracting([.maximizedWindow]).isEmpty
     }
 
     /// 权限检查只在启用、应用激活、设置页出现及用户操作时进行，没有授权状态轮询。
     func refreshWindowAccessibilityAuthorization() {
         isWindowAccessibilityAuthorized = windowAccessCheck()
         updateWindowMonitoring()
-        if !isWindowAccessibilityAuthorized, core.hasMaximizedWindow {
+        if !isWindowAccessibilityAuthorized, core.hasMaximizedWindow || !core.resumeSuppressedDisplayIDs.isEmpty {
             handle(.maximizedWindowMonitoringUnavailable)
         }
     }
@@ -434,8 +427,8 @@ final class GWPolicyController {
 
     private func refreshMaximizedWindowNow() {
         guard isWindowMonitoring else { return }
-        let present = maximizedWindowQuery()
-        if present != core.hasMaximizedWindow { handle(.maximizedWindowChanged(present)) }
+        let ids = maximizedWindowQuery()
+        if ids != core.maximizedDisplayIDs { handle(.maximizedDisplaysChanged(ids)) }
     }
 
     private func updateWindowMonitoring() {
@@ -466,7 +459,9 @@ final class GWPolicyController {
             battery: core.battery,
             isMonitoring: isMonitoring,
             isResumeSuppressed: core.isResumeSuppressed,
-            lastTransitionSummary: lastTransitionSummary
+            lastTransitionSummary: lastTransitionSummary,
+            scopedPauseDisplayCount: core.policySuspendedDisplayIDs.count,
+            hasGlobalPlaybackBlock: core.isGloballyBlockingPlayback
         )
     }
 

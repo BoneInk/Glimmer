@@ -37,8 +37,8 @@ final class AppPlaybackIntegration {
         policy.onPolicyChanged = { [weak self] transition in
             self?.handlePolicyTransition(transition)
         }
-        playback.onUserPlaybackCommand = { [weak self] in
-            self?.syncPolicyIntentFromSavedSettings()
+        playback.onUserPlaybackCommand = { [weak self] displayIDs in
+            self?.syncPolicyIntentFromSavedSettings(resuming: displayIDs)
         }
         playlist.isItemPlayable = { [weak self] id in
             guard let self else { return false }
@@ -53,30 +53,34 @@ final class AppPlaybackIntegration {
 
     /// 策略转换：暂停/恢复真实会话；轮播计时随有效播放状态挂起/恢复。
     func handlePolicyTransition(_ transition: GWPolicyTransition) {
-        playlist.setTimerSuspended(!transition.effectiveIsPlaying, reason: transition.summary)
         applyCurrentPolicyState()
     }
 
     /// 把当前策略状态应用到所有真实会话（不写用户设置）。
     func applyCurrentPolicyState() {
-        let blocked = policy.isPolicyBlockingPlayback
-        playback.applyPolicyState(isBlocked: blocked) { [store, policy] displayID in
-            policy.shouldPlayOnDisplay(userIsPaused: store.settings(for: displayID).isPaused)
+        playback.applyPolicyState(isBlocked: policy.core.isGloballyBlockingPlayback,
+                                  suspendedDisplayIDs: policy.core.policySuspendedDisplayIDs) { [store, policy] displayID in
+            policy.shouldPlayOnDisplay(displayID, userIsPaused: store.settings(for: displayID).isPaused)
         }
+        let anyCanPlay = playback.sessions.keys.contains {
+            policy.shouldPlayOnDisplay($0, userIsPaused: store.settings(for: $0).isPaused)
+        }
+        playlist.setTimerSuspended(!anyCanPlay, reason: policy.status.reasonListText)
     }
 
     /// 用户手动播放/暂停/应用后的策略意图同步。
     ///
     /// 全局意图由「保存的每屏意图」聚合而来：只要有一台显示器希望播放，全局意图即播放；
     /// 全部暂停（或没有桌面会话）时为暂停。策略解除后按每屏意图逐屏恢复。
-    func syncPolicyIntentFromSavedSettings() {
-        let displayIDs = Set(playback.sessions.keys).union(playback.suspendedAssignments.keys)
-        let anyWantsPlay = displayIDs.contains { !store.settings(for: $0).isPaused }
+    func syncPolicyIntentFromSavedSettings(resuming displayIDs: Set<String>? = nil) {
+        let assignedIDs = Set(playback.sessions.keys).union(playback.suspendedAssignments.keys)
+        let anyWantsPlay = assignedIDs.contains { !store.settings(for: $0).isPaused }
         if anyWantsPlay {
-            policy.userRequestedPlay()
+            policy.userRequestedPlay(on: displayIDs)
         } else {
             policy.userRequestedPause()
         }
+        applyCurrentPolicyState()
     }
 
     /// 轮播选中新素材：应用到全部显示器（每屏的暂停意图由会话设置自然保留）。

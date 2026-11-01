@@ -149,9 +149,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ? SteamContentKeychainSessionStore() : nil
         workshop = WorkshopCoordinator(account: SteamAccountManager(sessionStore: steamSessionStore))
         lockScreenActions = LockScreenActionController(coordinator: ExperimentalLockScreenCoordinator(storage: storage,
-            exportConfiguration: { [weak self] item in
+            exportConfiguration: { [weak self] item, targetDisplayID in
                 let preferences = self?.settings?.preferences ?? .default
-                let displayID = self?.playback?.sessions.values.first(where: { $0.item.id == item.id })?.display.displayID
+                let displayID = targetDisplayID.flatMap { self?.displayRegistry?.descriptor(for: $0)?.displayID }
+                    ?? self?.playback?.sessions.values.first(where: { $0.item.id == item.id })?.display.displayID
                     ?? CGMainDisplayID()
                 return LockScreenExportSourceResolver.desktopConfiguration(settings: preferences.lockScreenExport,
                     wallpaperFPS: preferences.wallpaperFPS, displayID: displayID)
@@ -432,6 +433,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard isReady else { return }
         displayRegistry.refresh()
         playback.handleScreenChange()
+        integration.applyCurrentPolicyState()
     }
 
     // MARK: - 工坊导入

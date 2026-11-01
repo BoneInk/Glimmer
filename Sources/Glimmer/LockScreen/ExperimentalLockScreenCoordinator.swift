@@ -1,4 +1,6 @@
 import Foundation
+import AppKit
+import CoreGraphics
 import Observation
 
 enum ExperimentalLockScreenState: String, Codable, Sendable {
@@ -11,16 +13,46 @@ private struct LockScreenPersistentState: Codable {
     let warning: String?
 }
 
-private struct LockScreenExtensionConfiguration: Encodable {
+private struct LockScreenExtensionConfiguration: Codable {
     let schemaVersion: Int
     let assetID: String
     let videoFileName: String
     let liveDirectoryName: String?
-    let gravity = "fill"
-    let isMuted = true
+    let gravity: String
+    let isMuted: Bool
     init(assetID: String, videoFileName: String = "", liveDirectoryName: String? = nil) {
         self.assetID = assetID; self.videoFileName = videoFileName
+        gravity = "fill"; isMuted = true
         self.liveDirectoryName = liveDirectoryName; schemaVersion = liveDirectoryName == nil ? 1 : 2
+    }
+}
+
+private struct LockScreenDisplayConfigurations: Codable {
+    var schemaVersion = 3
+    var defaultConfiguration: LockScreenExtensionConfiguration?
+    var displayConfigurations: [String: LockScreenExtensionConfiguration] = [:]
+
+    static func updating(_ configuration: LockScreenExtensionConfiguration, displays: Set<String>?, previous: Data?) throws -> Data {
+        guard let displays else { return try JSONEncoder().encode(configuration) }
+        guard !displays.isEmpty, displays.allSatisfy({ UUID(uuidString: $0) != nil }) else {
+            throw ExperimentalLockScreenFailure(message: "该显示器没有稳定标识，无法独立设置锁屏。")
+        }
+        var document = Self()
+        if let previous {
+            let header = try JSONSerialization.jsonObject(with: previous) as? [String: Any]
+            if header?["schemaVersion"] as? Int == 3 {
+                document = try JSONDecoder().decode(Self.self, from: previous)
+            } else {
+                document.defaultConfiguration = try JSONDecoder().decode(LockScreenExtensionConfiguration.self, from: previous)
+            }
+        }
+        for id in displays { document.displayConfigurations[id.uppercased()] = configuration }
+        guard document.displayConfigurations.count <= 128 else {
+            throw ExperimentalLockScreenFailure(message: "显示器锁屏配置数量已达上限，未作修改。")
+        }
+        let data = try JSONEncoder().encode(document)
+        guard data.count <= 64 * 1024 else { throw ExperimentalLockScreenFailure(message: "显示器锁屏配置过大，未作修改。") }
+        return data
     }
 }
 
@@ -36,7 +68,7 @@ final class ExperimentalLockScreenCoordinator {
     private let storage: AppStorage
     private let environment: ExperimentalLockScreenEnvironment
     private let preparer = ExperimentalLockScreenAssetPreparer()
-    private let exportConfiguration: @MainActor (WallpaperItem) -> LockScreenExportConfiguration
+    private let exportConfiguration: @MainActor (WallpaperItem, String?) -> LockScreenExportConfiguration
     private let registrar = ExperimentalLockScreenRegistrar()
     private var preparation: Task<ExperimentalLockScreenAsset, Error>?
     private var generation = UUID()
@@ -71,7 +103,7 @@ final class ExperimentalLockScreenCoordinator {
     }
 
     init(storage: AppStorage = AppStorage(), environment: ExperimentalLockScreenEnvironment = .production,
-         exportConfiguration: @escaping @MainActor (WallpaperItem) -> LockScreenExportConfiguration = { _ in
+         exportConfiguration: @escaping @MainActor (WallpaperItem, String?) -> LockScreenExportConfiguration = { _, _ in
              LockScreenExportSourceResolver.desktopConfiguration()
          }) {
         self.storage = storage
@@ -94,7 +126,7 @@ final class ExperimentalLockScreenCoordinator {
         Self(storage: storage, environment: .review(storage: storage))
     }
 
-    func prepare(item: WallpaperItem) async {
+    func prepare(item: WallpaperItem, displayID: String? = nil) async {
         guard !isBusy else { return }
         guard item.isVideoWallpaper || item.isWebWallpaper || item.isSceneWallpaper else {
             lastError = "动态锁屏目前支持视频、Web 动画和 Scene。"
@@ -114,7 +146,7 @@ final class ExperimentalLockScreenCoordinator {
             let assetsRoot = root.appendingPathComponent("Assets", isDirectory: true)
             try LockScreenOwnedFiles.makePrivateDirectory(assetsRoot)
             let preparer = self.preparer, storage = self.storage
-            var configuration = exportConfiguration(item)
+            var configuration = exportConfiguration(item, displayID)
             // Video desktop playback retains the track's native timing, independently
             // of the global Scene/Web FPS cap. Probe it again in the preparer.
             if item.isVideoWallpaper { configuration.wallpaperFPS = nil }
@@ -219,7 +251,7 @@ final class ExperimentalLockScreenCoordinator {
 
     /// Must only be called from an explicit Apply action. Review environments never
     /// call pluginkit or access the actual user's wallpaper store.
-    func applyPrepared() async {
+    func applyPrepared(to displayIDs: Set<String>? = nil) async {
         guard !isBusy, let asset = preparedAsset else { return }
         isBusy = true
         operationDetail = "正在准备扩展可读取的私有素材"
@@ -246,8 +278,8 @@ final class ExperimentalLockScreenCoordinator {
                 let sharedVideo = try await preparer.stageVideo(asset, directory: environment.sharedDirectory)
                 configuration = .init(assetID: asset.id.uuidString, videoFileName: sharedVideo.lastPathComponent)
             }
-            let config = try JSONEncoder().encode(configuration)
             previousConfiguration = try? Data(contentsOf: configurationURL)
+            let config = try LockScreenDisplayConfigurations.updating(configuration, displays: displayIDs, previous: previousConfiguration)
             submittedConfiguration = config
             // The extension remains harmless until an explicit system desktop/lock-screen provider selection.
             if !environment.isReview {
@@ -259,12 +291,16 @@ final class ExperimentalLockScreenCoordinator {
             }
             state = .registered
             try saveState()
+            guard (try? Data(contentsOf: configurationURL)) == previousConfiguration else {
+                throw ExperimentalLockScreenFailure(message: "锁屏配置已改变，已停止应用以保留新选择。")
+            }
             try LockScreenOwnedFiles.privateWrite(config, to: configurationURL)
             configurationWasWritten = true
             operationDetail = "正在备份并提交系统桌面／锁屏配置"
             let transaction = LockScreenStoreTransaction(storeDirectory: environment.storeDirectory, snapshotURL: snapshotURL)
             _ = try transaction.apply(configuration: config, previousConfiguration: previousConfiguration,
-                                      assetID: asset.id, sharedDirectory: environment.sharedDirectory)
+                                      assetID: asset.id, sharedDirectory: environment.sharedDirectory,
+                                      displayIDs: displayIDs, onlineDisplayIDs: onlineDisplayIdentifiers())
             committed = true
             state = .applied
             // State-file failure must not claim the wallpaper store itself rolled back.
@@ -284,6 +320,17 @@ final class ExperimentalLockScreenCoordinator {
         }
         isBusy = false
         operationDetail = nil
+    }
+
+    private func onlineDisplayIdentifiers() -> Set<String> {
+        guard !environment.isReview else { return [] }
+        var count: UInt32 = 0
+        var ids = [CGDirectDisplayID](repeating: 0, count: 32)
+        guard CGGetOnlineDisplayList(UInt32(ids.count), &ids, &count) == .success else { return [] }
+        return Set(ids.prefix(Int(count)).compactMap { id in
+            guard let uuid = CGDisplayCreateUUIDFromDisplayID(id)?.takeRetainedValue() else { return nil }
+            return CFUUIDCreateString(nil, uuid) as String
+        })
     }
 
     func restorePrevious() async {

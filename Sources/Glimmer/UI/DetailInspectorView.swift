@@ -44,8 +44,8 @@ struct DetailInspectorView: View {
 
     private var missing: Bool { !item.fileExists }
     private var targetDisplayID: String? {
-        (selectedDisplayID == "__all_displays__" ? nil : selectedDisplayID)
-            ?? displays.first(where: { $0.isPrimary })?.id ?? displays.first?.id
+        if let selectedDisplayID, displays.contains(where: { $0.id == selectedDisplayID }) { return selectedDisplayID }
+        return displays.first(where: { $0.isPrimary })?.id ?? displays.first?.id
     }
 
     private var settings: DisplayPlaybackSettings {
@@ -436,7 +436,8 @@ struct DetailInspectorView: View {
                 Label(SceneWallpaperPresentation.errorSummary(feedback), systemImage: "exclamationmark.triangle")
                     .font(.caption).foregroundStyle(.orange)
             }
-            if let policyReasonText, !policyReasonText.isEmpty {
+            if let policyReasonText, !policyReasonText.isEmpty,
+               selectedDisplayID == "__all_displays__" || targetDisplayID.map({ playback.isPolicySuspended(on: $0) }) == true {
                 Label("已因\(policyReasonText)暂停", systemImage: "pause.circle")
                     .font(.caption).foregroundStyle(.orange)
             }
@@ -446,7 +447,7 @@ struct DetailInspectorView: View {
 
     private var displayPicker: some View {
         Picker("显示器", selection: Binding(
-            get: { selectedDisplayID ?? targetDisplayID ?? "" },
+            get: { selectedDisplayID == "__all_displays__" ? "__all_displays__" : targetDisplayID ?? "" },
             set: { selectedDisplayID = $0 }
         )) {
             ForEach(displays) { display in Text(display.localizedName).tag(display.id) }
@@ -475,7 +476,9 @@ struct DetailInspectorView: View {
                 .disabled(applyState.isPreparing || displays.isEmpty)
                 .accessibilityIdentifier("wallpaper-apply")
                 if item.isVideoWallpaper || item.isWebWallpaper || item.isSceneWallpaper {
-                    LockScreenApplyControls(item: item, onFeedback: { previewToast = $0 })
+                    LockScreenApplyControls(item: item,
+                        displayIDs: selectedDisplayID == "__all_displays__" ? nil : targetDisplayID.map { [$0] },
+                        hasDisplays: !displays.isEmpty, onFeedback: { previewToast = $0 })
                 }
                 WallpaperInformationButton(itemID: item.workshopID, localItem: item, initialDetail: information.detail)
         }
