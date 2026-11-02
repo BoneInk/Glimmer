@@ -15,6 +15,8 @@ final class GWNativeExtension: NSObject, AppExtension {
     override required init() {
         super.init()
         GWLog("experimental native wallpaper starting uid=\(getuid()) build=\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") ?? "unknown") path=\(Bundle.main.bundlePath) privateRuntime=\(GWLoadRuntime())")
+        DistributedNotificationCenter.default().postNotificationName(
+            Notification.Name(GWBundleID + ".started"), object: nil, userInfo: nil, deliverImmediately: true)
     }
     var configuration: some AppExtensionConfiguration { GWExtensionConfiguration() }
 }
@@ -25,6 +27,16 @@ struct GWExtensionDiagnostics {
     @MainActor private static var webDiagnostic: GWWebLayerDiagnostics?
     @MainActor static func main() {
         let args = CommandLine.arguments
+        if args.contains("--display-sleep-probe") {
+            _ = NSApplication.shared
+            Task { @MainActor in
+                let result = await GWDisplaySleepProbe()
+                printJSON(result)
+                exit(result["passed"] as? Bool == true ? 0 : 1)
+            }
+            NSApplication.shared.run()
+            return
+        }
         if let index = args.firstIndex(of: "--web-layer-producer"), args.count > index + 1 {
             _ = GWLoadRuntime()
             _ = NSApplication.shared
@@ -87,10 +99,17 @@ struct GWExtensionDiagnostics {
             do {
                 let directory = URL(fileURLWithPath: args[index + 1], isDirectory: true)
                 let (config, url) = try GWConfiguration.load(directory: directory, isolatedProbe: true)
-                struct ProbeRequest { let size = CGSize(width: 640, height: 360); let scaleFactor: CGFloat = 1; let isPreview = true }
+                struct ProbeRequest {
+                    let size = CGSize(width: 640, height: 360)
+                    let scaleFactor: CGFloat = 1
+                    let isPreview = false
+                    let presentationMode = "locked"
+                    let activityState = "active"
+                }
                 let surface = try GWVideoSurface(config: config, video: url, request: GWRequest(ProbeRequest()))
                 var started = false
-                surface.start { started = $0 }
+                let cleanup = GWInstallDiagnosticSurface(surface, request: GWRequest(ProbeRequest())) { started = $0 }
+                defer { cleanup() }
                 let deadline = Date().addingTimeInterval(7)
                 while Date() < deadline && (!started || surface.frameCount < 8 || surface.sampledSignatures.count < 2) {
                     RunLoop.main.run(until: Date().addingTimeInterval(0.02))
@@ -142,7 +161,8 @@ struct GWExtensionDiagnostics {
                     RunLoop.main.run(until: Date().addingTimeInterval(0.02))
                 }
                 let stallRecovered = surface.frameCount >= stalledCount + 3
-                var result: [String: Any] = ["started": started, "remoteContextIDNonzero": surface.context.contextId != 0,
+                var result: [String: Any] = ["started": started, "activeLockScreenRegistryStartup": started,
+                    "remoteContextIDNonzero": surface.context.contextId != 0,
                     "remoteContextSecureRoundTrip": response.map { GWRoundTripObject($0) } ?? false,
                     "decodedFramesEnqueued": surface.frameCount, "differentFrameSignatures": surface.sampledSignatures.count,
                     "sampleRendererStatus": surface.layer.sampleBufferRenderer.status.rawValue,
@@ -171,7 +191,7 @@ struct GWExtensionDiagnostics {
                 exit(1)
             }
         }
-        fputs("Diagnostic helper requires --runtime-probe, --validate-staged-config or --isolated-video-probe\n", stderr)
+        fputs("Diagnostic helper requires --runtime-probe, --display-sleep-probe, --validate-staged-config or --isolated-video-probe\n", stderr)
         exit(2)
     }
     private static func printJSON(_ value: [String: Any]) {

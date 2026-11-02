@@ -13,6 +13,7 @@ private final class GWSurfaces {
     static let shared = GWSurfaces()
     private var values: [String: any GWNativeWallpaperSurface] = [:]
     private var owners: [String: UUID] = [:]
+    private let displaySleep = GWLockScreenDisplaySleepGuard()
     func key(_ id: Any?) -> String {
         if let uuid = Self.uuid(in: id) { return uuid.uuidString }
         return String(describing: id ?? "default")
@@ -28,6 +29,7 @@ private final class GWSurfaces {
     func remove(_ key: String, owner: UUID? = nil) {
         guard owner == nil || owners[key] == owner else { return }
         owners[key] = nil
+        displaySleep.remove(key)
         values.removeValue(forKey: key)?.stop()
     }
     func claim(_ key: String, owner: UUID) { owners[key] = owner }
@@ -35,8 +37,13 @@ private final class GWSurfaces {
         let keys = owners.filter { $0.value == owner }.map(\.key)
         keys.forEach { remove($0, owner: owner) }
     }
-    func removeAll() { let old = values; values.removeAll(); owners.removeAll(); old.values.forEach { $0.stop() } }
-    func setSleeping(_ value: Bool) { values.values.forEach { $0.setSleeping(value) } }
+    func removeAll() { let old = values; values.removeAll(); owners.removeAll(); displaySleep.removeAll(); old.values.forEach { $0.stop() } }
+    func setSleeping(_ value: Bool) { displaySleep.setSleeping(value); values.values.forEach { $0.setSleeping(value) } }
+    func update(_ key: String, request: GWRequest) {
+        guard let surface = values[key] else { return }
+        displaySleep.update(key, request: request)
+        surface.update(request)
+    }
     func get(_ key: String) -> (any GWNativeWallpaperSurface)? { values[key] }
     func set(_ surface: any GWNativeWallpaperSurface, key: String) {
         remove(key)
@@ -44,7 +51,36 @@ private final class GWSurfaces {
         if values.count >= 12 { removeAll() }
         values[key] = surface
     }
+    func install(_ surface: any GWNativeWallpaperSurface, key: String, owner: UUID,
+                 request: GWRequest, completion: @escaping (Bool) -> Void) {
+        set(surface, key: key)
+        claim(key, owner: owner)
+        // Geometry and playback intent are already initialized from request.
+        // update() may start a frame timer, which makes start() reject a cold
+        // active acquisition as a duplicate. Only protect display sleep here.
+        displaySleep.update(key, request: request)
+        surface.start { success in
+            guard success, self.get(key) === surface else {
+                GWLog("native wallpaper startup failed context=\(surface.context.contextId) ready=\(success) current=\(self.get(key) === surface)")
+                if self.get(key) === surface { self.remove(key) }
+                completion(false)
+                return
+            }
+            completion(true)
+        }
+    }
 }
+
+#if GW_DIAGNOSTIC_ENTRY
+@MainActor
+func GWInstallDiagnosticSurface(_ surface: any GWNativeWallpaperSurface, request: GWRequest,
+                                completion: @escaping (Bool) -> Void) -> () -> Void {
+    let key = UUID().uuidString
+    let registry = GWSurfaces.shared
+    registry.install(surface, key: key, owner: UUID(), request: request, completion: completion)
+    return { registry.remove(key) }
+}
+#endif
 
 final class GWWallpaperHandler: NSObject, WallpaperExtensionXPCProtocol {
     let owner = UUID()
@@ -61,7 +97,7 @@ final class GWWallpaperHandler: NSObject, WallpaperExtensionXPCProtocol {
                 if let existing = registry.get(key), existing.assetID == config.assetID,
                    let response = createRemoteContextXPC(contextId: existing.context.contextId) {
                     registry.claim(key, owner: owner)
-                    existing.update(info)
+                    registry.update(key, request: info)
                     reply(response, nil)
                     return
                 }
@@ -70,18 +106,15 @@ final class GWWallpaperHandler: NSObject, WallpaperExtensionXPCProtocol {
                       GWRoundTripObject(response) else {
                     surface.stop(); throw GWError(30, "Unsupported wallpaper remote-context layout")
                 }
-                registry.set(surface, key: key)
-                registry.claim(key, owner: owner)
-                surface.start { success in
-                    guard success, registry.get(key) === surface else {
-                        if registry.get(key) === surface { registry.remove(key) }
+                registry.install(surface, key: key, owner: owner, request: info) { success in
+                    guard success else {
                         reply(nil, GWError(31, "Wallpaper surface did not produce a frame"))
                         return
                     }
                     GWLog("acquired native wallpaper context=\(surface.context.contextId) preview=\(info.preview) mode=\(info.mode ?? "none")")
                     reply(response, nil)
                 }
-            } catch { reply(nil, error) }
+            } catch { GWLog("native wallpaper acquire failed: \(error.localizedDescription)"); reply(nil, error) }
         }
     }
 
@@ -91,7 +124,7 @@ final class GWWallpaperHandler: NSObject, WallpaperExtensionXPCProtocol {
             let (id, request, reply) = inputs.value
             let info = GWRequest(request)
             GWLog("wallpaper activity mode=\(info.mode ?? "none") activity=\(info.activity ?? "none") playing=\(info.shouldPlay)")
-            GWSurfaces.shared.get(GWSurfaces.shared.key(id))?.update(info)
+            GWSurfaces.shared.update(GWSurfaces.shared.key(id), request: info)
             reply(nil)
         }
     }

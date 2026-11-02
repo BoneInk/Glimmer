@@ -33,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var isTerminating = false
     private var lockScreenTerminationWait: Task<Void,Never>?
     private var startupMigrationTask: Task<Void, Never>?
+    private var lockScreenRecovery: LockScreenConnectionRecovery?
     private var startupProgressWindow: NSWindow?
     private var startupProgressIndicator: NSProgressIndicator?
     private var startupStatusLabel: NSTextField?
@@ -158,6 +159,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     wallpaperFPS: preferences.wallpaperFPS, displayID: displayID)
             }))
         workshop.isDynamicLockScreenBusy = { [weak self] in self?.lockScreenActions?.isBusy == true }
+        if ["/Applications/Glimmer.app", NSHomeDirectory() + "/Applications/Glimmer.app"].contains(Bundle.main.bundleURL.path),
+           let extensionURL = Bundle.main.builtInPlugInsURL?.appendingPathComponent("GlimmerWallpaperExtension.appex") {
+            let registrar = ExperimentalLockScreenRegistrar()
+            lockScreenRecovery = LockScreenConnectionRecovery(
+                executable: extensionURL.appendingPathComponent("Contents/MacOS/GlimmerWallpaperExtension"),
+                storeURL: FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/com.apple.wallpaper/Store/Index.plist"),
+                provider: GlimmerIdentity.lockScreenProvider,
+                canRecover: { [weak self] in
+                    self?.isTerminating == false && self?.lockScreenActions?.isBusy == false
+                        && LockScreenConnectionRecovery.displaysAreAwake
+                },
+                reloadHost: { try await registrar.reloadCurrentUser() })
+            lockScreenRecovery?.start()
+        }
         integration = AppPlaybackIntegration(
             store: store,
             playback: playback,
@@ -411,6 +426,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         guard !isTerminating else { return }
         isTerminating = true
+        lockScreenRecovery?.stop()
 
         // 1) 停止真实播放、计时器与助手进程（无孤儿会话）。
         // 注意：不在退出时把偏好文件反向写入素材库（R15 复核：避免用默认值覆盖真实设置）。

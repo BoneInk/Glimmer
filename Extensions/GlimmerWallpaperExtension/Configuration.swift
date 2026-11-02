@@ -148,4 +148,8 @@ struct GWRequest {
         // explicit inactive state, sleep or invalidation may freeze the clock.
         return true
     }
+    var keepsLockScreenVisible: Bool {
+        guard !preview, mode?.lowercased() == "locked", shouldPlay else { return false }
+        return displayID.map { CGDisplayIsAsleep($0) == 0 } ?? true
+    }
 }

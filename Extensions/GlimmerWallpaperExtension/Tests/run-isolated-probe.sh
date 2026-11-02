@@ -16,7 +16,8 @@ export DEVELOPER_DIR="${DEVELOPER_DIR:-/Library/Developer/CommandLineTools}"
 "$ROOT/scripts/build-wallpaper-extension.sh" --diagnostic-entry --output "$WORK/GlimmerWallpaperDiagnostics.bundle"
 BIN="$WORK/GlimmerWallpaperDiagnostics.bundle/Contents/MacOS/GlimmerWallpaperExtension"
 "$BIN" --runtime-probe > "$OUT/runtime-probe.json"
-PROBE="$(python3 - "$ROOT/evidence/ui-test-video.mp4" <<'PY'
+"$BIN" --display-sleep-probe > "$OUT/display-sleep-probe.json"
+PROBE="$(python3 - "${GW_PROBE_VIDEO_PATH:-$ROOT/evidence/ui-test-video.mp4}" <<'PY'
 from pathlib import Path
 import os,stat,uuid,json,shutil,sys
 root=Path('/Users/Shared/GlimmerNativeLockScreen')
@@ -52,14 +53,17 @@ python3 - "$OUT" <<'PY'
 from pathlib import Path
 import json,sys
 p=Path(sys.argv[1]);r=json.loads((p/'runtime-probe.json').read_text());v=json.loads((p/'video-probe.json').read_text())
+d=json.loads((p/'display-sleep-probe.json').read_text())
+assert d['sandboxActive'] and d['passed'] and all(d['checks'].values()) and not d['systemWallpaperModified']
 assert r['sandboxActive'] and r['privateFrameworkLoaded'] and r['settingsObjectCreated'] and r['settingsSecureRoundTrip']
 assert v['sandboxActive'] and v['decodedFramesEnqueued']>=8 and v['differentFrameSignatures']>=2
+assert v['activeLockScreenRegistryStartup']
 assert v['snapshotXPCTransportRoundTrip'] and v['remoteContextXPCTransportRoundTrip']
 assert v['muted'] and v['volume']==0 and not v['systemWallpaperModified']
 assert v['desktopModePausesWithoutFrameLoop'] and v['previewOrLockedModeResumes'] and v['stopReleasesPlayerContextAndBuffer']
 assert v['workspaceSleepPausesVideo'] and v['inactiveWakeHoldsBackingImage']
 assert v['wakeRebuildsLostDecoderInSameContext'] and v['stalledDecoderRecovers']
-print('PASS: sandbox/private-runtime/settings, changing video frames, workspace sleep/wake, decoder/compositor loss and silent decoder stall recovery, snapshot/context XPC transport, 5 unsafe staging cases rejected; no registration or wallpaper changes.')
+print('PASS: sandbox/private-runtime/settings, bounded lock-screen display sleep assertion lifecycle, changing video frames, workspace sleep/wake, decoder/compositor loss and silent decoder stall recovery, snapshot/context XPC transport, 5 unsafe staging cases rejected; no registration or wallpaper changes.')
 PY
 # Preserve only the signed package, never the staged demo/config or captured frames.
 mkdir -p "$OUT/GlimmerWallpaperExtension.appex"
