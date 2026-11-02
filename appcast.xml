@@ -4,26 +4,26 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <channel>
         <title>Glimmer</title>
         <item>
-            <title>0.18.2</title>
-            <pubDate>Sun, 01 Nov 2026 19:36:04 +0800</pubDate>
-            <sparkle:version>48</sparkle:version>
-            <sparkle:shortVersionString>0.18.2</sparkle:shortVersionString>
+            <title>0.18.3</title>
+            <pubDate>Mon, 02 Nov 2026 20:32:48 +0800</pubDate>
+            <sparkle:version>49</sparkle:version>
+            <sparkle:shortVersionString>0.18.3</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description sparkle:format="plain-text"><![CDATA[Glimmer 0.18.2（构建 48）
+            <description sparkle:format="plain-text"><![CDATA[Glimmer 0.18.3（构建 49）
 
-全屏或最大化窗口现在按显示器分别判断，仅暂停被覆盖屏幕上的壁纸，其他屏幕继续播放。
+修复锁屏首次启动时回退到默认动态锁屏的问题。
 
-在壁纸详情页选择显示器后，点击“锁屏”可为该屏幕单独设置壁纸；选择“全部显示器”则统一应用。保留其他屏幕的设置，并支持恢复此前的锁屏配置。
+动态锁屏按系统设定的显示器休眠时长保亮，解锁或主动睡眠时释放，不修改电源设置。
 
-修复逐屏暂停与手动播放、轮播、切换壁纸之间的联动，保留各屏幕的手动暂停与恢复意图。继续使用辅助功能事件监听，无周期性窗口扫描。
+应用运行时，在系统重新注册终止扩展后自动恢复连接。采用事件监听，无周期性检测，保留当前壁纸选择。
 
-Apple Silicon，macOS 26 或更高版本。Apple Development 签名，未经过 Apple 公证。实际多显示器锁屏画面仍待实机验证。
+Apple Silicon，macOS 26 或更高版本。Apple Development 签名，未经过 Apple 公证。实验性锁屏接口的系统兼容性限制仍适用。
 ]]></description>
-            <enclosure url="https://github.com/BoneInk/Glimmer/releases/download/v0.18.2/Glimmer-0.18.2-arm64.zip" length="344413369" type="application/octet-stream" sparkle:edSignature="zjgqVtYULVcV7EfdxwI52EZCjzODVuCoBY7loXhpm0x7ZXh8iPqBOLXIpdrd1dLnDFOR6QdodTfyo178yWtjBw=="></enclosure>
+            <enclosure url="https://github.com/BoneInk/Glimmer/releases/download/v0.18.3/Glimmer-0.18.3-arm64.zip" length="344436427" type="application/octet-stream" sparkle:edSignature="WdH4+81gWArddG/H9VhpGYvNCA3Pk0bqtTMWS5tGSpELcpgG7Dta7GjbhQuutSEVKrrC5m7yFGLIap3VtaXKAA=="></enclosure>
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: nyDIYA933jPTKRTkKUSPFavNc3iMFbzXKbECuTklxY98GqPHQBgxhPDRH9VFJrrzef0ccr8dsBRu6K7iLO+pDQ==
-length: 1912
+edSignature: b57y+MHYXDD1phZxxW54RaEXnhhXANQWhAZbb2iU9hVx/sbD+nYsRehsCZHbUG66E6VFuTYiMBo2m3YIng4zDQ==
+length: 1726
 -->
