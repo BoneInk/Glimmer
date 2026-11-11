@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WORK="$(mktemp -d /tmp/gw-scene-lock-export.XXXXXX)"
+WORK="$(mktemp -d /tmp/gw-scene-texture-cache.XXXXXX)"
 trap 'rm -rf "$WORK"' EXIT
 export DEVELOPER_DIR=/Library/Developer/CommandLineTools
 swiftc -swift-version 6 -strict-concurrency=complete -target arm64-apple-macos26.0 \
@@ -10,5 +10,5 @@ swiftc -swift-version 6 -strict-concurrency=complete -target arm64-apple-macos26
  "$ROOT/Sources/SceneBackendShared/SceneBackendTypes.swift" \
  "$ROOT/Sources/Glimmer/SceneBackend/SceneBackendXPCClient.swift" \
  "$ROOT/Sources/Glimmer/SceneBackend/SceneBackendMetalHostView.swift" \
- "$ROOT/Tests/SceneLockScreenExportTests.swift" -o "$WORK/probe"
+ "$ROOT/Tests/SceneWallpaper/SceneBackendTextureCacheTests.swift" -o "$WORK/probe"
 "$WORK/probe"

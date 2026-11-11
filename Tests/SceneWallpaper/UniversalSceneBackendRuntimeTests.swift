@@ -24,6 +24,10 @@ private final class FakeSceneBackendTransport: SceneBackendSessionTransport {
     var fpsCalls = [Int]()
     var holdNextRender = false
     var heldRender: CheckedContinuation<Void, Never>?
+    var renderDelay: Duration = .zero
+    var renderStarts = [ContinuousClock.Instant]()
+    var inFlightFrames = 0
+    var maximumInFlightFrames = 0
     let instanceID = UUID()
     var statusValue: SceneBackendProcessStatus {
         .init(helperPID: Self.helperPID, instanceID: instanceID,
@@ -51,6 +55,10 @@ private final class FakeSceneBackendTransport: SceneBackendSessionTransport {
     func render(_ input: SceneFrameInput) async throws -> (SceneFrameToken, IOSurface) {
         guard let configuration else { throw UniversalSceneBackendError.notReady }
         renders.append(input)
+        renderStarts.append(.now)
+        inFlightFrames += 1
+        maximumInFlightFrames = max(maximumInFlightFrames, inFlightFrames)
+        if renderDelay > .zero { try? await Task.sleep(for: renderDelay) }
         if holdNextRender {
             holdNextRender = false
             await withCheckedContinuation { heldRender = $0 }
@@ -65,7 +73,10 @@ private final class FakeSceneBackendTransport: SceneBackendSessionTransport {
                       slotID: UUID(), width: configuration.width, height: configuration.height,
                       bytesPerRow: bytesPerRow, pixelFormat: "BGRA8Unorm"), surface)
     }
-    func acknowledge(_ token: SceneFrameToken) async throws { acknowledged.append(token) }
+    func acknowledge(_ token: SceneFrameToken) async throws {
+        acknowledged.append(token)
+        inFlightFrames -= 1
+    }
     func updateProperties(_ properties: [String: String], revision: UInt64) async throws {
         guard revision > propertyRevision else { throw UniversalSceneBackendError.invalidProperties }
         updates.append(properties)
@@ -222,7 +233,9 @@ private final class FakeSceneBackendTransport: SceneBackendSessionTransport {
         let aspectSequence = fake.renders.last!.sequence
         let aspectElapsed = fake.renders.last!.elapsedSeconds
         runtime.setAspectFill(false)
-        for _ in 0..<100 where fake.fill || fake.renders.last!.sequence == aspectSequence {
+        // The fake records render entry before GPU completion and the status ACK.
+        for _ in 0..<100 where fake.fill || fake.renders.last!.sequence == aspectSequence
+            || runtime.processStatus?.aspectFill != false {
             try await Task.sleep(for: .milliseconds(5))
         }
         try check(!fake.fill && runtime.processStatus?.aspectFill == false &&
@@ -266,6 +279,74 @@ private final class FakeSceneBackendTransport: SceneBackendSessionTransport {
                   runtime.processStatus?.instanceID == helperInstance && runtime.processStatus?.frameRateLimit == 240 &&
                   runtime.activeRuntime >= runtimeBeforeFPS,
                   "FPS slider burst coalesces on the same helper session without resetting active time")
+        // A slow helper must consume the frame budget rather than add its work
+        // to a full 1/FPS sleep. At 20 FPS and 25 ms work the old loop took 75 ms.
+        runtime.setPaused(true)
+        for _ in 0..<100 where fake.inFlightFrames != 0 { try await Task.sleep(for: .milliseconds(5)) }
+        try runtime.setFrameRateLimit(20)
+        fake.renderDelay = .milliseconds(25)
+        let cadenceStart = fake.renderStarts.count
+        runtime.setPaused(false)
+        for _ in 0..<300 where fake.renderStarts.count < cadenceStart + 13 {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        runtime.setPaused(true)
+        for _ in 0..<100 where fake.inFlightFrames != 0 { try await Task.sleep(for: .milliseconds(5)) }
+        let cadence = Array(fake.renderStarts.dropFirst(cadenceStart).prefix(13))
+        try check(cadence.count == 13, "delayed transport produces the cadence measurement frames")
+        let intervals = zip(cadence, cadence.dropFirst()).map { first, second -> Double in
+            let duration = first.duration(to: second).components
+            return Double(duration.seconds) + Double(duration.attoseconds) / 1e18
+        }
+        let cadenceMean = intervals.reduce(0, +) / Double(intervals.count)
+        try check(cadenceMean > 0.04 && cadenceMean < 0.065,
+                  "25ms transport work at 20 FPS retains about 50ms frame starts instead of 75ms")
+        try check(fake.maximumInFlightFrames == 1 && fake.inFlightFrames == 0 &&
+                  fake.acknowledged.count == fake.renders.count,
+                  "deadline scheduling keeps at most one frame in flight through GPU consumption and ACK")
+
+        // A 1 FPS sleep must wake promptly when the limit rises. Keep the same
+        // helper session and real active time through the edit.
+        fake.renderDelay = .zero
+        try runtime.setFrameRateLimit(1)
+        runtime.setPaused(false)
+        try await Task.sleep(for: .milliseconds(80))
+        let framesBeforeWake = runtime.frameCount
+        let wakeStart = ContinuousClock.now
+        try runtime.setFrameRateLimit(60)
+        for _ in 0..<80 where runtime.frameCount == framesBeforeWake {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        try check(runtime.frameCount > framesBeforeWake && wakeStart.duration(to: .now) < .milliseconds(300),
+                  "FPS increase interrupts a pending one-second sleep without waiting for its old deadline")
+        runtime.setPaused(true)
+        for _ in 0..<100 where fake.inFlightFrames != 0 { try await Task.sleep(for: .milliseconds(5)) }
+        let inputWindow = NSWindow(contentRect: NSRect(x: 40, y: 40, width: 200, height: 200),
+            styleMask: [.borderless], backing: .buffered, defer: false)
+        inputWindow.isReleasedWhenClosed = false
+        runtime.hostView.frame = NSRect(x: 0, y: 0, width: 200, height: 200)
+        inputWindow.contentView = runtime.hostView
+        let inputPoint = inputWindow.convertPoint(toScreen: NSPoint(x: 100, y: 100))
+        runtime.setPaused(false)
+        for _ in 0..<100 where runtime.state != .ready { try await Task.sleep(for: .milliseconds(5)) }
+        let inputStart = fake.renders.count
+        runtime.setPointerButton(down: true, screenPoint: inputPoint)
+        runtime.setPointerButton(down: false, screenPoint: inputPoint)
+        for _ in 0..<100 where !fake.renders.dropFirst(inputStart).contains(where: \.leftMouseDown) {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        try check(fake.renders.dropFirst(inputStart).contains { $0.leftMouseDown && $0.cursorX != nil && $0.cursorY != nil },
+                  "a desktop press released between frames reaches the helper with mapped host coordinates")
+        runtime.setPaused(true)
+        runtime.setPointerButton(down: true, screenPoint: inputPoint)
+        runtime.setPaused(false)
+        let resetStart = fake.renders.count
+        try await Task.sleep(for: .milliseconds(70))
+        try check(fake.renders.dropFirst(resetStart).allSatisfy { !$0.leftMouseDown },
+                  "pause resets pending button input and paused clicks never reappear on resume")
+        runtime.setPaused(true)
+        inputWindow.contentView = nil
+        inputWindow.close()
         try rejects("frame rate outside 1 through 240 rejects") { try runtime.setFrameRateLimit(0) }
         runtime.dispose()
         for _ in 0..<100 where pool.activeLeaseCount != 0 { try await Task.sleep(for: .milliseconds(5)) }
@@ -334,7 +415,50 @@ private final class FakeSceneBackendTransport: SceneBackendSessionTransport {
         try check(Double(elapsed.seconds) + Double(elapsed.attoseconds) / 1e18 < 0.5,
                   "deadline returns without waiting for a noncooperative operation")
 
+        // Real swap-chain regression: headless frame ACKs do not prove that
+        // MTKView retires its drawable and presents later scene frames.
+        let application = NSApplication.shared
+        application.setActivationPolicy(.accessory)
+        application.finishLaunching()
+        let presentationView = try SceneBackendMetalHostView.make()
+        let presentationWindow = NSWindow(contentRect: .init(x: 80, y: 80, width: 64, height: 64),
+            styleMask: .borderless, backing: .buffered, defer: false)
+        presentationWindow.isReleasedWhenClosed = false
+        presentationWindow.ignoresMouseEvents = true
+        presentationWindow.contentView = presentationView
+        presentationWindow.orderFrontRegardless()
+        var drawables = [ObjectIdentifier]()
+        var previousDrawable: AnyObject?
+        presentationView.onDrawableForTesting = { identity in
+            // Keep the last object alive until the next acquisition. Otherwise
+            // the allocator can reuse its address and make fresh drawables look
+            // like one cached object even though all frames were presented.
+            withExtendedLifetime(previousDrawable) { drawables.append(identity) }
+            previousDrawable = presentationView.currentDrawable as AnyObject?
+        }
+        let presentationSession = UUID()
+        for sequence in 1...12 {
+            let bytesPerRow = 256
+            let io = IOSurface(properties: [.width: 64, .height: 64, .bytesPerElement: 4,
+                .bytesPerRow: bytesPerRow, .allocSize: bytesPerRow * 64, .pixelFormat: UInt32(0x4247_5241)])!
+            io.lock(options: [], seed: nil)
+            let pixels = io.baseAddress.bindMemory(to: UInt32.self, capacity: 64 * 64)
+            pixels.update(repeating: sequence.isMultiple(of: 2) ? 0xff00ff00 : 0xffff0000, count: 64 * 64)
+            io.unlock(options: [], seed: nil)
+            let frame = SceneFrameToken(sessionID: presentationSession, generation: 1, sequence: UInt64(sequence),
+                slotID: UUID(), width: 64, height: 64, bytesPerRow: bytesPerRow, pixelFormat: "BGRA8Unorm")
+            try await presentationView.consume(surface: io, token: frame)
+            try await Task.sleep(for: .milliseconds(40))
+        }
+        presentationView.onDrawableForTesting = nil
+        previousDrawable = nil
+        presentationWindow.orderOut(nil); presentationWindow.close()
+        try check(drawables.count >= 10 && Set(drawables).count >= 2,
+                  "attached Scene view presents successive frames through fresh MTKView drawable cycles (\(drawables.count) presentations, \(Set(drawables).count) drawables)")
+
         let report: [String: Any] = ["success": true, "checkCount": checks.count, "checks": checks,
+                                     "delayedTransportMeanFrameIntervalMilliseconds": cadenceMean * 1_000,
+                                     "drawableCycles": drawables.count, "differentDrawables": Set(drawables).count,
                                      "fixtureOnly": true, "realXPCServiceLaunched": false,
                                      "actualSteamCacheRead": false, "cpuFrameReadback": false]
         let data = try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])

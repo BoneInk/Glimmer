@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEST_OUT="$(mktemp -d "${TMPDIR:-/tmp}/glimmer-workshop-web-test.XXXXXX")"
 trap 'rm -rf "$TEST_OUT"' EXIT
 SOURCES=()
-for directory in Steam Store Model Import Media Display Desktop; do
+for directory in Steam SteamContent Store Model Import Media Display Desktop; do
   for source in "$ROOT/Sources/Glimmer/$directory/"*.swift; do SOURCES+=("$source"); done
 done
 source "$ROOT/scripts/author-web-core-sources.sh"
@@ -15,5 +15,6 @@ swiftc "${AUTHOR_WEB_CORE_SOURCES[@]}" -swift-version 6 -strict-concurrency=comp
   "$ROOT/Sources/Glimmer/Support/VideoFileSupport.swift" \
   "$ROOT/Sources/Glimmer/Support/WorkshopWallpaperApplication.swift" \
   "$ROOT/Sources/Glimmer/Support/ManagedWallpaperDeletionService.swift" \
+  "$ROOT/Sources/Glimmer/Support/SceneSteamEngineAssetRegistration.swift" \
   "$ROOT/Tests/WorkshopWebIntegrationTests.swift" -o "$TEST_OUT/WorkshopWebIntegrationTests"
 "$TEST_OUT/WorkshopWebIntegrationTests"

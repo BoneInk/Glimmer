@@ -1,12 +1,6 @@
 import Foundation
 
-enum GWLockScreenProjectPlayback: String, Codable, CaseIterable, Identifiable, Sendable {
-    case live, recorded
-    var id: String { rawValue }
-    var title: String { self == .live ? "实时渲染" : "录制视频" }
-}
-
-enum GWLockScreenExportResolution: String, Codable, CaseIterable, Identifiable, Sendable {
+enum GWLockScreenRenderResolution: String, Codable, CaseIterable, Identifiable, Sendable {
     case original, hd720, fullHD1080, qhd1440, uhd2160
 
     var id: String { rawValue }
@@ -31,39 +25,32 @@ enum GWLockScreenExportResolution: String, Codable, CaseIterable, Identifiable, 
 }
 
 /// Zero FPS means source timing. Manual values survive toggling synchronization.
-struct GWLockScreenExportSettings: Codable, Equatable, Sendable {
-    var projectPlayback: GWLockScreenProjectPlayback = .live
-    var allowWebHTTPS = false
+struct GWLockScreenRenderSettings: Codable, Equatable, Sendable {
     var syncWallpaperSettings = true
-    var resolution: GWLockScreenExportResolution = .fullHD1080
+    var resolution: GWLockScreenRenderResolution = .fullHD1080
     var framesPerSecond: Int = 30 {
         didSet { framesPerSecond = min(max(framesPerSecond, 0), 240) }
     }
 
     init(syncWallpaperSettings: Bool = true,
-         resolution: GWLockScreenExportResolution = .fullHD1080, framesPerSecond: Int = 30,
-         projectPlayback: GWLockScreenProjectPlayback = .live, allowWebHTTPS: Bool = false) {
+         resolution: GWLockScreenRenderResolution = .fullHD1080, framesPerSecond: Int = 30) {
         self.syncWallpaperSettings = syncWallpaperSettings
         self.resolution = resolution
         self.framesPerSecond = min(max(framesPerSecond, 0), 240)
-        self.projectPlayback = projectPlayback
-        self.allowWebHTTPS = allowWebHTTPS
     }
 
-    private enum CodingKeys: CodingKey { case syncWallpaperSettings, resolution, framesPerSecond, projectPlayback, allowWebHTTPS }
+    private enum CodingKeys: CodingKey { case syncWallpaperSettings, resolution, framesPerSecond }
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         syncWallpaperSettings = (try? values.decode(Bool.self, forKey: .syncWallpaperSettings)) ?? true
-        resolution = (try? values.decode(GWLockScreenExportResolution.self, forKey: .resolution)) ?? .fullHD1080
+        resolution = (try? values.decode(GWLockScreenRenderResolution.self, forKey: .resolution)) ?? .fullHD1080
         framesPerSecond = min(max((try? values.decode(Int.self, forKey: .framesPerSecond)) ?? 30, 0), 240)
-        projectPlayback = (try? values.decode(GWLockScreenProjectPlayback.self, forKey: .projectPlayback)) ?? .live
-        allowWebHTTPS = (try? values.decode(Bool.self, forKey: .allowWebHTTPS)) ?? false
     }
 
     static let original = Self(syncWallpaperSettings: false, resolution: .original, framesPerSecond: 0)
 }
 
-struct LockScreenExportSpecification: Equatable, Sendable {
+struct LockScreenRenderSpecification: Equatable, Sendable {
     let width: Int
     let height: Int
     /// Keep fractional video rates (for example 24000/1001) until encoding.
@@ -76,27 +63,21 @@ struct LockScreenExportSpecification: Equatable, Sendable {
     }
 
     var renderedFramesPerSecond: Int { max(1, Int(framesPerSecond.rounded(.down))) }
-    var averageBitRate: Int {
-        Self.averageBitRate(width: width, height: height, fps: framesPerSecond)
-    }
-    static func averageBitRate(width: Int, height: Int, fps: Double) -> Int {
-        let scale = Double(width) * Double(height) / (1920 * 1080) * fps / 30
-        return Int(min(120_000_000, max(1_000_000, 8_000_000 * scale)))
-    }
+
 }
 
-struct LockScreenExportConfiguration: Sendable {
-    var settings: GWLockScreenExportSettings = .init()
+struct LockScreenRenderConfiguration: Sendable {
+    var settings: GWLockScreenRenderSettings = .init()
     /// Actual desktop render size; nil uses the source size (also useful in isolated tests).
     var wallpaperWidth: Int?
     var wallpaperHeight: Int?
     var wallpaperFPS: Double?
 
-    func resolve(source: LockScreenExportSpecification) throws -> LockScreenExportSpecification {
+    func resolve(source: LockScreenRenderSpecification) throws -> LockScreenRenderSpecification {
         guard source.width >= 2, source.height >= 2,
               source.width <= 65_536, source.height <= 65_536,
               source.framesPerSecond.isFinite, source.framesPerSecond > 0 else {
-            throw LockScreenExportConfigurationFailure(message: "无法确定素材原始分辨率或帧率，已停止锁屏导出。")
+            throw LockScreenRenderConfigurationFailure(message: "无法确定素材原始分辨率或帧率，已停止准备锁屏。")
         }
         let width = Double(source.width), height = Double(source.height)
         var scale = 1.0
@@ -117,14 +98,14 @@ struct LockScreenExportConfiguration: Sendable {
         scale = min(scale, 8192 / width, 8192 / height, sqrt(16_777_216 / (width * height)))
         let outputWidth = Int((width * scale).rounded(.down)) / 2 * 2
         let outputHeight = Int((height * scale).rounded(.down)) / 2 * 2
-        guard LockScreenExportSpecification.validDimensions(width: outputWidth, height: outputHeight) else {
-            throw LockScreenExportConfigurationFailure(message: "素材画面比例无法生成有效的锁屏视频。")
+        guard LockScreenRenderSpecification.validDimensions(width: outputWidth, height: outputHeight) else {
+            throw LockScreenRenderConfigurationFailure(message: "素材画面比例无法生成有效的锁屏画面。")
         }
         return .init(width: outputWidth, height: outputHeight, framesPerSecond: min(fps, 240))
     }
 }
 
-struct LockScreenExportConfigurationFailure: LocalizedError, Sendable {
+struct LockScreenRenderConfigurationFailure: LocalizedError, Sendable {
     let message: String
     var errorDescription: String? { message }
 }

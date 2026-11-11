@@ -31,6 +31,16 @@ enum DisplayPlaybackPolicyIntegrationTests {
         check(playback.apply(item: item, to: nil) == nil, "both real video sessions start through the production integration")
         playlist.setItems([item.id]); playlist.startRotation()
         let saved = try Data(contentsOf: storage.libraryFile)
+        let mirroredCoverage = GWMaximizedWindowGeometry.coveredDisplays(
+            frames: ["A": frame], windows: [frame], mirroredDisplaySources: ["B": "A"]
+        )
+        policy.handle(.maximizedDisplaysChanged(mirroredCoverage))
+        check(!playback.isPlayingAnywhere && playlist.isSuspended,
+              "covering a mirror source pauses both real players and rotation")
+        check(try Data(contentsOf: storage.libraryFile) == saved, "mirror pause preserves both saved playback intents")
+        policy.handle(.maximizedDisplaysChanged([]))
+        check(playback.session(for: "A")!.isPlaying && playback.session(for: "B")!.isPlaying && !playlist.isSuspended,
+              "uncovering the mirror source restores both players and rotation")
         policy.handle(.maximizedDisplaysChanged(["A"]))
         check(!playback.session(for: "A")!.isPlaying && playback.session(for: "B")!.isPlaying,
               "covering A pauses only A through the real policy callback")

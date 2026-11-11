@@ -30,7 +30,17 @@ struct WebWallpaperPreviewView: View {
                     .background(.black.opacity(0.8), in: RoundedRectangle(cornerRadius: 12))
             }
         }
-        .task(id: "\(item.id):\(revision)") { await model.update(item: item, paused: isPaused, storage: storage, wallpaperFPS: wallpaperFPS) }
+        .overlay(alignment: .bottomLeading) {
+            if onTransitionSnapshot == nil, let runtime = model.runtime, !runtime.diagnostics.isEmpty {
+                Menu {
+                    ForEach(runtime.diagnostics, id: \.self) { Text($0) }
+                } label: {
+                    Label("兼容提示 (\(runtime.diagnostics.count))", systemImage: "info.circle")
+                        .font(.caption).padding(6)
+                }.menuStyle(.borderlessButton).fixedSize().padding(8)
+            }
+        }
+        .task(id: "\(item.id):\(revision):\(item.webAllowHTTPS == true)") { await model.update(item: item, paused: isPaused, storage: storage, wallpaperFPS: wallpaperFPS) }
         .task(id: model.runtime.map(ObjectIdentifier.init)) {
             guard let onTransitionSnapshot, let runtime = model.runtime else { return }
             let image = await model.transitionSnapshot(runtime)
@@ -67,7 +77,7 @@ private final class WebWallpaperPreviewModel {
     private var hostToken: UUID?
 
     func update(item: WallpaperItem, paused: Bool, storage: AppStorage, wallpaperFPS: Int = 30) async {
-        if itemID != item.id { dispose(); itemID = item.id }
+        if itemID != item.id || runtime?.capabilities.remoteResources != (item.webAllowHTTPS == true) { dispose(); itemID = item.id }
         desiredPaused = paused
         desiredWallpaperFPS = min(max(wallpaperFPS, 1), 240)
         generation += 1
@@ -85,7 +95,7 @@ private final class WebWallpaperPreviewModel {
                 return
             }
             let project = try WebWallpaperProjectDescriptor(projectURL: item.fileURL)
-            let runtime = try WebWallpaperRuntime(projectURL: project.projectURL, entryURL: project.entryURL, propertiesJSON: Data("{}".utf8))
+            let runtime = try WebWallpaperRuntime(projectURL: project.projectURL, entryURL: project.entryURL, propertiesJSON: Data("{}".utf8), allowHTTPS: item.webAllowHTTPS == true, mutedPlayback: true)
             try runtime.setFrameRateLimit(desiredWallpaperFPS)
             try runtime.configureResourceManifest(config.manifest)
             try runtime.applyPropertiesJSON(config.payload)

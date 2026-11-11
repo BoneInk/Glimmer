@@ -40,7 +40,7 @@ import Foundation
         let original = try PropertyListSerialization.data(fromPropertyList: fixture, format: .binary, options: 0)
         let displayA = "11111111-1111-1111-1111-111111111111"
         let displayB = "22222222-2222-2222-2222-222222222222"
-        let perDisplayFixture: [String: Any] = ["SystemDefault": node, "AllSpacesAndDisplays": [:],
+        let perDisplayFixture: [String: Any] = ["SystemDefault": node,
             "Displays": [displayA: node, displayB: node], "Spaces": ["space-a": ["Displays": [displayA: node, displayB: node]]],
             "UnknownRoot": Data([9, 8, 7])]
         let perDisplayData = try PropertyListSerialization.data(fromPropertyList: perDisplayFixture, format: .binary, options: 0)
@@ -61,9 +61,23 @@ import Foundation
         let inheritedObject = try PropertyListSerialization.propertyList(from: LockScreenStorePatcher.patch(inheritedData,
             displayIDs: [displayA], onlineDisplayIDs: [displayA, displayB]), format: nil) as! [String: Any]
         let inheritedDisplays = inheritedObject["Displays"] as! [String: Any]
-        check((inheritedObject["AllSpacesAndDisplays"] as? [String: Any])?.isEmpty == true, "individual setting splits the all-displays selection")
+        check(inheritedObject["AllSpacesAndDisplays"] as? String == "$null", "individual setting uses the native null sentinel instead of emitting a node without required Type")
         check(NSDictionary(dictionary: inheritedDisplays[displayB] as! [String: Any]).isEqual(to: node), "splitting shared selection retains B's inherited desktop and screen saver")
         check(NSDictionary(dictionary: ((inheritedDisplays[displayA] as! [String: Any])["Idle"] as! [String: Any])).isEqual(to: node["Idle"] as! [String: Any]), "selected A also retains its screen saver")
+        var legacyEmptyShared = perDisplayFixture
+        legacyEmptyShared["AllSpacesAndDisplays"] = [String: Any]()
+        let legacyEmptyData = try PropertyListSerialization.data(fromPropertyList: legacyEmptyShared, format: .binary, options: 0)
+        let repairedEmpty = try PropertyListSerialization.propertyList(from: LockScreenStorePatcher.patch(legacyEmptyData,
+            displayIDs: [displayA], onlineDisplayIDs: [displayA, displayB]), format: nil) as! [String: Any]
+        check(repairedEmpty["AllSpacesAndDisplays"] as? String == "$null", "reapplying repairs an empty shared selection left by previous builds")
+        let sharedSpaceData = try PropertyListSerialization.data(fromPropertyList: ["SystemDefault": node,
+            "AllSpacesAndDisplays": node, "Spaces": ["space-a": ["AllSpacesAndDisplays": node]]], format: .binary, options: 0)
+        let sharedSpaceObject = try PropertyListSerialization.propertyList(from: LockScreenStorePatcher.patch(sharedSpaceData,
+            displayIDs: [displayA], onlineDisplayIDs: [displayA, displayB]), format: nil) as! [String: Any]
+        let splitSpace = (sharedSpaceObject["Spaces"] as! [String: Any])["space-a"] as! [String: Any]
+        check(splitSpace["AllSpacesAndDisplays"] as? String == "$null", "Space-specific shared selections also use the native null sentinel")
+        let splitSpaceDisplays = splitSpace["Displays"] as! [String: Any]
+        check(NSDictionary(dictionary: splitSpaceDisplays[displayB] as! [String: Any]).isEqual(to: node), "splitting a Space preserves the other display's original roles")
         do { _ = try LockScreenStorePatcher.patch(original, displayIDs: []); preconditionFailure("empty target became global") } catch { checks += 1 }
         do { _ = try LockScreenStorePatcher.patch(original, displayIDs: ["session-display:temporary"]); preconditionFailure("unstable target accepted") } catch { checks += 1 }
         let patched = try LockScreenStorePatcher.patch(original)
@@ -115,7 +129,7 @@ import Foundation
         try LockScreenOwnedFiles.makePrivateDirectory(linkedStore)
         try linkedOriginal.write(to: linkedStore.appendingPathComponent("Index.plist"))
         let linkedTransaction = LockScreenStoreTransaction(storeDirectory: linkedStore, snapshotURL: root.appendingPathComponent("linked-snapshot.json"))
-        let linkedSnapshot = try linkedTransaction.apply(configuration: Data("linked-config".utf8), previousConfiguration: nil, assetID: UUID())
+        let linkedSnapshot = try linkedTransaction.apply(configuration: Data("linked-config".utf8), previousConfiguration: nil, assetID: UUID(), sharedDirectory: root.appendingPathComponent("Shared"))
         try linkedTransaction.restore(linkedSnapshot)
         let linkedRestored = try Data(contentsOf: linkedStore.appendingPathComponent("Index.plist"))
         check(linkedRestored == linkedOriginal, "snapshot restores exact original Linked/Type/stale Idle structure")
@@ -123,7 +137,7 @@ import Foundation
         let snapshotURL = root.appendingPathComponent("snapshot.json")
         let transaction = LockScreenStoreTransaction(storeDirectory: store, snapshotURL: snapshotURL)
         let config = Data("config".utf8)
-        let snapshot = try transaction.apply(configuration: config, previousConfiguration: nil, assetID: UUID())
+        let snapshot = try transaction.apply(configuration: config, previousConfiguration: nil, assetID: UUID(), sharedDirectory: root.appendingPathComponent("Shared"))
         try transaction.restore(snapshot)
         for name in ["Index.plist", "Index2.plist"] {
             let restored = try Data(contentsOf: store.appendingPathComponent(name))
@@ -137,7 +151,7 @@ import Foundation
             if writes == 2 { throw Injected.failure }
             try data.write(to: url, options: .atomic)
         })
-        do { _ = try failing.apply(configuration: config, previousConfiguration: nil, assetID: UUID()); preconditionFailure("missing failure") }
+        do { _ = try failing.apply(configuration: config, previousConfiguration: nil, assetID: UUID(), sharedDirectory: root.appendingPathComponent("Shared")); preconditionFailure("missing failure") }
         catch { checks += 1 }
         let savedSnapshotAfterFailure = try Data(contentsOf: snapshotURL)
         check(savedSnapshotBeforeFailure == savedSnapshotAfterFailure, "failed apply preserves previous successful restore snapshot")
@@ -151,7 +165,7 @@ import Foundation
             let current = try Data(contentsOf: store.appendingPathComponent(name))
             check(current == original, "failed multi-file apply rolls back \(name)")
         }
-        let applied = try transaction.apply(configuration: config, previousConfiguration: nil, assetID: UUID())
+        let applied = try transaction.apply(configuration: config, previousConfiguration: nil, assetID: UUID(), sharedDirectory: root.appendingPathComponent("Shared"))
         let activeBytes = applied.appliedFiles["Index.plist"]!
         var timestampOnly = try editingRole(activeBytes, role: "Desktop") { role in
             var role = role; role["LastUse"] = Date(timeIntervalSince1970: 9_000); role["LastSet"] = Date(timeIntervalSince1970: 8_000); return role
@@ -282,6 +296,50 @@ import Foundation
         await warningRestart.restorePrevious()
         check(warningRestart.state == .restored && warningRestart.lastError != nil, "restore reload failure preserves restored state")
         check(!FileManager.default.fileExists(atPath: warningConfigURL.path), "restore reload failure leaves restored config consistent")
+        // Retired state must never resurrect a recorded project or its restore action.
+        let retiredStorage = AppStorage(root: root.appendingPathComponent("Retired"))
+        let retiredRoot = retiredStorage.root.appendingPathComponent("ExperimentalLockScreen")
+        try LockScreenOwnedFiles.makePrivateDirectory(retiredRoot)
+        let stateURL = backendRoot.appendingPathComponent("state.json")
+        var oldState = try JSONSerialization.jsonObject(with: Data(contentsOf: stateURL)) as! [String: Any]
+        oldState.removeValue(forKey: "schemaVersion")
+        try JSONSerialization.data(withJSONObject: oldState).write(to: retiredRoot.appendingPathComponent("state.json"))
+        var oldSnapshot = try JSONSerialization.jsonObject(with: Data(contentsOf: backendRoot.appendingPathComponent("previous-settings.json"))) as! [String: Any]
+        oldSnapshot.removeValue(forKey: "schemaVersion")
+        oldSnapshot.removeValue(forKey: "sharedDirectoryPath")
+        let oldSnapshotData = try JSONSerialization.data(withJSONObject: oldSnapshot)
+        try oldSnapshotData.write(to: retiredRoot.appendingPathComponent("previous-settings.json"))
+        try oldSnapshotData.write(to: retiredRoot.appendingPathComponent("pending-old.json"))
+        let retired = ExperimentalLockScreenCoordinator.review(storage: retiredStorage)
+        check(retired.state == .idle && retired.preparedAsset == nil && !retired.canRestorePrevious,
+              "old recorded state and restore snapshots are ignored")
+
+        let webRoot = root.appendingPathComponent("LiveWeb")
+        try LockScreenOwnedFiles.makePrivateDirectory(webRoot)
+        let webProject = webRoot.appendingPathComponent("project.json")
+        try Data(#"{"type":"web","file":"index.html","general":{"properties":{}}}"#.utf8).write(to: webProject)
+        try Data("<html><body>Live clock</body></html>".utf8).write(to: webRoot.appendingPathComponent("index.html"))
+        var webItem = WallpaperItem(title: "Live Web", filePath: webProject.path, contentKind: .web)
+        let live = ExperimentalLockScreenCoordinator(storage: retiredStorage, environment: .review(storage: retiredStorage),
+            renderConfiguration: { _, _ in .init(wallpaperWidth: 640, wallpaperHeight: 360, wallpaperFPS: 24) })
+        await live.prepare(item: webItem)
+        check(live.state == .prepared && live.preparedAsset?.liveRecipe?.kind == .web,
+              "Web preparation always produces a live project")
+        check(live.preparedAsset?.liveRecipe?.allowHTTPS == false, "unset per-item HTTPS stays offline")
+        let liveAssetDirectory = live.preparedAsset!.videoURL.deletingLastPathComponent().deletingLastPathComponent()
+        let liveFiles = FileManager.default.enumerator(at: liveAssetDirectory, includingPropertiesForKeys: nil)!.allObjects as! [URL]
+        check(!liveFiles.contains { $0.pathExtension == "mp4" }, "live preparation produces no recorded video")
+        await live.applyPrepared()
+        check(live.state == .applied && live.canRestorePrevious, "new live apply replaces obsolete snapshots without migration")
+        let liveEnvironment = ExperimentalLockScreenEnvironment.review(storage: retiredStorage)
+        let submitted = try JSONSerialization.jsonObject(with: Data(contentsOf: liveEnvironment.sharedDirectory.appendingPathComponent("config.json"))) as! [String: Any]
+        check(submitted["schemaVersion"] as? Int == 2 && submitted["videoFileName"] as? String == "",
+              "live extension configuration never selects a video file")
+        webItem.webAllowHTTPS = true
+        await live.prepare(item: webItem)
+        check(live.preparedAsset?.liveRecipe?.allowHTTPS == true, "live recipe follows the per-item HTTPS choice")
+        await live.restorePrevious()
+        check(live.state == .restored, "live rollback preserves the current transaction contract")
         print("ExperimentalLockScreenTests: \(checks) checks passed; temp-only fixtures, generated video; no real pluginkit/system store/WallpaperAgent actions")
     }
 }

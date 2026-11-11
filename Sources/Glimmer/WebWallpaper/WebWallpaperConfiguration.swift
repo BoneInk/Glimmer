@@ -16,6 +16,9 @@ struct WebWallpaperCapabilities: Sendable {
     let remoteResources: Bool
     init(remoteResources: Bool = false) { self.remoteResources = remoteResources }
     let childFrames = false
+    let audioListenerAdapter = true
+    let systemAudioCapture = false
+    let systemMediaIntegration = false
 }
 
 struct WebWallpaperProjectLocation: Sendable {

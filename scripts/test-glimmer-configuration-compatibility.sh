@@ -14,7 +14,7 @@ swiftc -disable-sandbox \
   "$ROOT/Sources/Glimmer/Policies/GWModuleSupport.swift" \
   "$ROOT/Sources/Glimmer/Policies/GWPolicyModels.swift" \
   "$ROOT/Sources/Glimmer/Playlist/GWPlaylistModels.swift" \
-  "$ROOT/Sources/Glimmer/LockScreen/LockScreenExportSettings.swift" \
+  "$ROOT/Sources/Glimmer/LockScreen/LockScreenRenderSettings.swift" \
   "$ROOT/Sources/Glimmer/Settings/GWSettingsModels.swift" \
   "$ROOT/Sources/Glimmer/Settings/GWConfigurationTransfer.swift" \
   "$ROOT/Tests/GlimmerConfigurationCompatibilityTests.swift" \

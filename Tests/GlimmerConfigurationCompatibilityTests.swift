@@ -34,6 +34,28 @@ struct GlimmerConfigurationCompatibilityTests {
         try check(GlimmerIdentity.legacyConfigurationFormat == "glasswallpaper.configuration",
                   "legacy configuration compatibility input is exact")
 
+        let temporaryID = "session-display:" + UUID().uuidString
+        let playback = GWPlaybackConfiguration(displays: [temporaryID: .default, "legacy-display-7": .default])
+        let filtered = playback.normalized()
+        try check(filtered.displays[temporaryID] == nil && filtered.displays["legacy-display-7"] != nil,
+                  "normalization filters only temporary display identities")
+        let playbackExport = try GWConfigurationTransfer.encodeExport(GWConfigurationEnvelope(playback: playback))
+        try check(!String(decoding: playbackExport, as: UTF8.self).contains(temporaryID),
+                  "production export strips temporary display identities")
+        let rawImport = try GWJSONFileStore.makeEncoder().encode(GWConfigurationEnvelope(playback: playback))
+        let importedPlayback = try GWConfigurationTransfer.validateImport(data: rawImport).playback
+        try check(importedPlayback?.displays[temporaryID] == nil && importedPlayback?.displays["legacy-display-7"] != nil,
+                  "production importer strips temporary identities and preserves legacy stable keys")
+        var unsafeObject = try rootObject(rawImport)
+        unsafeObject["playback"] = ["displays": [temporaryID: ["password": "test-only"]]]
+        do {
+            _ = try GWConfigurationTransfer.validateImport(data: JSONSerialization.data(withJSONObject: unsafeObject))
+            throw ConfigurationTestFailure(description: "temporary display keys must not hide nested credentials")
+        } catch GWConfigurationError.credentialContent {
+            checks += 1
+            print("PASS temporary display keys still reject nested credential fields")
+        }
+
         exportedObject["format"] = "com.example.unrelated"
         let unrelated = try JSONSerialization.data(
             withJSONObject: exportedObject, options: [.sortedKeys, .withoutEscapingSlashes])

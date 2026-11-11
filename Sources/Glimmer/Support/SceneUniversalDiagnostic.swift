@@ -2,8 +2,6 @@
 import AppKit
 import Foundation
 import Darwin
-import CoreVideo
-import IOSurface
 
 /// Exact packaged client with an offscreen host; no library/desktop/credentials.
 @MainActor
@@ -128,57 +126,6 @@ enum SceneUniversalDiagnostic {
                     throw UniversalSceneBackendError.interrupted
                 }
             }
-            if arguments.contains("--lock-screen-export") {
-                guard let exportPath = parameter("--output"), exportPath.hasPrefix("/") else {
-                    throw UniversalSceneBackendError.invalidProject
-                }
-                let outputDirectory = URL(fileURLWithPath: exportPath, isDirectory: true)
-                try FileManager.default.createDirectory(at: outputDirectory,
-                    withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-                let payload = try parameter("--properties").map {
-                    try Data(contentsOf: URL(fileURLWithPath: $0))
-                } ?? Data("{}".utf8)
-                let exporter = SceneWallpaperLockScreenExporter()
-                let recorded = try await exporter.export(projectURL: URL(fileURLWithPath: projectPath),
-                    authorPayload: payload, directory: outputDirectory)
-                let probe = try await VideoProbe.probe(url: recorded.videoURL)
-                let codec = (probe.videoCodec ?? "").lowercased()
-                let videoFormatValid = probe.isPlayable && !probe.hasAudioTrack
-                    && abs(probe.durationSeconds - 10) <= 0.2
-                    && probe.pixelWidth == 1920 && probe.pixelHeight == 1080
-                    && (codec.contains("avc") || codec.contains("h264"))
-                    && recorded.renderedFrameCount == 300 && recorded.visibleFrameCount > 0
-                guard videoFormatValid else { throw UniversalSceneBackendError.invalidFrame }
-                let animated = recorded.distinctFrameCount > 1 && recorded.maximumFrameDifference >= 0.35
-                if !arguments.contains("--allow-static") {
-                    guard animated else { throw UniversalSceneBackendError.invalidFrame }
-                }
-                let orientationPassed = try await exportOrientationProbe()
-                guard orientationPassed else { throw UniversalSceneBackendError.invalidFrame }
-                let targetPID = target.backendProcessStatus?.helperPID
-                let lockScreenReport: [String: Any] = [
-                    "videoPath": recorded.videoURL.path,
-                    "durationSeconds": probe.durationSeconds,
-                    "width": probe.pixelWidth, "height": probe.pixelHeight,
-                    "codec": probe.videoCodec ?? "unknown",
-                    "hasAudioTrack": probe.hasAudioTrack,
-                    "renderedFrames": recorded.renderedFrameCount,
-                    "distinctFrames": recorded.distinctFrameCount,
-                    "visibleFrames": recorded.visibleFrameCount,
-                    "maximumFrameDifference": recorded.maximumFrameDifference,
-                    "firstElapsedSeconds": recorded.firstElapsedSeconds,
-                    "orientationPassed": orientationPassed,
-                    "usedIndependentHelper": recorded.helperPID != nil
-                        && recorded.helperPID != targetPID,
-                    "systemLockScreenTouched": false,
-                    "userLibraryTouched": false
-                ]
-                report["lockScreenExport"] = lockScreenReport
-            }
-            if arguments.contains("--verify-lock-cache") {
-                report["lockScreenCache"] = try await verifyLockCache(projectURL: descriptor.projectURL,
-                    output: output)
-            }
             target.dispose()
             report["success"] = true
             report["disposed"] = target.state == .disposed
@@ -198,106 +145,5 @@ enum SceneUniversalDiagnostic {
         return report["success"] as? Bool == true ? 0 : 1
     }
 
-    private final class CacheProbeState { var exports = 0 }
-
-    /// Uses the production material provider and exporter, without the system
-    /// lock-screen coordinator. All writable state stays in this diagnostic root.
-    private static func verifyLockCache(projectURL: URL, output: URL) async throws -> [String: Any] {
-        let storage = AppStorage(root: output.appendingPathComponent("IsolatedStorage", isDirectory: true))
-        let item = WallpaperItem(title: "Cache diagnostic", filePath: projectURL.path, contentKind: .scene)
-        let settings = RenderedLockScreenVideoCache.Settings(signature: "scene-h264-v1")
-        let state = CacheProbeState()
-        let root = storage.root.appendingPathComponent("SceneVideoCache", isDirectory: true)
-        let material = try await SceneWallpaperLockScreenConfiguration.material(item: item, storage: storage)
-        let repeated = try await SceneWallpaperLockScreenConfiguration.material(item: item, storage: storage)
-        guard material.identityHash == repeated.identityHash, material.payload == repeated.payload else {
-            throw RenderedLockScreenVideoFailure(message: "相同作者参数的缓存标识不稳定。")
-        }
-        func makeCache() -> RenderedLockScreenVideoCache {
-            RenderedLockScreenVideoCache(root: root, settings: settings,
-                materialProvider: {
-                    try await SceneWallpaperLockScreenConfiguration.material(item: item, storage: storage)
-                }, exportOperation: { payload, directory, progress in
-                    state.exports += 1
-                    return try await SceneWallpaperLockScreenExporter(settings: settings)
-                        .export(item: item, authorPayload: payload, directory: directory, progress: progress).videoURL
-                })
-        }
-        let first = try await makeCache().withVideo { $0 }
-        let second = try await makeCache().withVideo { $0 }
-        let probe = try await VideoProbe.probe(url: second)
-        guard first == second, state.exports == 1, probe.isPlayable,
-              !probe.hasAudioTrack, probe.pixelWidth == 1920, probe.pixelHeight == 1080 else {
-            throw RenderedLockScreenVideoFailure(message: "真实 Scene 锁屏缓存复用检查失败。")
-        }
-        return ["exports": state.exports, "sameVideoReused": first == second,
-            "stableProductionMaterial": true, "videoPath": second.path,
-            "durationSeconds": probe.durationSeconds, "width": probe.pixelWidth,
-            "height": probe.pixelHeight, "hasAudioTrack": probe.hasAudioTrack,
-            "systemLockScreenTouched": false, "userLibraryTouched": false]
-    }
-
-    /// Offscreen Metal probe for the export orientation contract: a synthetic
-    /// top-red/bottom-blue frame must stay upright in the encoder pixel buffer.
-    private static func exportOrientationProbe() async throws -> Bool {
-        let width = 64, height = 32, bytesPerRow = width * 4
-        let surfaceProperties: [String: Any] = [
-            kIOSurfaceWidth as String: width,
-            kIOSurfaceHeight as String: height,
-            kIOSurfaceBytesPerRow as String: bytesPerRow,
-            kIOSurfacePixelFormat as String: 0x4247_5241
-        ]
-        guard let surface = IOSurfaceCreate(surfaceProperties as CFDictionary) else { return false }
-        IOSurfaceLock(surface, [], nil)
-        do {
-            let base = IOSurfaceGetBaseAddress(surface)
-            let pixels = base.assumingMemoryBound(to: UInt8.self)
-            let surfaceRow = IOSurfaceGetBytesPerRow(surface)
-            for y in 0..<height {
-                for x in 0..<width {
-                    let offset = y * surfaceRow + x * 4
-                    let red = y < height / 2
-                    pixels[offset] = red ? 0 : 255
-                    pixels[offset + 1] = 0
-                    pixels[offset + 2] = red ? 255 : 0
-                    pixels[offset + 3] = 255
-                }
-            }
-        }
-        IOSurfaceUnlock(surface, [], nil)
-        var optional: CVPixelBuffer?
-        let attributes: [String: Any] = [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-            kCVPixelBufferWidthKey as String: width,
-            kCVPixelBufferHeightKey as String: height,
-            kCVPixelBufferIOSurfacePropertiesKey as String: [:],
-            kCVPixelBufferMetalCompatibilityKey as String: true
-        ]
-        guard CVPixelBufferCreate(kCFAllocatorDefault, width, height,
-                                  kCVPixelFormatType_32BGRA, attributes as CFDictionary, &optional) == kCVReturnSuccess,
-              let buffer = optional else { return false }
-        let token = SceneFrameToken(sessionID: UUID(), generation: 1, sequence: 1,
-            slotID: UUID(), width: width, height: height, bytesPerRow: bytesPerRow,
-            pixelFormat: "BGRA8Unorm")
-        let host = try SceneBackendMetalHostView.make()
-        try await host.copyFrame(surface: surface, token: token, into: buffer)
-        CVPixelBufferLockBaseAddress(buffer, .readOnly)
-        defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
-        guard let output = CVPixelBufferGetBaseAddress(buffer) else { return false }
-        let out = output.assumingMemoryBound(to: UInt8.self)
-        let row = CVPixelBufferGetBytesPerRow(buffer)
-        func mean(rows: Range<Int>) -> (red: Double, blue: Double) {
-            var red = 0.0, blue = 0.0, count = 0.0
-            for y in rows {
-                for x in stride(from: 0, to: width, by: 4) {
-                    let offset = y * row + x * 4
-                    blue += Double(out[offset]); red += Double(out[offset + 2]); count += 1
-                }
-            }
-            return (red / count, blue / count)
-        }
-        let top = mean(rows: 0..<(height / 4)), bottom = mean(rows: (height * 3 / 4)..<height)
-        return top.red > 180 && top.blue < 60 && bottom.blue > 180 && bottom.red < 60
-    }
 }
 #endif

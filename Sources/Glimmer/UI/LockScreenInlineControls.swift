@@ -80,10 +80,10 @@ struct LockScreenApplyControls: View {
     private var lockScreenHelp: String {
         let target = displayIDs == nil ? "应用到全部显示器。" : "仅应用到所选显示器。"
         if item.isSceneWallpaper {
-            return target + "按设置中的播放方式应用 Scene；实时渲染保留时间与脚本更新，录制模式播放已保存的视频"
+            return target + "使用 Scene 实时渲染，保留时间与脚本更新"
         }
         if item.isWebWallpaper {
-            return target + "按设置中的播放方式应用网页；实时模式保留时间更新，天气联网需开启锁屏网页 HTTPS 访问"
+            return target + "使用网页实时渲染；天气联网需开启该作品的 HTTPS 访问"
         }
         return target + "设为动态锁屏，同时更新系统桌面底图"
     }

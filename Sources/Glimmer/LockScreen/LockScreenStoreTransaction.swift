@@ -101,7 +101,12 @@ enum LockScreenStorePatcher {
             if hasSurface(shared) {
                 // The shared role overrides individual nodes until it is cleared.
                 for key in displays.keys { displays[key] = shared }
-                output["AllSpacesAndDisplays"] = [String: Any]()
+            }
+            // The native null sentinel falls through to Displays. An empty
+            // dictionary is not a valid selection: WallpaperAgent requires Type
+            // on every present node and rejects the entire index without it.
+            if hasSurface(shared) || shared.isEmpty {
+                output["AllSpacesAndDisplays"] = "$null"
             }
             for id in targets {
                 let key = displays.keys.first { $0.uppercased() == id } ?? id
@@ -184,6 +189,7 @@ enum LockScreenStorePatcher {
 }
 
 struct LockScreenStoreSnapshot: Codable {
+    let schemaVersion: Int
     let id: UUID
     let originalFiles: [String: Data]
     let appliedHashes: [String: String]
@@ -191,13 +197,12 @@ struct LockScreenStoreSnapshot: Codable {
     let previousSharedConfiguration: Data?
     let appliedConfigurationHash: String
     let assetID: UUID
-    /// Explicit source lets an old snapshot restore from the old shared root
-    /// without silently redirecting or rewriting the system's current choice.
-    let sharedDirectoryPath: String?
+    let sharedDirectoryPath: String
 
     init(id: UUID, originalFiles: [String: Data], appliedHashes: [String: String],
          appliedFiles: [String: Data], previousSharedConfiguration: Data?,
-         appliedConfigurationHash: String, assetID: UUID, sharedDirectoryPath: String? = nil) {
+         appliedConfigurationHash: String, assetID: UUID, sharedDirectoryPath: String) {
+        schemaVersion = 2
         self.id = id
         self.originalFiles = originalFiles
         self.appliedHashes = appliedHashes
@@ -215,32 +220,23 @@ enum LockScreenSharedConfigurationLocator {
         let data: Data
     }
 
-    /// Locates the exact applied configuration by hash. Only the current shared
-    /// directory, the explicitly supplied legacy directory, or a snapshot path
-    /// equal to one of those may be read. Missing/mismatched data is an error.
-    static func locate(snapshot: LockScreenStoreSnapshot, preferredDirectory: URL,
-                       legacyDirectory: URL?) throws -> Location {
-        var candidates: [URL] = []
-        if let path = snapshot.sharedDirectoryPath {
-            candidates.append(URL(fileURLWithPath: path, isDirectory: true))
+    /// Only snapshots written for the current shared directory can be restored.
+    static func locate(snapshot: LockScreenStoreSnapshot, preferredDirectory: URL) throws -> Location {
+        let directory = preferredDirectory.standardizedFileURL
+        guard snapshot.schemaVersion == 2, snapshot.sharedDirectoryPath == directory.path else {
+            throw ExperimentalLockScreenFailure(message: "锁屏备份不是当前格式，无法恢复。")
         }
-        candidates.append(preferredDirectory)
-        if let legacyDirectory { candidates.append(legacyDirectory) }
-        let trusted = Set([preferredDirectory, legacyDirectory].compactMap { $0?.standardizedFileURL.path })
-        var seen = Set<String>()
-        for directory in candidates {
-            let standardized = directory.standardizedFileURL
-            guard trusted.contains(standardized.path), seen.insert(standardized.path).inserted else { continue }
-            let configURL = standardized.appendingPathComponent("config.json", isDirectory: false)
-            var info = stat()
-            guard lstat(configURL.path, &info) == 0,
-                  info.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG) else { continue }
-            let data = try Data(contentsOf: configURL)
-            if LockScreenStorePatcher.digest(data) == snapshot.appliedConfigurationHash {
-                return Location(directory: standardized, data: data)
-            }
+        let configURL = directory.appendingPathComponent("config.json", isDirectory: false)
+        var info = stat()
+        guard lstat(configURL.path, &info) == 0,
+              info.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG) else {
+            throw ExperimentalLockScreenFailure(message: "当前锁屏配置不存在，未修改任何设置。")
         }
-        throw ExperimentalLockScreenFailure(message: "当前扩展视频配置发生变化或已不在可信共享目录；为保护当前选择，不再自动恢复。")
+        let data = try Data(contentsOf: configURL)
+        guard LockScreenStorePatcher.digest(data) == snapshot.appliedConfigurationHash else {
+            throw ExperimentalLockScreenFailure(message: "当前锁屏配置发生变化；为保护当前选择，不再自动恢复。")
+        }
+        return Location(directory: directory, data: data)
     }
 }
 
@@ -252,7 +248,7 @@ struct LockScreenStoreTransaction {
     var write: (Data, URL) throws -> Void = { data, url in try data.write(to: url, options: .atomic) }
 
     func apply(configuration: Data, previousConfiguration: Data?, assetID: UUID,
-               sharedDirectory: URL? = nil, displayIDs: Set<String>? = nil,
+               sharedDirectory: URL, displayIDs: Set<String>? = nil,
                onlineDisplayIDs: Set<String> = []) throws -> LockScreenStoreSnapshot {
         var originals: [String: Data] = [:]
         var outputs: [String: Data] = [:]
@@ -272,7 +268,7 @@ struct LockScreenStoreTransaction {
             appliedFiles: outputs,
             previousSharedConfiguration: previousConfiguration,
             appliedConfigurationHash: LockScreenStorePatcher.digest(configuration), assetID: assetID,
-            sharedDirectoryPath: sharedDirectory?.standardizedFileURL.path)
+            sharedDirectoryPath: sharedDirectory.standardizedFileURL.path)
         let snapshotData = try JSONEncoder().encode(snapshot)
         let pendingURL = snapshotURL.deletingLastPathComponent().appendingPathComponent("pending-\(snapshot.id.uuidString).json")
         try snapshotData.write(to: pendingURL, options: .atomic)
@@ -311,7 +307,7 @@ struct LockScreenStoreTransaction {
     }
 
     func validateRestoration(_ snapshot: LockScreenStoreSnapshot, allowOriginal: Bool = false) throws {
-        guard !snapshot.originalFiles.isEmpty,
+        guard snapshot.schemaVersion == 2, !snapshot.originalFiles.isEmpty,
               Set(snapshot.originalFiles.keys).isSubset(of: ["Index.plist", "Index2.plist"]),
               Set(snapshot.originalFiles.keys) == Set(snapshot.appliedHashes.keys),
               Set(snapshot.originalFiles.keys) == Set(snapshot.appliedFiles.keys) else {
@@ -359,7 +355,8 @@ struct LockScreenStoreTransaction {
     private func archivePreviousSnapshot() throws {
         guard FileManager.default.fileExists(atPath: snapshotURL.path) else { return }
         let previous = try Data(contentsOf: snapshotURL)
-        let snapshot = try JSONDecoder().decode(LockScreenStoreSnapshot.self, from: previous)
+        guard let snapshot = try? JSONDecoder().decode(LockScreenStoreSnapshot.self, from: previous),
+              snapshot.schemaVersion == 2 else { return }
         let directory = snapshotURL.deletingLastPathComponent().appendingPathComponent("history", isDirectory: true)
         try LockScreenOwnedFiles.makePrivateDirectory(directory)
         let destination = directory.appendingPathComponent("\(snapshot.id.uuidString).json")

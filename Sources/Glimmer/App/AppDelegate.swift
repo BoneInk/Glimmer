@@ -150,12 +150,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ? SteamContentKeychainSessionStore() : nil
         workshop = WorkshopCoordinator(account: SteamAccountManager(sessionStore: steamSessionStore))
         lockScreenActions = LockScreenActionController(coordinator: ExperimentalLockScreenCoordinator(storage: storage,
-            exportConfiguration: { [weak self] item, targetDisplayID in
+            renderConfiguration: { [weak self] item, targetDisplayID in
                 let preferences = self?.settings?.preferences ?? .default
                 let displayID = targetDisplayID.flatMap { self?.displayRegistry?.descriptor(for: $0)?.displayID }
                     ?? self?.playback?.sessions.values.first(where: { $0.item.id == item.id })?.display.displayID
                     ?? CGMainDisplayID()
-                return LockScreenExportSourceResolver.desktopConfiguration(settings: preferences.lockScreenExport,
+                return LockScreenRenderSourceResolver.desktopConfiguration(settings: preferences.lockScreenRender,
                     wallpaperFPS: preferences.wallpaperFPS, displayID: displayID)
             }))
         workshop.isDynamicLockScreenBusy = { [weak self] in self?.lockScreenActions?.isBusy == true }
@@ -218,7 +218,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return .failed("应用正在退出，未设置壁纸") }
             let screenID = (self.libraryWindow?.screen ?? NSScreen.main).flatMap { screen in
                 (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
-            }.flatMap(DisplayRegistry.uuidString(for:))
+            }.map(DisplayRegistry.identifier(for:))
             return await WorkshopWallpaperApplication.apply(
                 url: url, metadata: metadata, target: target,
                 currentDisplayID: screenID ?? self.displayRegistry.primary?.id,

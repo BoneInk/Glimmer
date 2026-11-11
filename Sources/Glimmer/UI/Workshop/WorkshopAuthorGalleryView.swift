@@ -68,6 +68,7 @@ struct WorkshopAuthorGalleryView: View {
         .padding(22)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .accessibilityIdentifier("creator-workshop-gallery")
+        .onExitCommand(perform: onBack)
     }
 
     private func open(_ result: WorkshopSearchResult) {

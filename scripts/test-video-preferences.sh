@@ -18,5 +18,6 @@ swiftc "${AUTHOR_WEB_CORE_SOURCES[@]}" -swift-version 6 -strict-concurrency=comp
   "$ROOT/Sources/Glimmer/Media/SyntheticVideoWriter.swift" \
   "$ROOT/Sources/Glimmer/Display/DisplayRegistry.swift" \
   "$ROOT/Sources/Glimmer/Desktop/DesktopWallpaperController.swift" \
+  "$ROOT/Sources/Glimmer/Desktop/DesktopWallpaperInputForwarder.swift" \
   "$ROOT/Tests/VideoPlaybackPreferencesTests.swift" -o "$WORK/probe"
 "$WORK/probe"

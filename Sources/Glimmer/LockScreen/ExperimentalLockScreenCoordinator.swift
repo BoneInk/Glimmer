@@ -8,9 +8,15 @@ enum ExperimentalLockScreenState: String, Codable, Sendable {
 }
 
 private struct LockScreenPersistentState: Codable {
+    let schemaVersion: Int
     let state: ExperimentalLockScreenState
     let asset: ExperimentalLockScreenAsset?
     let warning: String?
+
+    init(state: ExperimentalLockScreenState, asset: ExperimentalLockScreenAsset?, warning: String?) {
+        schemaVersion = 2
+        self.state = state; self.asset = asset; self.warning = warning
+    }
 }
 
 private struct LockScreenExtensionConfiguration: Codable {
@@ -68,26 +74,25 @@ final class ExperimentalLockScreenCoordinator {
     private let storage: AppStorage
     private let environment: ExperimentalLockScreenEnvironment
     private let preparer = ExperimentalLockScreenAssetPreparer()
-    private let exportConfiguration: @MainActor (WallpaperItem, String?) -> LockScreenExportConfiguration
+    private let renderConfiguration: @MainActor (WallpaperItem, String?) -> LockScreenRenderConfiguration
     private let registrar = ExperimentalLockScreenRegistrar()
     private var preparation: Task<ExperimentalLockScreenAsset, Error>?
     private var generation = UUID()
 
     private var root: URL { storage.root.resolvingSymlinksInPath().appendingPathComponent("ExperimentalLockScreen", isDirectory: true) }
-    private var sceneCacheRoot: URL { root.appendingPathComponent("SceneVideoCache", isDirectory: true) }
     private var stateURL: URL { root.appendingPathComponent("state.json") }
     private var snapshotURL: URL { root.appendingPathComponent("previous-settings.json") }
     private var configurationURL: URL { environment.sharedDirectory.appendingPathComponent("config.json") }
     private var pendingSnapshotURL: URL? {
         let entries = (try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
-        return entries.filter { $0.lastPathComponent.hasPrefix("pending-") && $0.pathExtension == "json" }
+        return entries.filter { $0.lastPathComponent.hasPrefix("pending-") && $0.pathExtension == "json" && isCurrentSnapshot(at: $0) }
             .max { lhs, rhs in
                 let a = (try? lhs.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
                 let b = (try? rhs.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
                 return a < b
             }
     }
-    var canRestorePrevious: Bool { pendingSnapshotURL != nil || FileManager.default.fileExists(atPath: snapshotURL.path) }
+    var canRestorePrevious: Bool { pendingSnapshotURL != nil || isCurrentSnapshot(at: snapshotURL) }
 
     var statusText: String {
         if isBusy, let operationDetail { return operationDetail }
@@ -103,15 +108,15 @@ final class ExperimentalLockScreenCoordinator {
     }
 
     init(storage: AppStorage = AppStorage(), environment: ExperimentalLockScreenEnvironment = .production,
-         exportConfiguration: @escaping @MainActor (WallpaperItem, String?) -> LockScreenExportConfiguration = { _, _ in
-             LockScreenExportSourceResolver.desktopConfiguration()
+         renderConfiguration: @escaping @MainActor (WallpaperItem, String?) -> LockScreenRenderConfiguration = { _, _ in
+             LockScreenRenderSourceResolver.desktopConfiguration()
          }) {
         self.storage = storage
         self.environment = environment
-        self.exportConfiguration = exportConfiguration
+        self.renderConfiguration = renderConfiguration
         // Reading status never re-applies wallpaper or registers an extension after launch.
         if let data = try? Data(contentsOf: storage.root.appendingPathComponent("ExperimentalLockScreen/state.json")),
-           let saved = try? JSONDecoder().decode(LockScreenPersistentState.self, from: data) {
+           let saved = try? JSONDecoder().decode(LockScreenPersistentState.self, from: data), saved.schemaVersion == 2 {
             state = saved.state == .preparing ? .idle : saved.state
             preparedAsset = saved.asset
             lastError = saved.warning
@@ -134,7 +139,6 @@ final class ExperimentalLockScreenCoordinator {
         }
         generation = UUID()
         let ticket = generation
-        let previousAsset = preparedAsset
         isBusy = true
         state = .preparing
         preparedAsset = nil
@@ -146,67 +150,22 @@ final class ExperimentalLockScreenCoordinator {
             let assetsRoot = root.appendingPathComponent("Assets", isDirectory: true)
             try LockScreenOwnedFiles.makePrivateDirectory(assetsRoot)
             let preparer = self.preparer, storage = self.storage
-            var configuration = exportConfiguration(item, displayID)
+            var configuration = renderConfiguration(item, displayID)
             // Video desktop playback retains the track's native timing, independently
             // of the global Scene/Web FPS cap. Probe it again in the preparer.
             if item.isVideoWallpaper { configuration.wallpaperFPS = nil }
-            let sceneCacheRoot = self.sceneCacheRoot.appendingPathComponent(item.id.uuidString, isDirectory: true)
-            let webCacheRoot = root.appendingPathComponent("WebVideoCache", isDirectory: true)
-                .appendingPathComponent(item.id.uuidString, isDirectory: true)
-            let rendered: LockScreenExportSpecification? = item.isVideoWallpaper ? nil
-                : try configuration.resolve(source: LockScreenExportSourceResolver.renderedSource(item: item, configuration: configuration))
-            preparationDetail = rendered.map { "正在准备 \($0.width)×\($0.height) · \($0.renderedFramesPerSecond) FPS 锁屏视频" }
+            let rendered: LockScreenRenderSpecification? = item.isVideoWallpaper ? nil
+                : try configuration.resolve(source: LockScreenRenderSourceResolver.renderedSource(item: item, configuration: configuration))
+            preparationDetail = rendered.map { "正在准备 \($0.width)×\($0.height) · \($0.renderedFramesPerSecond) FPS 实时锁屏" }
                 ?? "正在检查视频原始规格"
             let task = Task { [weak self] in
-                if !item.isVideoWallpaper, configuration.settings.projectPlayback == .live {
+                if !item.isVideoWallpaper {
                     guard let rendered else { throw LiveWallpaperFailure(message: "缺少实时锁屏规格。") }
                     self?.receivePreparationDetail("正在准备实时锁屏项目与作者设置", ticket: ticket)
                     return try await LiveWallpaperPreparer.prepare(item: item, storage: storage, root: assetsRoot,
-                        specification: rendered, allowHTTPS: configuration.settings.allowWebHTTPS)
+                        specification: rendered, allowHTTPS: item.webAllowHTTPS == true)
                 }
-                if item.isSceneWallpaper {
-                    #if GW_UNIVERSAL_SCENE_BACKEND
-                    guard let rendered else { throw LockScreenExportConfigurationFailure(message: "缺少 Scene 导出规格。") }
-                    let settings = RenderedLockScreenVideoCache.Settings(signature: "scene-h264-v2",
-                        framesPerSecond: rendered.renderedFramesPerSecond, width: rendered.width, height: rendered.height)
-                    let cache = RenderedLockScreenVideoCache(root: sceneCacheRoot, settings: settings,
-                        materialProvider: {
-                            try await SceneWallpaperLockScreenConfiguration.material(item: item, storage: storage)
-                        },
-                        exportOperation: { payload, directory, progress in
-                            let report = try await SceneWallpaperLockScreenExporter(settings: settings)
-                                .export(item: item, authorPayload: payload, directory: directory, progress: progress)
-                            return report.videoURL
-                        })
-                    return try await cache.withVideo(progress: { [weak self] detail in
-                        await self?.receivePreparationDetail(detail, ticket: ticket)
-                    }) { video in
-                        let asset = try await preparer.prepare(item: item, sourceURL: video, root: assetsRoot) { [weak self] detail in
-                            await self?.receivePreparationDetail(detail, ticket: ticket)
-                        }
-                        RenderedLockScreenVideoCache.discardOtherEntries(in: sceneCacheRoot, keeping: video)
-                        return asset
-                    }
-                    #else
-                    throw ExperimentalLockScreenFailure(message: "当前构建不支持 Scene 锁屏导出。")
-                    #endif
-                }
-                if item.isWebWallpaper {
-                    guard let rendered else { throw LockScreenExportConfigurationFailure(message: "缺少网页导出规格。") }
-                    let webVideoCache = WebWallpaperLockScreenVideoCache(root: webCacheRoot,
-                        settings: .init(framesPerSecond: rendered.renderedFramesPerSecond,
-                                        width: rendered.width, height: rendered.height))
-                    return try await webVideoCache.withVideo(item: item, storage: storage, progress: { [weak self] detail in
-                        await self?.receivePreparationDetail(detail, ticket: ticket)
-                    }) { video in
-                        let asset = try await preparer.prepare(item: item, sourceURL: video, root: assetsRoot) { [weak self] detail in
-                            await self?.receivePreparationDetail(detail, ticket: ticket)
-                        }
-                        webVideoCache.discardOtherEntries(keeping: video)
-                        return asset
-                    }
-                }
-                return try await preparer.prepare(item: item, sourceURL: nil, root: assetsRoot,
+                return try await preparer.prepare(item: item, root: assetsRoot,
                                                   configuration: configuration) { [weak self] detail in
                     await self?.receivePreparationDetail(detail, ticket: ticket)
                 }
@@ -217,14 +176,6 @@ final class ExperimentalLockScreenCoordinator {
             preparedAsset = asset
             state = .prepared
             try saveState()
-            if let previousAsset, previousAsset.itemID == item.id, previousAsset.videoURL != asset.videoURL {
-                let oldDirectory = previousAsset.videoURL.deletingLastPathComponent().standardizedFileURL
-                if oldDirectory.deletingLastPathComponent() == assetsRoot.standardizedFileURL,
-                   oldDirectory.lastPathComponent == previousAsset.id.uuidString,
-                   (try? oldDirectory.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) == false {
-                    try? FileManager.default.removeItem(at: oldDirectory)
-                }
-            }
         } catch {
             guard generation == ticket else { return }
             state = .failed
@@ -343,8 +294,7 @@ final class ExperimentalLockScreenCoordinator {
             let pendingURL = pendingSnapshotURL
             let snapshot = try JSONDecoder().decode(LockScreenStoreSnapshot.self, from: Data(contentsOf: pendingURL ?? snapshotURL))
             let location = try LockScreenSharedConfigurationLocator.locate(
-                snapshot: snapshot, preferredDirectory: environment.sharedDirectory,
-                legacyDirectory: environment.legacySharedDirectory)
+                snapshot: snapshot, preferredDirectory: environment.sharedDirectory)
             let currentConfig = location.data
             let restoredConfigurationURL = location.directory.appendingPathComponent("config.json", isDirectory: false)
             let transaction = LockScreenStoreTransaction(storeDirectory: environment.storeDirectory, snapshotURL: snapshotURL)
@@ -381,6 +331,13 @@ final class ExperimentalLockScreenCoordinator {
     private func receivePreparationDetail(_ detail: String, ticket: UUID) {
         guard generation == ticket, state == .preparing else { return }
         preparationDetail = detail
+    }
+
+    private func isCurrentSnapshot(at url: URL) -> Bool {
+        guard let data = try? Data(contentsOf: url),
+              let snapshot = try? JSONDecoder().decode(LockScreenStoreSnapshot.self, from: data) else { return false }
+        return snapshot.schemaVersion == 2
+            && snapshot.sharedDirectoryPath == environment.sharedDirectory.standardizedFileURL.path
     }
 
     private func saveState() throws {

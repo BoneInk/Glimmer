@@ -92,6 +92,7 @@ final class GWWebLayerDiagnostics {
         result["contextID"] = surface.context.contextId
         result["documentCount"] = surface.documentCount
         result["runtimeState"] = surface.runtime?.state.rawValue ?? "released"
+        result["frameRateLimit"] = surface.runtime?.frameRateLimit ?? 0
         return result
     }
 
@@ -284,6 +285,14 @@ final class GWWebLayerDiagnostics {
                     else if command == "reload" { try await self.reload(); self.emit(["event":"reloaded","value":try await self.metrics()]) }
                     else if command == "sleep" { try await self.pause(sleep: true); self.emit(["event":"sleeping"]) }
                     else if command == "wake" { try await self.resume(sleep: true); self.emit(["event":"awake","value":try await self.metrics()]) }
+                    else if command.hasPrefix("fps "), let fps = Int(command.dropFirst(4)), let runtime = self.surface.runtime {
+                        try runtime.setFrameRateLimit(fps)
+                        self.emit(["event":"fps","value":try await self.metrics()])
+                    }
+                    else if command == "media-pause" {
+                        _ = try await self.text("document.querySelector('video').pause(); return '';")
+                        self.emit(["event":"media-paused","value":try await self.metrics()])
+                    }
                     else if command == "media-response" {
                         let value = try await self.text("""
                         const v=document.querySelector('video');

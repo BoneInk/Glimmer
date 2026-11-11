@@ -51,7 +51,7 @@ struct GWSettingsView: View {
             VStack(alignment: .leading, spacing: 14) {
                 appearanceCard
                 performanceCard
-                LockScreenExportSettingsSection(coordinator: coordinator)
+                LockScreenRenderSettingsSection(coordinator: coordinator)
                 launchCard
                 if let appUpdater { GWAppUpdatesSection(updater: appUpdater) }
                 if let policy { GWPolicySettingsView(controller: policy, showsResetButton: false) }
@@ -217,8 +217,8 @@ struct GWSettingsView: View {
                     .frame(maxWidth: 340)
                     .accessibilityLabel("壁纸帧率上限")
                     .accessibilityValue("\(coordinator.preferences.wallpaperFPS) FPS")
-                    .accessibilityHint("限制 Scene 与 Web 壁纸帧率；视频保持素材原始帧率")
-                    .help("限制 Scene 与 Web 壁纸帧率；视频保持素材原始帧率")
+                    .accessibilityHint("限制 Scene 渲染与 Web 网页动画帧率；视频保持素材原始帧率")
+                    .help("限制 Scene 渲染与 Web 网页动画帧率。Web 内嵌视频、CSS 动画和脚本定时器使用各自时钟。")
                 Text("\(coordinator.preferences.wallpaperFPS) FPS")
                     .font(.callout.monospacedDigit())
                     .frame(width: 58, alignment: .trailing)
@@ -336,7 +336,7 @@ struct GWSettingsView: View {
         ) {
             HStack(spacing: 10) {
                 Button {
-                    Task { await exportConfiguration() }
+                    Task { await renderConfiguration() }
                 } label: {
                     Label("导出配置…", systemImage: "square.and.arrow.up")
                 }
@@ -364,7 +364,7 @@ struct GWSettingsView: View {
         }
     }
 
-    private func exportConfiguration() async {
+    private func renderConfiguration() async {
         let panel = NSSavePanel()
         panel.title = "导出配置"
         panel.message = "导出文件不包含素材、账号、登录或令牌信息。"
@@ -375,7 +375,7 @@ struct GWSettingsView: View {
         let response = await panel.begin()
         guard response == .OK, let url = panel.url else { return }
         do {
-            let bytes = try coordinator.exportConfiguration(to: url)
+            let bytes = try coordinator.renderConfiguration(to: url)
             transferMessage = "已导出配置（\(GWSettingsFormat.bytes(Int64(bytes)))）。"
             transferError = nil
         } catch {

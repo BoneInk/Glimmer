@@ -203,6 +203,132 @@ final class WebProbeDelegate: NSObject, NSApplicationDelegate {
         runtime.dispose();runtime=nil
     }
 
+    func deterministicFramePacerTests() async throws {
+        let source = String(decoding: try JSONSerialization.data(withJSONObject: WebWallpaperFramePacer.script(fps: 30, paused: true), options: .fragmentsAllowed), as: UTF8.self)
+        let results = try await js("""
+        (() => { try {
+          const native = new Map(), allNative = new Map(), failures = [], checks = [];
+          let nativeID = 0, requests = 0;
+          const nativeClock = {
+            requestAnimationFrame(callback) {const id=++nativeID;requests++;native.set(id,callback);allNative.set(id,callback);return id},
+            cancelAnimationFrame(id) {native.delete(id)}
+          };
+          const host = {...nativeClock};
+          Function('window','setTimeout', \(source))(host, callback=>failures.push(callback));
+          const assert = (value,name) => {if(!value)throw Error(name);checks.push(name)};
+          const step = time => {const batch=Array.from(native.values());native.clear();for(const callback of batch)callback(time)};
+          let ticks=0;
+          const loop=()=>{ticks++;host.requestAnimationFrame(loop)};
+          host.requestAnimationFrame(loop);
+          assert(native.size===1 && requests===1,'initial pause schedules only the bootstrap native RAF');
+          step(-1000);
+          assert(ticks===1 && native.size===0 && requests===1,'initial pause runs one author batch and keeps nested RAF pending');
+          ticks=0;
+          host.__gwSetWallpaperPaused(false);
+          for(let i=0;i<60;i++)step(i*1000/60);
+          assert(ticks===30,'60 Hz display delivers 30 FPS');
+          const oldCallback=allNative.get(nativeID), before=ticks, beforeRequests=requests;
+          host.__gwSetWallpaperPaused(true);
+          for(let i=60;i<120;i++)step(i*1000/60);
+          oldCallback(2000);
+          assert(ticks===before && requests===beforeRequests && native.size===0,'pause cancels native wakeups and rejects already dispatched frames');
+          let cancelled=false, once=0;
+          const cancelID=host.requestAnimationFrame(()=>cancelled=true);
+          host.requestAnimationFrame(()=>once++);
+          host.cancelAnimationFrame(cancelID);
+          host.__gwSetWallpaperFrameRate(12.5);
+          host.__gwSetWallpaperPaused(false);
+          oldCallback(2010);
+          for(let i=120;i<180;i++)step(i*1000/60);
+          assert(ticks-before===12 && once===1 && !cancelled,'resume preserves pending cancellation and dynamic FPS without replay');
+          host.__gwSetWallpaperPaused(true);
+          // A separate scheduler leaves only our finite callback batch pending.
+          const isolated={...nativeClock};
+          Function('window','setTimeout', \(source))(isolated, callback=>failures.push(callback));
+          const seen=[];
+          isolated.requestAnimationFrame(()=>{seen.push('first');isolated.__gwSetWallpaperPaused(true);isolated.__gwSetWallpaperPaused(false);isolated.requestAnimationFrame(()=>seen.push('nested'))});
+          const cancelledInBatch=isolated.requestAnimationFrame(()=>seen.push('cancelled'));
+          isolated.requestAnimationFrame(()=>seen.push('last'));
+          isolated.__gwSetWallpaperPaused(false);step(4000);
+          assert(seen.join(',')==='first' && native.size===1,'pause resume inside a callback defers the remaining batch');
+          isolated.cancelAnimationFrame(cancelledInBatch);step(4017);
+          assert(seen.join(',')==='first,last,nested' && native.size===0,'deferred callbacks retain handles and run once on the next frame');
+          isolated.requestAnimationFrame(()=>{throw Error('authored failure')});
+          isolated.requestAnimationFrame(()=>seen.push('after-error'));step(4100);
+          assert(failures.length===1 && seen.at(-1)==='after-error','throwing callback does not stall remaining callbacks');
+          isolated.requestAnimationFrame(()=>seen.push('never'));
+          isolated.__gwSetWallpaperPaused(true);
+          assert(native.size===0,'idle pause removes the final outstanding native frame');
+          const initial={...nativeClock}, initialSeen=[];
+          Function('window','setTimeout', \(source))(initial, callback=>failures.push(callback));
+          initial.requestAnimationFrame(()=>{
+            initialSeen.push('first');initial.__gwSetWallpaperPaused(false);initial.__gwSetWallpaperPaused(true);
+            initial.requestAnimationFrame(()=>initialSeen.push('nested'));
+          });
+          const initialCancel=initial.requestAnimationFrame(()=>initialSeen.push('cancelled'));
+          initial.requestAnimationFrame(()=>initialSeen.push('last'));
+          step(5000);initial.cancelAnimationFrame(initialCancel);
+          assert(initialSeen.join(',')==='first' && native.size===0,'initial bootstrap honors pause resume epoch and keeps deferred handles pending');
+          initial.__gwSetWallpaperPaused(false);step(5017);initial.__gwSetWallpaperPaused(true);step(5100);
+          assert(initialSeen.join(',')==='first,last,nested' && native.size===0,'initial bootstrap cannot be renewed by resume pause');
+          let cancelledSelfTicks=0;
+          const cancelLoop=()=>{cancelledSelfTicks++;initial.cancelAnimationFrame(-1);initial.requestAnimationFrame(cancelLoop)};
+          initial.__gwSetWallpaperPaused(false);initial.requestAnimationFrame(cancelLoop);
+          for(let i=0;i<60;i++)step(6000+i*1000/60);
+          initial.__gwSetWallpaperPaused(true);
+          assert(cancelledSelfTicks===30 && native.size===0,'cancelling a nonexistent handle inside RAF cannot bypass the FPS cap');
+          return checks;
+        } catch(error) {return ['FAILED: '+String(error)+String(error && error.stack || '')]} })()
+        """) as? [String] ?? []
+        try check(results.count == 12, "deterministic RAF simulation: " + results.joined(separator:"; "))
+        for result in results { try check(true, "deterministic RAF: " + result) }
+    }
+
+    func hostPauseTests() async throws {
+        runtime = try WebWallpaperRuntime(projectURL:fixture.appendingPathComponent("project.json"),entryURL:fixture.appendingPathComponent("host-pause.html"),propertiesJSON:Data("{}".utf8))
+        runtime.setPaused(true)
+        window.contentView=runtime.webView;runtime.load();try await waitForReady()
+        try await Task.sleep(for:.milliseconds(160))
+        try check((try await js("rafTicks===1 && timerTicks>5 && pauseCalls.at(-1)===true")) as? Bool == true,"initial host pause runs exactly one bootstrap RAF batch then remains stable while timers and handshake continue")
+        try check((try await js("document.getElementById('canvas').getContext('2d').getImageData(0,0,1,1).data[0]===255")) as? Bool == true,"one initial paused bootstrap paints the common RAF-only canvas")
+        runtime.setPaused(false);try await wait("rafTicks>=4")
+        try check((try await js("document.getElementById('canvas').getContext('2d').getImageData(0,0,1,1).data[0]===255")) as? Bool == true,"first resume paints the RAF-only canvas")
+        let acknowledgement = Task { @MainActor in try await runtime.applyPropertiesAndWait(Data(#"{"text":{"type":"textinput","value":"SLOW"}}"#.utf8)) }
+        try await wait("slowStarted && !slowDone")
+        runtime.setPaused(true)
+        try await Task.sleep(for:.milliseconds(40))
+        let stopped=(try await js("rafTicks")) as? Int ?? -1
+        _ = try await js("window.cancelledFired=false;window.onceFired=0;window.cancelID=requestAnimationFrame(()=>cancelledFired=true);requestAnimationFrame(()=>onceFired++);cancelAnimationFrame(cancelID);true")
+        try runtime.setFrameRateLimit(12)
+        try await Task.sleep(for:.milliseconds(130))
+        try check((try await js("rafTicks===\(stopped) && !slowDone && pauseCalls.at(-1)===false && onceFired===0")) as? Bool == true,"host pause stops RAF while the earlier async property callback still blocks author pause delivery")
+        try await acknowledgement.value
+        try await wait("pauseCalls.at(-1)===true && lastFPS===12")
+        try check((try await js("rafTicks===\(stopped) && slowDone && timerTicks>20")) as? Bool == true,"async property acknowledgement completes during pause without reactivating RAF")
+        runtime.setPaused(false);try await wait("onceFired===1 && rafTicks>\(stopped)")
+        _ = try await js("window.resumeBaseline=rafTicks;window.resumeStamp=performance.now();true")
+        try await Task.sleep(for:.milliseconds(1050))
+        let resumed=(try await js("rafTicks-resumeBaseline")) as? Int ?? -1
+        let pendingPreserved=(try await js("!cancelledFired && onceFired===1 && new Set(frameStamps).size===frameStamps.length")) as? Bool == true
+        try check((10...15).contains(resumed) && pendingPreserved,"resumed pending callbacks run once at updated 12 FPS with no catch-up burst (ticks=\(resumed))")
+        _ = try await js("requestAnimationFrame(async()=>{window.asyncRAFStarted=true;await new Promise(resolve=>setTimeout(resolve,150));window.asyncRAFReturned=true;requestAnimationFrame(()=>window.asyncRAFChild=true)});true")
+        try await wait("window.asyncRAFStarted")
+        runtime.setPaused(true);try await wait("pauseCalls.at(-1)===true")
+        try await wait("window.asyncRAFReturned")
+        try check((try await js("!window.asyncRAFChild")) as? Bool == true,"an already executing async RAF may finish but its next RAF remains pending during pause")
+        do {
+            try await runtime.applyPropertiesAndWait(Data(#"{"text":{"type":"textinput","value":"WAIT_RAF"}}"#.utf8),timeout:0.15)
+            throw WebWallpaperFailure(message:"RAF-dependent property callback acknowledged during pause")
+        } catch { try check(error.localizedDescription.contains("timed out"),"RAF-dependent author property promise has a bounded acknowledgement timeout while paused") }
+        try check((try await js("rafAckStarted && !window.rafAckDone")) as? Bool == true,"property timeout never runs a hidden author RAF")
+        runtime.setPaused(false);try await wait("rafAckDone && window.asyncRAFChild")
+        try await runtime.applyPropertiesAndWait(Data(#"{"text":{"type":"textinput","value":"WAIT_RAF"}}"#.utf8))
+        try check((try await js("rafAckDone")) as? Bool == true,"RAF-dependent property consumption recovers after resume")
+        try await deterministicFramePacerTests()
+        runtime.dispose()
+        runtime=nil
+    }
+
     func makeSilentVideo() async throws {
         let writer = try AVAssetWriter(outputURL: fixture.appendingPathComponent("silent.mp4"), fileType: .mp4)
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey:32, AVVideoHeightKey:32])
@@ -224,9 +350,69 @@ final class WebProbeDelegate: NSObject, NSApplicationDelegate {
         await withCheckedContinuation { continuation in writer.finishWriting { continuation.resume() } }
         guard writer.status == .completed else { throw writer.error ?? WebWallpaperFailure(message:"Synthetic video completion failed") }
     }
+    func compatibilityTests() async throws {
+        runtime?.dispose()
+        let entry = fixture.appendingPathComponent("compatibility.html")
+        try Data(#"""
+        <!doctype html><body><script>
+        window.ticks=0;setInterval(()=>ticks++,20);
+        window.optionalRemoved=false;const img=new Image();img.onerror=()=>{optionalRemoved=true;img.remove()};img.src='missing-optional.png';document.body.appendChild(img);
+        window.httpsCaught=false;fetch('https://example.invalid/optional').catch(()=>httpsCaught=true);
+        window.audioCalls=0;window.audioValid=true;window.audioActive=0;window.audioPeak=0;
+        wallpaperRegisterAudioListener(async values=>{audioCalls++;audioValid=audioValid&&values.length===128&&values.every(x=>x===0);audioActive++;audioPeak=Math.max(audioPeak,audioActive);await new Promise(r=>setTimeout(r,90));audioActive--});
+        window.mediaStatus=[];window.mediaEvents=0;
+        wallpaperRegisterMediaStatusListener(e=>mediaStatus.push(e.enabled));
+        for(const name of ['Properties','Thumbnail','Playback','Timeline'])window['wallpaperRegisterMedia'+name+'Listener'](()=>mediaEvents++);
+        </script></body>
+        """#.utf8).write(to: entry)
+        runtime = try WebWallpaperRuntime(projectURL: fixture.appendingPathComponent("project.json"), entryURL: entry, propertiesJSON: Data("{}".utf8))
+        window.contentView=runtime.webView;runtime.load();try await waitForReady()
+        try await wait("optionalRemoved&&httpsCaught&&ticks>5&&audioCalls>2&&mediaStatus.length===1")
+        try check(runtime.state == .ready && runtime.lastError == nil && runtime.diagnostics.count >= 3, "optional missing image and caught denied HTTPS keep real page timers running with diagnostics")
+        try check((try await js("audioValid&&audioPeak===1&&mediaStatus[0]===false&&mediaEvents===0")) as? Bool == true,"registered audio has bounded async silent samples; disabled media emits status only")
+        runtime.setPaused(true);try await Task.sleep(for:.milliseconds(180))
+        let pausedCount=(try await js("audioCalls")) as? Int
+        try await Task.sleep(for:.milliseconds(150))
+        try check((try await js("audioCalls")) as? Int == pausedCount,"pause suspends audio compatibility timer")
+        runtime.setPaused(false);try await wait("audioCalls>\(pausedCount ?? 0)")
+        _ = try await js("wallpaperRegisterAudioListener(null);wallpaperRegisterMediaStatusListener(null);window.stoppedAudio=audioCalls;void 0")
+        try await Task.sleep(for:.milliseconds(180))
+        try check((try await js("audioCalls===stoppedAudio")) as? Bool == true,"null registration cancels audio listener")
+        _ = try await js("for(let i=0;i<100;i++) document.dispatchEvent(new SecurityPolicyViolationEvent('securitypolicyviolation',{blockedURI:'http://blocked.invalid/'+i,effectiveDirective:'connect-src'}));void 0")
+        try await Task.sleep(for:.milliseconds(120))
+        try check(runtime.diagnostics.count == 64,"resource diagnostics are bounded per document")
+        runtime.reload();try await waitForReady();try await wait("audioCalls>1")
+        try check(runtime.diagnostics.count < 64,"reload clears previous diagnostics and restarts listener lifecycle")
+        _ = try await js("window.heldAudio=0;window.replacementAudio=0;wallpaperRegisterAudioListener(()=>{heldAudio++;return new Promise(r=>window.releaseAudio=r)});void 0")
+        try await wait("heldAudio===1")
+        _ = try await js("wallpaperRegisterAudioListener(()=>replacementAudio++);void 0")
+        try await Task.sleep(for:.milliseconds(150))
+        try check((try await js("heldAudio===1 && replacementAudio===0")) as? Bool == true,"listener replacement cannot overlap an unresolved audio callback")
+        _ = try await js("releaseAudio();void 0");try await wait("replacementAudio>0")
+        _ = try await js("window.audioBeforeHide=replacementAudio;window.dispatchEvent(new Event('pagehide'));void 0")
+        try await Task.sleep(for:.milliseconds(120))
+        try check((try await js("replacementAudio===audioBeforeHide")) as? Bool == true,"pagehide releases registered audio listener and timer")
+        _ = try await js("setTimeout(()=>{throw new Error('UNCAUGHT_COMPAT_FAILURE')},0);void 0")
+        try await Task.sleep(for:.milliseconds(120))
+        try check(runtime.state == .failed && runtime.lastError?.contains("UNCAUGHT_COMPAT_FAILURE") == true,"true uncaught JavaScript remains fatal")
+        runtime.dispose()
+        try Data("<!doctype html><script src='missing-core.js'></script>".utf8).write(to:entry)
+        runtime = try WebWallpaperRuntime(projectURL: fixture.appendingPathComponent("project.json"),entryURL:entry,propertiesJSON:Data("{}".utf8))
+        window.contentView=runtime.webView;runtime.load()
+        try await Task.sleep(for:.milliseconds(400))
+        try check(runtime.state == .failed && runtime.lastError?.contains("script failed to load") == true,"missing core script remains fatal")
+        runtime.dispose()
+    }
+
     func run() async throws {
+        if ProcessInfo.processInfo.environment["GW_WEB_COMPATIBILITY_ONLY"] == "1" {
+            window = NSWindow(contentRect: NSRect(x: 80, y: 80, width: 480, height: 320), styleMask: [.titled], backing: .buffered, defer: false)
+            window.orderFrontRegardless()
+            try await compatibilityTests()
+            return
+        }
         try await makeSilentVideo()
-        runtime = try WebWallpaperRuntime(projectURL: fixture.appendingPathComponent("project.json"), entryURL: fixture.appendingPathComponent("index.html"), propertiesJSON: payload())
+        runtime = try WebWallpaperRuntime(projectURL: fixture.appendingPathComponent("project.json"), entryURL: fixture.appendingPathComponent("index.html"), propertiesJSON: payload(), mutedPlayback: true)
         try check(runtime.state == .idle, "init is side-effect-free until explicit load")
         try check(!runtime.webView.configuration.websiteDataStore.isPersistent, "nonpersistent website data store")
         try check(runtime.unsupportedPropertyKeys == ["files"], "file property explicitly excluded from delivered capabilities")
@@ -246,6 +432,31 @@ final class WebProbeDelegate: NSObject, NSApplicationDelegate {
         try runtime.setFrameRateLimit(60)
         try await wait("window.generalCalls.length>=2 && window.generalCalls[generalCalls.length-1].fps===60")
         try check(runtime.frameRateLimit == 60, "live typed FPS update reaches the real authored general-properties listener")
+        runtime.setPaused(false)
+        try await wait("window.pauseCalls[window.pauseCalls.length-1]===false")
+        _ = try await js("window.__gwRateTicks=0;function rateTick(){window.__gwRateTicks++;requestAnimationFrame(rateTick)}requestAnimationFrame(rateTick);true")
+        try runtime.setGeneralPropertiesJSON(Data("{\"fps\":12.5}".utf8))
+        try await wait("window.generalCalls[generalCalls.length-1].fps===12.5")
+        _ = try await js("window.__gwRateTicks=0;true")
+        try await Task.sleep(for: .milliseconds(1100))
+        let twelve = (try await js("window.__gwRateTicks")) as? Int ?? 0
+        try check((10...16).contains(twelve), "normal Web runtime enforces 12 FPS even when the author ignores the setting (ticks=\(twelve))")
+        try runtime.setFrameRateLimit(24)
+        try await wait("window.generalCalls[generalCalls.length-1].fps===24")
+        _ = try await js("window.__gwRateTicks=0;true")
+        try await Task.sleep(for: .milliseconds(1100))
+        let twentyFour = (try await js("window.__gwRateTicks")) as? Int ?? 0
+        try check((23...29).contains(twentyFour), "live FPS changes update the same page scheduler without a reload (ticks=\(twentyFour))")
+        _ = try await js("""
+        window.__gwBatch={stamps:[],cancelled:false,nested:false};
+        const cancelled=requestAnimationFrame(()=>window.__gwBatch.cancelled=true);
+        requestAnimationFrame(t=>{__gwBatch.stamps.push(t);requestAnimationFrame(()=>__gwBatch.nested=true)});
+        requestAnimationFrame(t=>__gwBatch.stamps.push(t));
+        cancelAnimationFrame(cancelled);true
+        """)
+        try await wait("window.__gwBatch.stamps.length===2 && window.__gwBatch.nested")
+        try check((try await js("!__gwBatch.cancelled && __gwBatch.stamps[0]===__gwBatch.stamps[1]")) as? Bool == true,
+                  "paced callbacks preserve cancellation, shared frame timestamps and nested scheduling")
         try await Task.sleep(for: .milliseconds(200))
         let imageResult: ProbeResult<NSImage> = await withCheckedContinuation { continuation in
             runtime.webView.takeSnapshot(with: nil) { image, error in
@@ -257,17 +468,20 @@ final class WebProbeDelegate: NSObject, NSApplicationDelegate {
         guard let tiff = image.tiffRepresentation, let bitmap = NSBitmapImageRep(data: tiff),
               let color = bitmap.colorAt(x: bitmap.pixelsWide/2, y: bitmap.pixelsHigh/2)?.usingColorSpace(.sRGB) else { throw WebWallpaperFailure(message: "Snapshot pixels missing") }
         try check(color.redComponent > 0.9 && color.greenComponent < 0.2 && color.blueComponent < 0.2, "real WebKit snapshot center pixels reflect authored red color (\(color.redComponent),\(color.greenComponent),\(color.blueComponent))")
+        runtime.setPaused(true)
+        try await wait("window.pauseCalls[window.pauseCalls.length-1]===true")
         let firstTicks = (try await js("fixtureTicks")) as? Int ?? -1
         try await Task.sleep(for: .milliseconds(180))
         try check((try await js("fixtureTicks")) as? Int == firstTicks, "cooperative setPaused stops real fixture timer effects")
         runtime.setPaused(false)
         try await wait("fixtureTicks>\(firstTicks+2)")
         try check(runtime.state == .ready, "resume restarts cooperative timer effects")
-        try check(runtime.webView.configuration.mediaTypesRequiringUserActionForPlayback == .audio, "native audio autoplay requires user gesture")
+        try check(runtime.webView.configuration.mediaTypesRequiringUserActionForPlayback.isEmpty, "muted wallpaper allows authored media to start without user gesture")
         _ = try await js("window.requestMediaTest=true;void 0")
         try await wait("typeof audioResult!=='undefined' && audioResult!=='pending'")
         let audioResult = (try await js("audioResult")) as? String ?? "missing"
-        try check(audioResult == "NotAllowedError", "real audible audio play rejects without user gesture (\(audioResult))")
+        try check(audioResult == "played" && runtime.webView.value(forKey: "_mediaMutedState") as? UInt == 1,
+                  "real audio advances while native page output remains muted (\(audioResult))")
         try await wait("videoResult==='played' && silentVideo.currentTime>0.1")
         try check((try await js("silentVideo.muted && !silentVideo.paused && silentVideo.videoWidth===32")) as? Bool == true, "real muted silent H264 video advances without user gesture")
 
@@ -360,7 +574,8 @@ final class WebProbeDelegate: NSObject, NSApplicationDelegate {
         try check((try await js("typeof window.leaked==='undefined'")) as? Bool == true, "symlink to outside project cannot read secret")
         _ = try await js("window.childAttempted=true; const f=document.createElement('iframe'); f.src='index.html'; document.body.appendChild(f); void 0")
         try await Task.sleep(for: .milliseconds(150))
-        try check(runtime.lastError != nil, "CSP child-frame denial is visible")
+        try check(runtime.diagnostics.contains(where: { $0.contains("Blocked a wallpaper resource") }) && runtime.lastError == nil, "CSP child-frame denial is visible as a nonfatal diagnostic")
+        try check((try await js("(()=>{const child=document.querySelector('iframe');try{return !child.contentDocument || child.contentDocument.URL==='about:blank'}catch{return true}})()")) as? Bool == true,"CSP denial prevents the attempted child document from loading")
         let beforeURL = runtime.webView.url
         _ = try await js("window.location.href='https://example.invalid/'")
         try await Task.sleep(for: .milliseconds(200))
@@ -399,6 +614,8 @@ final class WebProbeDelegate: NSObject, NSApplicationDelegate {
         runtime = nil
         try await Task.sleep(for: .milliseconds(120))
         try check(released == nil, "disposed runtime releases without WebKit message-handler retain cycle")
+        try await hostPauseTests()
+        try await compatibilityTests()
         try await resourceTests()
         try await capabilityRecoveryTests()
         try await actualAssetStoreTests()

@@ -2,10 +2,10 @@ import AppKit
 import CoreGraphics
 
 @MainActor
-enum LockScreenExportSourceResolver {
-    static func desktopConfiguration(settings: GWLockScreenExportSettings = .init(),
+enum LockScreenRenderSourceResolver {
+    static func desktopConfiguration(settings: GWLockScreenRenderSettings = .init(),
                                      wallpaperFPS: Int = 30, displayID: CGDirectDisplayID = CGMainDisplayID())
-        -> LockScreenExportConfiguration {
+        -> LockScreenRenderConfiguration {
         let mode = CGDisplayCopyDisplayMode(displayID)
         var width = mode?.pixelWidth, height = mode?.pixelHeight
         let bounds = CGDisplayBounds(displayID)
@@ -15,8 +15,8 @@ enum LockScreenExportSourceResolver {
                      wallpaperFPS: Double(wallpaperFPS))
     }
 
-    static func renderedSource(item: WallpaperItem, configuration: LockScreenExportConfiguration)
-        throws -> LockScreenExportSpecification {
+    static func renderedSource(item: WallpaperItem, configuration: LockScreenRenderConfiguration)
+        throws -> LockScreenRenderSpecification {
         var width = item.pixelWidth, height = item.pixelHeight
         if item.isSceneWallpaper {
             #if GW_UNIVERSAL_SCENE_BACKEND
@@ -25,7 +25,7 @@ enum LockScreenExportSourceResolver {
             width = Int(descriptor.inspection.canvasSize.x.rounded(.down))
             height = Int(descriptor.inspection.canvasSize.y.rounded(.down))
             #else
-            throw LockScreenExportConfigurationFailure(message: "当前构建不支持 Scene 锁屏导出。")
+            throw LockScreenRenderConfigurationFailure(message: "当前构建不支持 Scene 实时锁屏。")
             #endif
         } else {
             let project = try WebWallpaperProjectDescriptor(projectURL: item.fileURL)
@@ -42,7 +42,7 @@ enum LockScreenExportSourceResolver {
         guard let width = width ?? configuration.wallpaperWidth,
               let height = height ?? configuration.wallpaperHeight,
               let fps = configuration.wallpaperFPS else {
-            throw LockScreenExportConfigurationFailure(message: "无法确定壁纸渲染尺寸或帧率，请连接显示器后重试。")
+            throw LockScreenRenderConfigurationFailure(message: "无法确定壁纸渲染尺寸或帧率，请连接显示器后重试。")
         }
         return .init(width: width, height: height, framesPerSecond: fps)
     }

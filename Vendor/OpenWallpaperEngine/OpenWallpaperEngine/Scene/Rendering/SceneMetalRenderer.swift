@@ -197,6 +197,9 @@ final class SceneMetalRenderer: NSObject, MTKViewDelegate {
     /// previewed and rendered (the iPhone & iPad Export) holds it fixed in both, so the camera and
     /// depth parallax, the cursor uniforms and the scripts' cursor are the same in each.
     var fixedPointer: SIMD2<Float>?
+    /// A helper receives audited desktop presses from the host rather than
+    /// installing its own system event monitors. Nil retains upstream behavior.
+    var externalLeftMouseDown: Bool?
     /// The fixed pointer the camera parallax last reached: a new one is reached at once, not over
     /// `cameraparallaxdelay`, so a render starts where its preview has settled.
     var parallaxSettledPointer: SIMD2<Float>?

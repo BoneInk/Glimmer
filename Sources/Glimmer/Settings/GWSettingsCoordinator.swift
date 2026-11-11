@@ -227,7 +227,7 @@ final class GWSettingsCoordinator {
 
     /// 导出到指定文件（原子写入），返回字节数。
     @discardableResult
-    func exportConfiguration(to url: URL) throws -> Int {
+    func renderConfiguration(to url: URL) throws -> Int {
         let bytes = try GWConfigurationTransfer.writeExport(makeExportEnvelope(), to: url)
         lastExportAt = Date()
         return bytes

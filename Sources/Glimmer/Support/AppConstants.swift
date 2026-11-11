@@ -24,7 +24,6 @@ enum GlimmerIdentity {
     static let legacyBundleIdentifier = "com.boneinkzhong.glasswallpaper"
     static let legacyApplicationSupportFolderName = "GlassWallpaper"
     static let legacyKeychainService = "com.boneinkzhong.glasswallpaper.steam-content"
-    static let legacyLockScreenSharedFolderName = "GlassWallpaperNativeLockScreen"
     static let legacyDownloadManifestName = "glasswallpaper-download.json"
     static let legacyConfigurationFormat = "glasswallpaper.configuration"
     static let legacyLibraryWindowAutosaveName = "GlassWallpaperLibraryWindow"

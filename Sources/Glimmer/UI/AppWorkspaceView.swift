@@ -89,6 +89,8 @@ struct AppWorkspaceView: View {
     @Environment(\.windowGlassReduceMotionOverride) private var reviewReduceMotion
     @GlassState private var authorReturnItem: WallpaperItem?
     @GlassState private var authorReturnResult: WorkshopSearchResult?
+    @GlassState private var restoredCreatorItemID: UUID?
+    @GlassState private var restoredCreatorAuthor: WorkshopAuthor?
 
     @MainActor
     init(store: VideoLibraryStore, importService: ImportService,
@@ -313,6 +315,9 @@ struct AppWorkspaceView: View {
                 // property of this view and must not drive the button's next action.
                 let isPaused = store.settings(for: entry.key).isPaused
                 let actionName = isPaused ? "播放" : "暂停"
+                let supportsSound = entry.value.item.isVideoWallpaper || entry.value.item.isSceneWallpaper || entry.value.item.isWebWallpaper
+                let isMuted = store.effectiveSettings(for: entry.value.item.id, displayID: entry.key).isMuted
+                let soundActionName = isMuted ? "取消静音" : "静音"
                 HStack(spacing: 8) {
                     Text(displayName)
                         .font(.caption)
@@ -320,6 +325,23 @@ struct AppWorkspaceView: View {
                         .truncationMode(.middle)
                         .help(displayName)
                     Spacer(minLength: 4)
+                    Button {
+                        playback.setMuted(!isMuted, displayID: entry.key)
+                    } label: {
+                        Image(systemName: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                            .frame(width: 30, height: 30)
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.borderless)
+                    .background(.primary.opacity(0.055), in: Circle())
+                    .disabled(!supportsSound)
+                    .help(supportsSound
+                          ? "\(soundActionName)\(displayName)上的桌面壁纸"
+                          : "此壁纸暂不支持声音控制")
+                    .accessibilityLabel("\(soundActionName)\(displayName)上的桌面壁纸")
+                    .accessibilityValue(supportsSound ? (isMuted ? "已静音" : "声音已开启") : "不支持声音控制")
+                    .accessibilityIdentifier("sidebar-display-mute-\(entry.key)")
                     Button {
                         playback.playPause(displayID: entry.key)
                     } label: {
@@ -367,7 +389,8 @@ struct AppWorkspaceView: View {
                 displays: displays, playback: playback,
                 onClose: { workshop.cancelOpeningWallpaperDetails(); detailPresentation.dismiss() },
                 policy: policy, onOpenDynamicLockScreen: onOpenDynamicLockScreen,
-                immersive: true, wallpaperFPS: settings.preferences.wallpaperFPS)
+                immersive: true, wallpaperFPS: settings.preferences.wallpaperFPS,
+                initialAuthor: restoredCreatorItemID == item.id ? restoredCreatorAuthor : nil)
                 .id(route.id)
         } else if let result = route.result {
             GlassStyleReader { style in
@@ -382,9 +405,18 @@ struct AppWorkspaceView: View {
     private var detailContent: some View {
         if let gallery = authorGallery {
             WorkshopAuthorGalleryView(session: gallery, coordinator: workshop, onBack: {
-                creatorAvatarTransition.cancel(); gallery.cancel(); authorGallery = nil
-                if let item = authorReturnItem { detailPresentation.open(item) }
+                if authorReturnItem != nil {
+                    creatorAvatarTransition.beginReturn(authorID: gallery.author.id,
+                        reduceMotion: systemReduceMotion || reviewReduceMotion)
+                } else { creatorAvatarTransition.cancel() }
+                gallery.cancel(); authorGallery = nil
+                if let item = authorReturnItem {
+                    restoredCreatorItemID = item.id
+                    restoredCreatorAuthor = gallery.author
+                    detailPresentation.open(item)
+                }
                 else if let result = authorReturnResult { detailPresentation.open(result) }
+                else { creatorAvatarTransition.cancel() }
                 authorReturnItem = nil; authorReturnResult = nil
             }).id(gallery.author.id)
         } else {

@@ -28,6 +28,7 @@ SOURCES=()
 while IFS= read -r file; do SOURCES+=("$file"); done < <(find "$SRC" -maxdepth 1 -name '*.swift' | sort)
 SHARED_SOURCES="${GW_SWIFT_SOURCES_ROOT:-$ROOT/Sources}"
 SOURCES+=("$SHARED_SOURCES/SceneBackendShared/SceneBackendTypes.swift"
+  "$SHARED_SOURCES/SceneBackendShared/SceneFrameSchedule.swift"
   "$SHARED_SOURCES/Glimmer/SceneBackend/SceneBackendXPCClient.swift"
   "$SHARED_SOURCES/Glimmer/LockScreen/LiveWallpaperBundle.swift"
   "$SHARED_SOURCES/Glimmer/AuthorPropertyAssets/AuthorPropertyAssetTypes.swift"

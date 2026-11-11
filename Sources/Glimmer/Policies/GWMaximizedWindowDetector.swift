@@ -18,9 +18,15 @@ enum GWMaximizedWindowGeometry {
             && window.maxY >= visibleFrame.maxY - tolerance
     }
 
-    static func coveredDisplays(frames: [String: CGRect], windows: [CGRect]) -> Set<String> {
-        Set(frames.compactMap { id, frame in
+    static func coveredDisplays(
+        frames: [String: CGRect], windows: [CGRect], mirroredDisplaySources: [String: String] = [:]
+    ) -> Set<String> {
+        let covered = Set(frames.compactMap { id, frame in
             windows.contains { covers(frame, window: $0) } ? id : nil
+        })
+        // 镜像接收屏没有独立 NSScreen，但仍可能有桌面播放会话，必须跟随源屏暂停。
+        return covered.union(mirroredDisplaySources.compactMap { id, source in
+            covered.contains(source) ? id : nil
         })
     }
 }
@@ -58,6 +64,13 @@ enum GWMaximizedWindowDetector {
                   let rect = CGRect(dictionaryRepresentation: bounds as CFDictionary) else { return nil }
             return rect
         }
-        return GWMaximizedWindowGeometry.coveredDisplays(frames: frames, windows: bounds)
+        let mirroredDisplaySources = Dictionary(uniqueKeysWithValues: identifiers.compactMap { displayID, identifier -> (String, String)? in
+            let sourceID = CGDisplayMirrorsDisplay(displayID)
+            guard sourceID != kCGNullDirectDisplay, let source = identifiers[sourceID] else { return nil }
+            return (identifier, source)
+        })
+        return GWMaximizedWindowGeometry.coveredDisplays(
+            frames: frames, windows: bounds, mirroredDisplaySources: mirroredDisplaySources
+        )
     }
 }

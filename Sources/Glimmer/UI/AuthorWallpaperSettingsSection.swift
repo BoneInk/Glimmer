@@ -18,14 +18,16 @@ struct AuthorWallpaperSettingsSection: View {
         // Keep the loader/observation mounted even while the floating card is absent.
         VStack(alignment: .leading, spacing: 0) {
             if let floatingPanelMaxHeight {
-                if let project, capabilities(for: project).hasEditableOptions(in: project) {
+                if item.isWebWallpaper || project.map({ capabilities(for: $0).hasEditableOptions(in: $0) }) == true {
                     WallpaperDetailFloatingPanel(maxHeight: floatingPanelMaxHeight) {
-                        propertyContent(project, editableOnly: true)
+                        networkContent
+                        if let project { propertyContent(project, editableOnly: true) }
                     }
                     .accessibilityIdentifier("wallpaper-details-floating-settings")
                 }
             } else {
                 VStack(alignment: .leading, spacing: 0) {
+                    networkContent
                     if let project, !project.properties.isEmpty {
                         propertyContent(project, editableOnly: false)
                     } else if let projectError {
@@ -52,6 +54,21 @@ struct AuthorWallpaperSettingsSection: View {
             }
         }
     }
+    @ViewBuilder private var networkContent: some View {
+        if item.isWebWallpaper {
+            Toggle("允许此网页访问 HTTPS 网络", isOn: Binding(
+                get: { item.webAllowHTTPS == true },
+                set: { playback.updateWebHTTPS($0, itemID: item.id) }))
+                .accessibilityIdentifier("wallpaper-web-network")
+            Text("允许天气等网络内容。更改后重新加载；锁屏需重新准备。")
+                .font(.caption).foregroundStyle(.secondary).padding(.bottom, 8)
+            DisclosureGroup("兼容性说明") {
+                Text("未单独设置时，桌面与预览离线，旧作品实时锁屏沿用全局默认值。此开关会保存本作品的统一权限。HTTP、本机文件和嵌套网页仍受限制。音频分析仅提供静默数据，系统媒体信息尚未接入。")
+                    .font(.caption).foregroundStyle(.secondary)
+            }.padding(.bottom, 12)
+        }
+    }
+
     private func capabilities(for project: AuthorPropertyProject) -> AuthorPropertyEditingCapabilities {
         let keys = item.isProjectWallpaper ? AuthorPropertyServices.shared.editableKeys(project: project, itemID: item.id) : []
         return .init(editableKeys: keys,

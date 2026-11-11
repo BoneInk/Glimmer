@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WORK="$(mktemp -d /tmp/gw-lock-export-settings.XXXXXX)"
+WORK="$(mktemp -d /tmp/gw-lock-render-settings.XXXXXX)"
 trap 'rm -rf "$WORK"' EXIT
 export DEVELOPER_DIR=/Library/Developer/CommandLineTools
 SOURCES=(
@@ -14,8 +14,8 @@ SOURCES=(
  "$ROOT/Sources/Glimmer/Media/SyntheticVideoWriter.swift"
  "$ROOT/Sources/Glimmer/Support/WebWallpaperProjectDescriptor.swift"
  "$ROOT/Sources/Glimmer/LockScreen/LockScreenStoreTransaction.swift"
- "$ROOT/Sources/Glimmer/LockScreen/LockScreenExportSettings.swift"
- "$ROOT/Sources/Glimmer/LockScreen/LockScreenExportSourceResolver.swift"
+ "$ROOT/Sources/Glimmer/LockScreen/LockScreenRenderSettings.swift"
+ "$ROOT/Sources/Glimmer/LockScreen/LockScreenRenderSourceResolver.swift"
  "$ROOT/Sources/Glimmer/LockScreen/LockScreenVideoTranscoder.swift"
  "$ROOT/Sources/Glimmer/LockScreen/ExperimentalLockScreenAssets.swift"
  "$ROOT/Sources/Glimmer/LockScreen/LiveWallpaperBundle.swift"
@@ -26,7 +26,7 @@ SOURCES=(
  "$ROOT/Sources/Glimmer/Settings/GWConfigurationTransfer.swift"
  "$ROOT/Sources/Glimmer/Settings/GWSettingsCoordinator.swift"
 )
-for TEST in LockScreenExportSettingsTests GWSettingsFPSPersistenceTests GWSettingsBackgroundPreferencesTests; do
+for TEST in LockScreenRenderSettingsTests GWSettingsFPSPersistenceTests GWSettingsBackgroundPreferencesTests; do
  swiftc -swift-version 6 -strict-concurrency=complete -warnings-as-errors -target arm64-apple-macos26.0 \
   "${SOURCES[@]}" "$ROOT/Tests/$TEST.swift" -o "$WORK/$TEST"
  "$WORK/$TEST"

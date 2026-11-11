@@ -306,6 +306,7 @@ struct WorkshopSearchRequest: Sendable, Equatable {
 struct WorkshopSearchPage: Sendable, Equatable {
     var request: WorkshopSearchRequest
     var totalCount: Int
+    var isTotalCountExact = true
     var totalPages: Int?
     var results: [WorkshopSearchResult]
     /// 解析取证：命中的 SSR 查询位置（便于回归时确认页面结构是否变化）。

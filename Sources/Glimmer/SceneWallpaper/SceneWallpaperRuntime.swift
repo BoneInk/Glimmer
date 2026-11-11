@@ -364,6 +364,9 @@ final class LegacySceneWallpaperRuntime {
         soundEnabled = enabled
         soundVolume = volume.isFinite ? min(max(volume, 0), 1) : 1
     }
+    /// The finite rollback renderer has no cursor callback implementation.
+    func setPointerButton(down: Bool, screenPoint: NSPoint) { }
+
     func dispose() {
         guard state != .disposed else { return }
         generation = UUID(); stopFrameLoop(); work?.cancel(); work = nil

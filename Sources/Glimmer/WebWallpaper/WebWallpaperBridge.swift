@@ -14,6 +14,13 @@ enum WebWallpaperBridge {
       const post = (kind, detail = {}) => {
         try { window.webkit.messageHandlers.gwWallpaper.postMessage({token, kind, ...detail}); } catch (_) {}
       };
+      // Bounded per-document diagnostics: denied optional resources do not stop a clock.
+      const diagnostics = new Set();
+      const diagnose = (category, message, detail = {}) => {
+        const key = category + ':' + message + ':' + String(detail.uri || '');
+        if (diagnostics.has(key) || diagnostics.size >= 64) return;
+        diagnostics.add(key); post('diagnostic', {category, message: String(message).slice(0, 2048), ...detail});
+      };
       let listener;
       let directories = {}, directoriesJSON = '{}', deliveredDirectories = null;
       let desired = {}, general = {fps: 30}, paused = false, revision = -1, received = false, documentReady = false;
@@ -150,7 +157,11 @@ enum WebWallpaperBridge {
       window.__gwWallpaperReceive = (expectedToken, nextRevision, propertiesJSON, generalJSON, nextPaused, nextDirectoriesJSON) => {
         if (expectedToken !== token || nextRevision < revision) return;
         revision = nextRevision; received = true;
-        desired = JSON.parse(propertiesJSON); general = JSON.parse(generalJSON); paused = !!nextPaused;
+        desired = JSON.parse(propertiesJSON); general = JSON.parse(generalJSON); paused = !!nextPaused; updateAudio();
+        // Host scheduling takes effect independently of serialized/async author
+        // callbacks.
+        window.__gwSetWallpaperPaused?.(paused);
+        window.__gwSetWallpaperFrameRate?.(general.fps);
         directoriesJSON = nextDirectoriesJSON; directories = JSON.parse(directoriesJSON);
         enqueue();
       };
@@ -161,15 +172,74 @@ enum WebWallpaperBridge {
         const file=files.length ? files[Math.floor(Math.random()*files.length)].path : '';
         queueMicrotask(()=>{try{callback(propertyName,file);}catch(error){post('scriptError',{message:String(error && error.message || error).slice(0,2048)});}});
       };
+      // Compatibility adapters only. No system audio is captured and no Now Playing
+      // metadata is manufactured. Replacement/null registration releases old closures.
+      let audioListener = null, audioTimer = null, audioFlight = null;
+      const mediaListeners = new Map();
+      const invoke = (callback, value) => {
+        try {
+          Promise.resolve(callback(value)).catch(error => post('scriptError', {message: String(error && error.message || error).slice(0, 2048)}));
+        } catch(error) { post('scriptError', {message: String(error && error.message || error).slice(0, 2048)}); }
+      };
+      const updateAudio = () => {
+        if (audioTimer !== null) { clearInterval(audioTimer); audioTimer = null; }
+        if (audioListener && !paused) audioTimer = setInterval(audioTick, 1000 / 30);
+      };
+      const audioTick = () => {
+        if (!audioListener || paused || audioFlight) return;
+        const flight = {}; audioFlight = flight;
+        try {
+          Promise.resolve(audioListener(new Array(128).fill(0))).catch(error => post('scriptError', {message: String(error && error.message || error).slice(0, 2048)}))
+            .finally(() => { if (audioFlight === flight) audioFlight = null; });
+        } catch(error) { audioFlight = null; post('scriptError', {message: String(error && error.message || error).slice(0, 2048)}); }
+      };
+      window.wallpaperRegisterAudioListener = callback => {
+        audioListener = typeof callback === 'function' ? callback : null;
+        if (audioListener) diagnose('unavailable', 'System audio capture is unavailable; audio callbacks contain 128 silent samples.');
+        updateAudio();
+        return () => { if (audioListener === callback) { audioListener = null; updateAudio(); } };
+      };
+      window.wallpaperUnregisterAudioListener = callback => {
+        if (!callback || audioListener === callback) { audioListener = null; updateAudio(); }
+      };
+      window.wallpaperMediaIntegration = Object.freeze({
+        PLAYBACK_STOPPED: 0, PLAYBACK_PLAYING: 1, PLAYBACK_PAUSED: 2,
+        playback: Object.freeze({STOPPED: 0, PLAYING: 1, PAUSED: 2})
+      });
+      for (const name of ['Status', 'Properties', 'Thumbnail', 'Playback', 'Timeline']) {
+        window['wallpaperRegisterMedia' + name + 'Listener'] = callback => {
+          if (typeof callback === 'function') {
+            mediaListeners.set(name, callback);
+            diagnose('unavailable', 'System media integration is unavailable; only enabled:false status is delivered.');
+            if (name === 'Status') queueMicrotask(() => {
+              if (mediaListeners.get(name) === callback) invoke(callback, {enabled: false});
+            });
+          } else mediaListeners.delete(name);
+          return () => { if (mediaListeners.get(name) === callback) mediaListeners.delete(name); };
+        };
+        window['wallpaperUnregisterMedia' + name + 'Listener'] = callback => {
+          if (!callback || mediaListeners.get(name) === callback) mediaListeners.delete(name);
+        };
+      }
+      window.addEventListener('pagehide', () => {
+        audioListener = null; updateAudio(); mediaListeners.clear();
+      }, {once: true});
       const ready = () => { documentReady = true; post('documentReady'); enqueue(); };
       document.addEventListener('DOMContentLoaded', ready, {once: true});
       window.addEventListener('load', ready, {once: true});
       window.addEventListener('error', event => {
-        const message = event.message || 'A local wallpaper resource failed to load.';
-        post('scriptError', {message: String(message).slice(0, 2048)});
+        if (event.target && event.target !== window) {
+          const target = event.target;
+          const uri = String(target.src || target.href || '').slice(0, 2048);
+          // Missing external scripts can prevent the core entry from initializing.
+          if (target.tagName === 'SCRIPT') post('scriptError', {message: 'Wallpaper script failed to load: ' + uri});
+          else diagnose('resource', 'A wallpaper resource failed to load.', {uri});
+          return;
+        }
+        post('scriptError', {message: String(event.message || 'Wallpaper JavaScript failed.').slice(0, 2048)});
       }, true);
       window.addEventListener('unhandledrejection', event => post('scriptError', {message: String(event.reason && event.reason.message || event.reason).slice(0, 2048)}));
-      document.addEventListener('securitypolicyviolation', event => post('securityError', {message: 'Blocked a wallpaper resource or operation outside the local project policy.', uri: event.blockedURI, directive: event.effectiveDirective}));
+      document.addEventListener('securitypolicyviolation', event => diagnose('policy', 'Blocked a wallpaper resource or operation outside the project policy.', {uri: String(event.blockedURI).slice(0, 2048), directive: event.effectiveDirective}));
       post('bootstrap');
     })();
     """#

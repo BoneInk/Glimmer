@@ -16,6 +16,7 @@
   "integration_notes": [
     "Generic original package/loose/shared VFS, strict GPU shader/script/media readiness; no wallpaper-ID exceptions.",
     "Live scalar author property callbacks/bindings and one-frame paused updates; original Scene sound preparation with default-muted output.",
-    "Unsupported or unaudited capabilities remain explicit failures; complete Wallpaper Engine parity is not claimed."
+    "Unsupported or unaudited capabilities remain explicit failures; complete Wallpaper Engine parity is not claimed.",
+    "Host-side non-consuming desktop mouse forwarding; helper frame input explicitly supplies left-button state to the shared renderer and its existing SceneScript cursor pass. No helper global mouse monitor or keyboard forwarding."
   ]
 }

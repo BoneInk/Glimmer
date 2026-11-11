@@ -202,7 +202,7 @@ public final class SceneBackendFacade: @unchecked Sendable {
                   input.sequence > sequence, input.elapsedSeconds.isFinite, input.elapsedSeconds >= lastElapsed,
                   input.cursorX.map({ $0.isFinite }) ?? true, input.cursorY.map({ $0.isFinite }) ?? true
             else { throw SceneBackendFailure.stale }
-            guard !input.leftMouseDown else { throw SceneBackendFailure.unsupported }
+            renderer.externalLeftMouseDown = !paused && input.cursorX != nil && input.cursorY != nil && input.leftMouseDown
             time = 1000 + input.elapsedSeconds; lastElapsed = input.elapsedSeconds; sequence = input.sequence
             let cursor = input.cursorX.flatMap { x in input.cursorY.map { SIMD2(x, $0) } }
             if paused {

@@ -115,6 +115,8 @@ struct WallpaperItem: Identifiable, Hashable, Codable, Sendable {
     var videoPlaybackPreferences: VideoPlaybackPreferences?
     /// Missing in legacy libraries means video. Web records point at project.json.
     var contentKind: WallpaperContentKind?
+    /// Per-work HTTPS permission shared by preview, desktop and live lock screen; nil stays offline.
+    var webAllowHTTPS: Bool?
 
     init(
         id: UUID = UUID(),
@@ -138,7 +140,8 @@ struct WallpaperItem: Identifiable, Hashable, Codable, Sendable {
         workshopID: String? = nil,
         notes: String? = nil,
         videoPlaybackPreferences: VideoPlaybackPreferences? = nil,
-        contentKind: WallpaperContentKind? = nil
+        contentKind: WallpaperContentKind? = nil,
+        webAllowHTTPS: Bool? = nil
     ) {
         self.id = id
         self.title = title
@@ -162,6 +165,7 @@ struct WallpaperItem: Identifiable, Hashable, Codable, Sendable {
         self.notes = notes
         self.videoPlaybackPreferences = videoPlaybackPreferences?.normalized
         self.contentKind = contentKind
+        self.webAllowHTTPS = webAllowHTTPS
     }
 
     var fileURL: URL { URL(fileURLWithPath: filePath) }

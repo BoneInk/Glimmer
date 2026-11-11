@@ -63,7 +63,7 @@ enum AppSettingsWiring {
                 gravity: settings.gravity == .fill ? .fill : .fit
             )
         }
-        return GWPlaybackConfiguration(displays: displays)
+        return GWPlaybackConfiguration(displays: displays).normalized()
     }
 
     static func applyPlaybackConfiguration(

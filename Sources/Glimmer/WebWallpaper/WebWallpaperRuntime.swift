@@ -12,8 +12,11 @@ final class WebWallpaperRuntime: NSObject {
     let capabilities: WebWallpaperCapabilities
     private(set) var state: State = .idle
     private(set) var lastError: String?
-    /// Owners of remote layers recreate failed documents while keeping their backing.
+    /// Owners of remote layers may recreate a failed document while keeping
+    /// their displayed backing. Ordinary desktop owners keep their own policy.
     @ObservationIgnored var failureHandler: (@MainActor (String) -> Void)?
+    /// At most 64 unique nonfatal messages per document; cleared on reload.
+    private(set) var diagnostics: [String] = []
     private(set) var unsupportedPropertyKeys: [String]
     private(set) var propertyDeliveryCount = 0
     private(set) var lastDeliveredPropertyKeys: [String] = []
@@ -50,18 +53,18 @@ final class WebWallpaperRuntime: NSObject {
 
     /// Initialization validates locations/payload but does not load. Call load explicitly;
     /// pending settings can be changed before loading and are delivered on readiness.
-    private let manualFrameExport: Bool
     private let toleratesBlockedHTTPS: Bool
-    private let animationFrameRateLimit: Int?
 
-    init(projectURL: URL, entryURL: URL, propertiesJSON: Data, manualFrameExport: Bool = false,
+    init(projectURL: URL, entryURL: URL, propertiesJSON: Data,
          allowHTTPS: Bool = false, mutedPlayback: Bool = false, toleratesBlockedHTTPS: Bool = false,
-         animationFrameRateLimit: Int? = nil, remoteLayerRendering: Bool = false) throws {
+         animationFrameRateLimit: Int? = nil, remoteLayerRendering: Bool = false,
+         allowsAudioAutoplay: Bool = false) throws {
         guard animationFrameRateLimit.map({ (1...240).contains($0) }) ?? true else {
             throw WebWallpaperFailure(message: "Web animation frame rate must be in 1...240.")
         }
-        self.manualFrameExport = manualFrameExport
-        self.animationFrameRateLimit = animationFrameRateLimit
+        let initialFPS = animationFrameRateLimit ?? 30
+        frameRateLimit = initialFPS
+        generalJSON = "{\"fps\":\(initialFPS)}"
         capabilities = WebWallpaperCapabilities(remoteResources: allowHTTPS)
         self.toleratesBlockedHTTPS = toleratesBlockedHTTPS
         let location = try WebWallpaperProjectLocation(projectURL: projectURL, entryURL: entryURL)
@@ -73,10 +76,13 @@ final class WebWallpaperRuntime: NSObject {
         configuration.websiteDataStore = .nonPersistent()
         configuration.setURLSchemeHandler(schemeHandler, forURLScheme: WebWallpaperProjectLocation.scheme)
         configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
-        if manualFrameExport || remoteLayerRendering { configuration.preferences.inactiveSchedulingPolicy = .none }
+        // Wallpaper windows normally sit behind other apps. WebKit's inactive
+        // scheduling would add a second, visibility-dependent throttle. The
+        // shared RAF scheduler below owns the requested animation rate instead.
+        configuration.preferences.inactiveSchedulingPolicy = .none
         // Requiring a gesture for video prevents lock-screen backgrounds from
         // loading at all. Silence output separately while allowing video frames.
-        configuration.mediaTypesRequiringUserActionForPlayback = mutedPlayback ? [] : .audio
+        configuration.mediaTypesRequiringUserActionForPlayback = (mutedPlayback || allowsAudioAutoplay) ? [] : .audio
         configuration.userContentController.add(messages, name: "gwWallpaper")
         webView = WKWebView(frame: .zero, configuration: configuration)
         super.init()
@@ -88,6 +94,41 @@ final class WebWallpaperRuntime: NSObject {
 
     func load() { guard state != .disposed else { return }; beginDocument() }
     func reload() { guard state != .disposed else { return }; beginDocument() }
+
+    /// Changes native output without reloading authored media or its timeline.
+    func setMuted(_ muted: Bool) throws {
+        guard state != .disposed else { throw WebWallpaperFailure(message: "Web wallpaper runtime is disposed.") }
+        try WebWallpaperMutedMediaPolicy.setMuted(muted, on: webView)
+    }
+
+    /// Delivers only mouse input; original desktop events continue to Finder.
+    func forwardMouseEvent(_ event: NSEvent, screenPoint: NSPoint) {
+        guard state == .ready, let window = webView.window,
+              webView.bounds.width > 0, webView.bounds.height > 0 else { return }
+        let point = webView.convert(window.convertPoint(fromScreen: screenPoint), from: nil)
+        let x = point.x / webView.bounds.width
+        let y = webView.isFlipped ? point.y / webView.bounds.height : 1 - point.y / webView.bounds.height
+        guard x.isFinite, y.isFinite else { return }
+        let kind: String
+        switch event.type {
+        case .leftMouseDown: kind = "down"
+        case .leftMouseUp: kind = "up"
+        case .mouseMoved, .leftMouseDragged: kind = "move"
+        case .scrollWheel: kind = "wheel"
+        default: return
+        }
+        let scale = kind == "wheel" && event.hasPreciseScrollingDeltas ? 1.0 : 16.0
+        let dx = kind == "wheel" ? -Double(event.scrollingDeltaX) * scale : 0
+        let dy = kind == "wheel" ? -Double(event.scrollingDeltaY) * scale : 0
+        guard dx.isFinite, dy.isFinite else { return }
+        let payload: [String: Any] = ["kind": kind, "x": x, "y": y, "dx": dx, "dy": dy,
+            "clicks": kind == "down" || kind == "up" ? event.clickCount : 0,
+            "alt": event.modifierFlags.contains(.option), "ctrl": event.modifierFlags.contains(.control),
+            "shift": event.modifierFlags.contains(.shift), "meta": event.modifierFlags.contains(.command)]
+        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+              let json = String(data: data, encoding: .utf8) else { return }
+        webView.evaluateJavaScript("window.__gwForwardPointer?.(\(json));true", completionHandler: nil)
+    }
 
     func applyPropertiesJSON(_ data: Data) throws {
         guard state != .disposed else { throw WebWallpaperFailure(message: "Web wallpaper runtime is disposed.") }
@@ -201,8 +242,8 @@ final class WebWallpaperRuntime: NSObject {
         try setGeneralPropertiesJSON(try JSONSerialization.data(withJSONObject: ["fps": fps]))
     }
 
-    /// Official cooperative callback plus public HTML media suspension. This cannot
-    /// forcibly freeze arbitrary authored JavaScript, CSS, timers or requestAnimationFrame.
+    /// Suspends the live RAF scheduler and HTML media, and delivers the official
+    /// cooperative callback. CSS, workers and timers keep their own clocks.
     func setPaused(_ value: Bool) {
         guard state != .disposed else { return }
         paused = value
@@ -241,43 +282,17 @@ final class WebWallpaperRuntime: NSObject {
         webView.stopLoading()
         pushTask?.cancel(); pushTask = nil
         token = UUID().uuidString; revision = 0; finishedDocument = false
-        propertyDeliveryCount = 0; lastDeliveredPropertyKeys = []; lastError = nil
+        propertyDeliveryCount = 0; lastDeliveredPropertyKeys = []; lastError = nil; diagnostics = []
         state = .loading
         schemeHandler.beginDocument(token: token)
         let controller = webView.configuration.userContentController
         controller.removeAllUserScripts()
+        controller.addUserScript(WKUserScript(source: WebWallpaperPointerBridge.script, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         controller.addUserScript(WKUserScript(source: WebWallpaperBridge.script(token: token), injectionTime: .atDocumentStart, forMainFrameOnly: true))
-        if manualFrameExport {
-            controller.addUserScript(WKUserScript(source: Self.manualFrameClock,
-                injectionTime: .atDocumentStart, forMainFrameOnly: true))
-        } else if let animationFrameRateLimit {
-            controller.addUserScript(WKUserScript(source: WebWallpaperFramePacer.script(fps: animationFrameRateLimit),
-                injectionTime: .atDocumentStart, forMainFrameOnly: true))
-        }
+        controller.addUserScript(WKUserScript(source: WebWallpaperFramePacer.script(fps: frameRateLimit, paused: paused),
+            injectionTime: .atDocumentStart, forMainFrameOnly: true))
         navigation = webView.load(URLRequest(url: location.documentURL))
     }
-
-    /// The export session owns RAF scheduling. Timestamps still use the page's
-    /// real performance clock; previews and desktop sessions retain native RAF.
-    private static let manualFrameClock = #"""
-    (() => {
-      let nextID = 0;
-      const pending = new Map();
-      window.requestAnimationFrame = callback => {
-        if (typeof callback !== 'function') throw new TypeError('Animation callback must be a function');
-        const id = ++nextID; pending.set(id, callback); return id;
-      };
-      window.cancelAnimationFrame = id => { pending.delete(id); };
-      window.__gwLockScreenCaptureFrame = () => {
-        const frame = Array.from(pending.entries());
-        const now = performance.now();
-        for (const [id, callback] of frame) {
-          if (!pending.delete(id)) continue;
-          callback(now);
-        }
-      };
-    })();
-    """#
 
     fileprivate func receive(_ body: [String: Any]) {
         guard state != .disposed, body["token"] as? String == token, let kind = body["kind"] as? String else { return }
@@ -325,6 +340,17 @@ final class WebWallpaperRuntime: NSObject {
             canApplyUserProperties = body["userPropertiesListener"] as? Bool ?? false
             canApplyDirectoryProperties = body["directoryListener"] as? Bool ?? false
             if lastError == nil { state = paused ? .paused : .ready }
+        case "diagnostic":
+            let message = String((body["message"] as? String ?? "Wallpaper diagnostic").prefix(2048))
+            let rawURI = String((body["uri"] as? String ?? "").prefix(2048))
+            var uri = rawURI
+            if var components = URLComponents(string: rawURI) {
+                components.user = nil; components.password = nil
+                components.query = nil; components.fragment = nil
+                uri = components.string ?? "[resource]"
+            }
+            let value = message + (uri.isEmpty ? "" : " " + uri)
+            if diagnostics.count < 64, !diagnostics.contains(value) { diagnostics.append(value) }
         case "securityError":
             if toleratesBlockedHTTPS, (body["uri"] as? String)?.hasPrefix("https:") == true,
                ["connect-src", "img-src", "font-src", "style-src", "script-src", "media-src"].contains(body["directive"] as? String ?? "") {

@@ -13,5 +13,6 @@ swiftc "${AUTHOR_WEB_CORE_SOURCES[@]}" -swift-version 6 -strict-concurrency=comp
   "$ROOT/Sources/Glimmer/Support/AppConstants.swift" \
   "$ROOT/Sources/Glimmer/Support/VideoFileSupport.swift" \
   "$ROOT/Sources/Glimmer/Support/WorkshopWallpaperApplication.swift" \
+  "$ROOT/Sources/Glimmer/Support/SceneSteamEngineAssetRegistration.swift" \
   "$ROOT/Tests/WorkshopWallpaperApplyTests.swift" -o "$TEST_OUT/WorkshopWallpaperApplyTests"
 "$TEST_OUT/WorkshopWallpaperApplyTests"

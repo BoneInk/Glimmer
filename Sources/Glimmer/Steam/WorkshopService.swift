@@ -10,66 +10,75 @@ actor WorkshopService {
     static let shared = WorkshopService()
     private let http: SteamHTTPClient
     private var recentSearchPages: [(request: WorkshopSearchRequest, ids: [String])] = []
-    private var unionPageCache: [(request: WorkshopSearchRequest, page: WorkshopSearchPage)] = []
+    private var unionCursor: WorkshopSearchUnion.Cursor?
+    private var unionGeneration = UUID()
+    private let searchPageLoader: (@Sendable (WorkshopSearchRequest) async throws -> WorkshopSearchPage)?
     private var unionCacheKey: WorkshopSearchRequest?
     private var recentAuthorPages: [(authorID: String, page: Int, ids: [String])] = []
 
-    init(http: SteamHTTPClient = SteamHTTPClient()) {
+    init(http: SteamHTTPClient = SteamHTTPClient(),
+         searchPageLoader: (@Sendable (WorkshopSearchRequest) async throws -> WorkshopSearchPage)? = nil) {
         self.http = http
+        self.searchPageLoader = searchPageLoader
     }
 
     /// F11：按关键词、类型、排序与分页搜索 Wallpaper Engine 作品。
     func search(_ request: WorkshopSearchRequest) async throws -> WorkshopSearchPage {
-        let types = request.filters.orderedTypes
-        guard types.count > 1, types.count < WorkshopSearchType.selectableCases.count else {
-            return try await searchSingle(request)
-        }
-
-        let logicalPage = max(1, request.page)
+        let branches = request.filters.searchBranches
+        guard branches.count > 1 else { return try await searchSingle(request) }
         var cacheKey = request
         cacheKey.page = 1
         if request.page == 1 || unionCacheKey != cacheKey {
-            unionPageCache.removeAll()
+            unionCursor = nil
             unionCacheKey = cacheKey
+            unionGeneration = UUID()
         }
-        var branches: [[WorkshopSearchResult]] = []
-        var totalCount = 0
-        var paths: [String] = []
-
-        for type in types {
-            var accumulated: [WorkshopSearchResult] = []
-            var branchTotalPages: Int?
-            for pageNumber in 1...logicalPage {
-                try Task.checkCancellation()
-                if let branchTotalPages, pageNumber > branchTotalPages { break }
-                let branchRequest = request.specialized(for: type, page: pageNumber)
-                let page: WorkshopSearchPage
-                if let cached = unionPageCache.first(where: { $0.request == branchRequest })?.page {
-                    page = cached
-                } else {
-                    page = try await searchSingle(branchRequest)
-                    unionPageCache.append((branchRequest, page))
-                    if unionPageCache.count > 90 { unionPageCache.removeFirst(unionPageCache.count - 90) }
-                }
-                if pageNumber == 1 {
-                    totalCount += page.totalCount
-                    branchTotalPages = page.totalPages
-                    paths.append("\(type.rawValue):\(page.discoveryPath)")
-                }
-                accumulated.append(contentsOf: page.results)
+        let generation = unionGeneration
+        var cursor = unionCursor ?? WorkshopSearchUnion.Cursor(request: cacheKey, filters: branches)
+        let logicalPage = max(1, request.page)
+        let pageSize = max(1, min(request.pageSize, 30))
+        while cursor.pages.count < logicalPage && !cursor.finished {
+            var results: [WorkshopSearchResult] = []
+            while results.count < pageSize, let result = try await nextUnionResult(&cursor) {
+                results.append(result)
             }
-            branches.append(accumulated)
+            // One item of lookahead tells us whether a full final page has a next
+            // page. Keep it for the next call instead of requesting an empty page.
+            if !cursor.finished { cursor.lookahead = try await nextUnionResult(&cursor) }
+            if !results.isEmpty { cursor.pages.append(results) }
         }
-
-        return WorkshopSearchUnion.merge(
+        try Task.checkCancellation()
+        if unionGeneration == generation { unionCursor = cursor }
+        return WorkshopSearchPage(
             request: request,
-            branches: branches,
-            reportedTotal: totalCount,
-            discoveryPaths: paths
+            totalCount: cursor.seen.count,
+            isTotalCountExact: cursor.finished,
+            // Overlapping themes make summed branch totals inaccurate. The exact
+            // page count becomes known when the lazy, deduplicated union ends.
+            totalPages: cursor.finished ? cursor.pages.count : nil,
+            results: logicalPage <= cursor.pages.count ? cursor.pages[logicalPage - 1] : [],
+            discoveryPath: "union[\(branches.count)]"
         )
     }
 
+    private func nextUnionResult(_ cursor: inout WorkshopSearchUnion.Cursor) async throws -> WorkshopSearchResult? {
+        if let result = cursor.lookahead {
+            cursor.lookahead = nil
+            return result
+        }
+        while true {
+            try Task.checkCancellation()
+            switch cursor.next() {
+            case .result(let result): return result
+            case .fetch(let index, let request):
+                cursor.accept(try await searchSingle(request), branch: index)
+            case .end: return nil
+            }
+        }
+    }
+
     private func searchSingle(_ request: WorkshopSearchRequest) async throws -> WorkshopSearchPage {
+        if let searchPageLoader { return try await searchPageLoader(request) }
         let url = request.url
         WorkshopLog.info("工坊搜索：sort=\(request.sort.rawValue) page=\(max(1, request.page)) pageSize=\(request.pageSize) query=\(request.query.isEmpty ? "(空)" : "<关键词>")")
         let html = try await http.fetchPage(url)
@@ -152,39 +161,62 @@ actor WorkshopService {
 
 /// Produces deterministic logical pages without inventing a cross-type rank.
 /// Each branch keeps Steam's order and round-robin interleaving gives every
-/// selected type stable representation across page boundaries.
+/// selected branch stable representation across page boundaries.
 enum WorkshopSearchUnion {
-    static func merge(request: WorkshopSearchRequest,
-                      branches: [[WorkshopSearchResult]],
-                      reportedTotal: Int,
-                      discoveryPaths: [String]) -> WorkshopSearchPage {
-        var merged: [WorkshopSearchResult] = []
-        var firstBranchByID: [String: Int] = [:]
-        var crossBranchDuplicates = Set<String>()
-        let longest = branches.map(\.count).max() ?? 0
-        for index in 0..<longest {
-            for (branchIndex, branch) in branches.enumerated() where index < branch.count {
-                let result = branch[index]
-                if let firstBranch = firstBranchByID[result.id] {
-                    if firstBranch != branchIndex { crossBranchDuplicates.insert(result.id) }
-                } else {
-                    firstBranchByID[result.id] = branchIndex
-                    merged.append(result)
-                }
+    /// Fetch branches only as they are visited. This avoids a Cartesian burst
+    /// when many chips are selected and keeps already emitted logical pages stable.
+    struct Cursor {
+        struct Branch {
+            var request: WorkshopSearchRequest
+            var results: [WorkshopSearchResult] = []
+            var offset = 0
+            var exhausted = false
+        }
+        enum Step { case result(WorkshopSearchResult), fetch(Int, WorkshopSearchRequest), end }
+        var branches: [Branch]
+        var nextBranch = 0
+        var seen = Set<String>()
+        var pages: [[WorkshopSearchResult]] = []
+        var lookahead: WorkshopSearchResult?
+        var finished = false
+
+        init(request: WorkshopSearchRequest, filters: [WorkshopSearchFilters]) {
+            branches = filters.map { filters in
+                var branch = request
+                branch.filters = filters
+                branch.page = 1
+                return Branch(request: branch)
             }
         }
-        let page = max(1, request.page)
-        let pageSize = max(1, min(request.pageSize, 30))
-        let totalCount = max(0, reportedTotal - crossBranchDuplicates.count)
-        let start = (page - 1) * pageSize
-        let results = start < merged.count ? Array(merged[start..<min(start + pageSize, merged.count)]) : []
-        return WorkshopSearchPage(
-            request: request,
-            totalCount: totalCount,
-            totalPages: Int(ceil(Double(totalCount) / Double(pageSize))),
-            results: results,
-            discoveryPath: "union[\(discoveryPaths.joined(separator: ","))]"
-        )
+
+        mutating func next() -> Step {
+            guard !finished else { return .end }
+            var exhaustedBranches = 0
+            while exhaustedBranches < branches.count {
+                let index = nextBranch
+                if branches[index].offset < branches[index].results.count {
+                    let result = branches[index].results[branches[index].offset]
+                    branches[index].offset += 1
+                    nextBranch = (index + 1) % branches.count
+                    exhaustedBranches = 0
+                    if seen.insert(result.id).inserted { return .result(result) }
+                } else if branches[index].exhausted {
+                    nextBranch = (index + 1) % branches.count
+                    exhaustedBranches += 1
+                } else {
+                    return .fetch(index, branches[index].request)
+                }
+            }
+            finished = true
+            return .end
+        }
+
+        mutating func accept(_ page: WorkshopSearchPage, branch index: Int) {
+            branches[index].results = page.results
+            branches[index].offset = 0
+            branches[index].exhausted = !page.hasNextPage
+            branches[index].request.page += 1
+        }
     }
 }
 

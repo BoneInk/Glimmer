@@ -21,9 +21,9 @@ struct DetailInspectorView: View {
     var immersive = false
     var topContentInset: CGFloat = 0
     var wallpaperFPS = 30
+    var initialAuthor: WorkshopAuthor? = nil
 
     @GlassState private var selectedDisplayID: String?
-    @GlassState private var isPreviewMuted = true
     @GlassState private var previewPaused = false
     @GlassState private var previewReady = false
     @GlassState private var snapshotUnavailable = false
@@ -129,7 +129,7 @@ struct DetailInspectorView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         header
                         HStack(alignment: .top, spacing: 14) {
-                            WallpaperCreatorBadge(item: item, detail: information.detail,
+                            WallpaperCreatorBadge(item: item, detail: information.detail, initialAuthor: initialAuthor,
                                 fallbackName: !projectAuthor.isEmpty ? projectAuthor
                                     : item.workshopID == nil ? "本地壁纸" : information.isLoading ? "正在加载作者…" : "作者信息暂不可用")
                             VStack(alignment: .leading, spacing: 10) {
@@ -177,7 +177,6 @@ struct DetailInspectorView: View {
     private var previewControls: some View {
         HStack(spacing: 10) {
             WallpaperPreviewControls(paused: $previewPaused,
-                muted: (item.isVideoWallpaper || item.isSceneWallpaper) ? $isPreviewMuted : nil,
                 canTogglePause: !missing && (!item.isSceneWallpaper || scenePreviewRelay.controls.canTogglePause))
             if previewError != nil {
                 Button(action: reloadPreview) { Image(systemName: "arrow.clockwise") }
@@ -355,7 +354,7 @@ struct DetailInspectorView: View {
                     } else if item.isSceneWallpaper {
                         SceneWallpaperPreviewView(item: item, isPaused: previewPaused || heldForHandoff,
                             storage: store.storage, wallpaperFPS: wallpaperFPS,
-                            soundEnabled: !isPreviewMuted,
+                            soundEnabled: false,
                             soundVolume: settings.volume.isFinite ? settings.volume : 1,
                             previewModel: scenePreviewModel,
                             onControlsStateChange: { itemID, state in
@@ -365,7 +364,7 @@ struct DetailInspectorView: View {
                         PlayerPreviewView(
                             item: item,
                             isPaused: previewPaused || heldForHandoff,
-                            isMuted: isPreviewMuted,
+                            isMuted: true,
                             volume: settings.volume.isFinite ? settings.volume : 1,
                             rate: settings.clampedRate.isFinite ? Double(settings.clampedRate) : 1,
                             gravity: immersive ? .fill : settings.gravity,
@@ -479,6 +478,19 @@ struct DetailInspectorView: View {
                     LockScreenApplyControls(item: item,
                         displayIDs: selectedDisplayID == "__all_displays__" ? nil : targetDisplayID.map { [$0] },
                         hasDisplays: !displays.isEmpty, onFeedback: { previewToast = $0 })
+                    Button {
+                        var updated = videoPreferences
+                        updated.isMuted.toggle()
+                        playback.updateVideoPlaybackPreferences(updated, itemID: item.id)
+                    } label: {
+                        Image(systemName: settings.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                            .font(.system(size: 15)).frame(width: 18, height: 18)
+                    }
+                    .buttonStyle(.glass).controlSize(.regular)
+                    .help(settings.isMuted ? "取消壁纸静音" : "静音壁纸")
+                    .accessibilityLabel(settings.isMuted ? "取消壁纸静音" : "静音壁纸")
+                    .accessibilityValue(settings.isMuted ? "已静音" : "声音已开启")
+                    .accessibilityIdentifier("wallpaper-mute")
                 }
                 WallpaperInformationButton(itemID: item.workshopID, localItem: item, initialDetail: information.detail)
         }
@@ -494,7 +506,6 @@ struct DetailInspectorView: View {
 
     private var playbackSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Toggle("静音", isOn: binding(for: \.isMuted)).toggleStyle(.switch)
             HStack(spacing: 12) {
                 Text("音量").frame(width: 48, alignment: .leading)
                 Slider(value: binding(for: \.volume), in: 0...1)

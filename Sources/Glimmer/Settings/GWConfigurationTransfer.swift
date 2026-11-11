@@ -92,7 +92,9 @@ struct GWPlaybackConfiguration: Codable, Equatable, Sendable {
 
     func normalized() -> GWPlaybackConfiguration {
         var copy = self
-        copy.displays = displays.mapValues { $0.normalized() }
+        // UUID-less screen identities are valid only while that screen stays online.
+        copy.displays = displays.filter { !$0.key.hasPrefix("session-display:") }
+            .mapValues { $0.normalized() }
         return copy
     }
 }
@@ -226,7 +228,9 @@ enum GWConfigurationTransfer {
     /// 编码信封（人类可读、稳定排序）。
     static func encodeExport(_ envelope: GWConfigurationEnvelope) throws -> Data {
         do {
-            return try GWJSONFileStore.makeEncoder().encode(envelope)
+            var normalized = envelope
+            normalized.playback = envelope.playback?.normalized()
+            return try GWJSONFileStore.makeEncoder().encode(normalized)
         } catch {
             throw GWConfigurationError.writeFailed(detail: error.localizedDescription)
         }
@@ -369,18 +373,19 @@ enum GWConfigurationTransfer {
     // MARK: 校验辅助
 
     /// 递归扫描字段名（最多三层），返回疑似凭据的字段名列表（不读取值的任何内容）。
-    private static func credentialKeys(in object: Any, depth: Int) -> [String] {
+    private static func credentialKeys(in object: Any, depth: Int, path: [String] = []) -> [String] {
         guard depth <= 3, let dictionary = object as? [String: Any] else { return [] }
         var found: [String] = []
         for (key, value) in dictionary {
-            if isForbiddenKey(key) {
+            let temporaryDisplayKey = path == ["playback", "displays"] && key.hasPrefix("session-display:")
+            if !temporaryDisplayKey && isForbiddenKey(key) {
                 found.append(key)
             }
             if let nested = value as? [String: Any] {
-                found.append(contentsOf: credentialKeys(in: nested, depth: depth + 1))
+                found.append(contentsOf: credentialKeys(in: nested, depth: depth + 1, path: path + [key]))
             } else if let array = value as? [Any] {
                 for element in array {
-                    found.append(contentsOf: credentialKeys(in: element, depth: depth + 1))
+                    found.append(contentsOf: credentialKeys(in: element, depth: depth + 1, path: path + [key]))
                 }
             }
         }

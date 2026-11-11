@@ -6,11 +6,11 @@ import Foundation
 /// independent aspect-ratio parameter. Age tags do not alter Steam content settings.
 struct WorkshopSearchFilters: Equatable, Sendable {
     /// Empty means every type. Multiple values are an OR across separate Steam
-    /// requests; the remaining tags stay AND-ed inside every request.
+    /// requests. Values within each filter group are also OR-ed; groups are AND-ed.
     var types: Set<WorkshopSearchType>
-    var resolution: WorkshopResolution? = nil
-    var genre: WorkshopGenre? = nil
-    var ageRating: WorkshopAgeRating? = nil
+    var resolutions: Set<WorkshopResolution> = []
+    var genres: Set<WorkshopGenre> = []
+    var ageRatings: Set<WorkshopAgeRating> = []
     /// Main-layer ranking control, separate from required-tag filter chips.
     var trendPeriod: WorkshopTrendPeriod = .week
 
@@ -20,9 +20,9 @@ struct WorkshopSearchFilters: Equatable, Sendable {
          ageRating: WorkshopAgeRating? = nil,
          trendPeriod: WorkshopTrendPeriod = .week) {
         types = type == .all ? [] : [type]
-        self.resolution = resolution
-        self.genre = genre
-        self.ageRating = ageRating
+        resolutions = Set(resolution.map { [$0] } ?? [])
+        genres = Set(genre.map { [$0] } ?? [])
+        ageRatings = Set(ageRating.map { [$0] } ?? [])
         self.trendPeriod = trendPeriod
     }
 
@@ -32,9 +32,9 @@ struct WorkshopSearchFilters: Equatable, Sendable {
          ageRating: WorkshopAgeRating? = nil,
          trendPeriod: WorkshopTrendPeriod = .week) {
         self.types = Set(types.filter { $0 != .all })
-        self.resolution = resolution
-        self.genre = genre
-        self.ageRating = ageRating
+        resolutions = Set(resolution.map { [$0] } ?? [])
+        genres = Set(genre.map { [$0] } ?? [])
+        ageRatings = Set(ageRating.map { [$0] } ?? [])
         self.trendPeriod = trendPeriod
     }
 
@@ -48,14 +48,68 @@ struct WorkshopSearchFilters: Equatable, Sendable {
         WorkshopSearchType.selectableCases.filter(types.contains)
     }
 
-    var requiredTags: [String] {
-        [resolution?.rawValue, genre?.rawValue, ageRating?.rawValue].compactMap { $0 }
+    // Compatibility for callers that deliberately replace a group with one value.
+    var resolution: WorkshopResolution? {
+        get { resolutions.count == 1 ? resolutions.first : nil }
+        set { resolutions = Set(newValue.map { [$0] } ?? []) }
     }
+    var genre: WorkshopGenre? {
+        get { genres.count == 1 ? genres.first : nil }
+        set { genres = Set(newValue.map { [$0] } ?? []) }
+    }
+    var ageRating: WorkshopAgeRating? {
+        get { ageRatings.count == 1 ? ageRatings.first : nil }
+        set { ageRatings = Set(newValue.map { [$0] } ?? []) }
+    }
+
+    var orderedResolutions: [WorkshopResolution] { WorkshopResolution.allCases.filter(resolutions.contains) }
+    var orderedGenres: [WorkshopGenre] { WorkshopGenre.allCases.filter(genres.contains) }
+    var orderedAgeRatings: [WorkshopAgeRating] { WorkshopAgeRating.allCases.filter(ageRatings.contains) }
+
+    /// One concrete Steam query requires every tag. The service expands multiple
+    /// selections into singleton branches before generating public browse URLs.
+    var requiredTags: [String] {
+        orderedResolutions.map(\.rawValue) + orderedGenres.map(\.rawValue) + orderedAgeRatings.map(\.rawValue)
+    }
+
+    var searchBranches: [Self] {
+        let typeChoices: [WorkshopSearchType] = orderedTypes.isEmpty || types.count == WorkshopSearchType.selectableCases.count
+            ? [.all] : orderedTypes
+        let resolutionChoices: [WorkshopResolution?] = resolutions.isEmpty ? [nil] : orderedResolutions.map { $0 }
+        let genreChoices: [WorkshopGenre?] = genres.isEmpty ? [nil] : orderedGenres.map { $0 }
+        let ratingChoices: [WorkshopAgeRating?] = ageRatings.isEmpty ? [nil] : orderedAgeRatings.map { $0 }
+        return typeChoices.flatMap { type in
+            resolutionChoices.flatMap { resolution in
+                genreChoices.flatMap { genre in
+                    ratingChoices.map { rating in
+                        Self(type: type, resolution: resolution, genre: genre, ageRating: rating, trendPeriod: trendPeriod)
+                    }
+                }
+            }
+        }
+    }
+
+    mutating func toggle(_ genre: WorkshopGenre) {
+        if !genres.insert(genre).inserted { genres.remove(genre) }
+    }
+    mutating func toggle(_ resolution: WorkshopResolution) {
+        if !resolutions.insert(resolution).inserted { resolutions.remove(resolution) }
+    }
+    mutating func toggle(_ rating: WorkshopAgeRating) {
+        if !ageRatings.insert(rating).inserted { ageRatings.remove(rating) }
+    }
+
     var activeCount: Int { requiredTags.count + (types == [.video] ? 0 : 1) }
     var isEmpty: Bool { activeCount == 0 }
     var activeLabels: [String] {
-        (types == [.video] ? [] : ["类型：" + (types.isEmpty ? "全部类型" : orderedTypes.map(\.title).joined(separator: "、"))]) + [resolution.map { "分辨率：" + $0.title }, genre.map { "分类：" + $0.title },
-         ageRating.map { "年龄分级：" + $0.title }].compactMap { $0 }
+        var labels: [String] = []
+        if types != [.video] {
+            labels.append("类型：" + (types.isEmpty ? "全部类型" : orderedTypes.map(\.title).joined(separator: "、")))
+        }
+        if !genres.isEmpty { labels.append("主题：" + orderedGenres.map(\.title).joined(separator: "、")) }
+        if !resolutions.isEmpty { labels.append("分辨率：" + orderedResolutions.map(\.title).joined(separator: "、")) }
+        if !ageRatings.isEmpty { labels.append("年龄分级：" + orderedAgeRatings.map(\.title).joined(separator: "、")) }
+        return labels
     }
 }
 

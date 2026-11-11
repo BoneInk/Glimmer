@@ -64,6 +64,7 @@ final class WorkshopCoordinator {
     private(set) var searchError: String?
     private(set) var results: [WorkshopSearchResult] = []
     private(set) var totalCount: Int = 0
+    private(set) var isTotalCountExact = true
     private(set) var totalPages: Int?
     private(set) var lastDiscoveryPath: String?
     private(set) var lastSearchDuration: TimeInterval?
@@ -303,6 +304,7 @@ final class WorkshopCoordinator {
                     self.hasSuccessfulCurrentSearch = true
                     self.results = page.results
                     self.totalCount = page.totalCount
+                    self.isTotalCountExact = page.isTotalCountExact
                     self.totalPages = page.totalPages
                     self.lastDiscoveryPath = page.discoveryPath
                     self.lastSearchDuration = Date().timeIntervalSince(startedAt)

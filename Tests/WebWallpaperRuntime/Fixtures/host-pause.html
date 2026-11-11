@@ -1,0 +1,24 @@
+<!doctype html><html><head><meta charset="utf-8"><script>
+window.rafTicks=0;window.timerTicks=0;window.frameStamps=[];window.pauseCalls=[];
+window.slowStarted=false;window.slowDone=false;
+function animate(time){
+  rafTicks++;frameStamps.push(time);
+  const canvas=document.getElementById('canvas');
+  if(canvas){const context=canvas.getContext('2d');context.fillStyle='red';context.fillRect(0,0,16,16)}
+  window.loopID=requestAnimationFrame(animate)
+}
+window.loopID=requestAnimationFrame(animate);
+setInterval(()=>timerTicks++,10);
+window.wallpaperPropertyListener={
+  async applyUserProperties(properties){
+    if(properties.text && properties.text.value==='WAIT_RAF'){
+      window.rafAckStarted=true;await new Promise(resolve=>requestAnimationFrame(resolve));window.rafAckDone=true;
+    }
+    if(properties.text && properties.text.value==='SLOW'){
+      slowStarted=true;await new Promise(resolve=>setTimeout(resolve,500));slowDone=true;
+    }
+  },
+  applyGeneralProperties(properties){window.lastFPS=properties.fps},
+  setPaused(value){pauseCalls.push(value)}
+};
+</script></head><body><canvas id="canvas" width="16" height="16"></canvas>Host pause regression fixture</body></html>

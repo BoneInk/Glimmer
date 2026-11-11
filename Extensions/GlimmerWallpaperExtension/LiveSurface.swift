@@ -126,6 +126,7 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
 
     private func renderFrames(_ recipe: LiveWallpaperRecipe) async throws {
         var lastTick: ContinuousClock.Instant?, elapsed = 0.0, sentPaused: Bool?
+        var schedule = SceneFrameSchedule(framesPerSecond: recipe.fps, now: .now, immediately: true)
         while !stopped, !Task.isCancelled {
             do {
                 if helperDisconnected { throw UniversalSceneBackendError.interrupted }
@@ -140,6 +141,7 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
                     try Task.checkCancellation()
                     guard !stopped else { return }
                     sentPaused = nil; lastTick = nil
+                    schedule = SceneFrameSchedule(framesPerSecond: recipe.fps, now: .now, immediately: true)
                 }
                 // Preparation can span a sleep/visibility transition.
                 let paused = frameCount > 0 && !wantsPlayback
@@ -148,8 +150,10 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
                     try await client?.setPaused(paused)
                     sentPaused = paused
                     lastTick = nil
+                    schedule = SceneFrameSchedule(framesPerSecond: recipe.fps, now: .now, immediately: true)
                 }
                 if !paused {
+                    try await ContinuousClock().sleep(until: schedule.deadline)
                     guard !stopped, !Task.isCancelled else { break }
                     // Playback intent may change while the deadline is asleep.
                     if frameCount > 0, !wantsPlayback { continue }
@@ -158,6 +162,7 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
                     lastTick = now
                     guard let client else { throw GWError(52, "Live Scene helper is unavailable") }
                     let buffer = try await sceneFrame(client, recipe: recipe, elapsed: elapsed)
+                    schedule.advance(after: .now)
                     guard !stopped, !Task.isCancelled else { break }
                     if frameCount > 0, !wantsPlayback { continue }
                     if CACurrentMediaTime() - lastPresentationTime > 3 { restorePresentation() }
@@ -167,7 +172,7 @@ final class GWLiveSurface: GWNativeWallpaperSurface {
                         if let completion = startup { startup = nil; completion(true) }
                     }
                 }
-                try await Task.sleep(for: paused ? .milliseconds(100) : .seconds(1 / Double(recipe.fps)))
+                if paused { try await Task.sleep(for: .milliseconds(100)) }
             } catch is CancellationError { return }
             catch {
                 guard !stopped, !Task.isCancelled else { return }

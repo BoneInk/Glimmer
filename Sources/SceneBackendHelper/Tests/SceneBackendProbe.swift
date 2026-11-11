@@ -102,12 +102,12 @@ import OpenWallpaperEngine
         let peerReadiness = try JSONDecoder().decode(SceneBackendReadiness.self,from:peerPrepared)
         precondition(peerReadiness.isStrictlyReady)
         let device = MTLCreateSystemDefaultDevice()!
-        func frame(_ seq:UInt64,_ time:Double, service: SceneBackendRemote? = nil,
+        func frame(_ seq:UInt64,_ time:Double, leftMouseDown: Bool = false, service: SceneBackendRemote? = nil,
                    session: SceneBackendConfiguration? = nil) async throws -> (SceneFrameToken,String) {
             let service = service ?? remote
             let requestConfig = session ?? config
             let input = SceneFrameInput(sessionID:requestConfig.sessionID,generation:requestConfig.generation,sequence:seq,
-                elapsedSeconds:time,cursorX:320,cursorY:180,leftMouseDown:false)
+                elapsedSeconds:time,cursorX:320,cursorY:180,leftMouseDown:leftMouseDown)
             let (tokenData,surface):(Data,IOSurface) = try await withCheckedThrowingContinuation { done in
                 service.render(try! JSONEncoder().encode(input)) { token,surface,error in
                     if let error { done.resume(throwing:error) }
@@ -193,6 +193,15 @@ import OpenWallpaperEngine
         let resumed = try await frame(6,0.75)
         let resumedState = try await status(remote)
         precondition((resumedState.sceneSeconds ?? 0) > (pausedState.sceneSeconds ?? 0))
+        let cursorClickTested = ProcessInfo.processInfo.environment["SCENE_BACKEND_PROBE_CURSOR"] == "YES"
+        var cursorClickChangedPixels = false
+        if cursorClickTested {
+            _ = try await frame(7, 0.8, leftMouseDown: true)
+            _ = try await frame(8, 0.85, leftMouseDown: false)
+            let clicked = try await frame(9, 0.9)
+            cursorClickChangedPixels = clicked.1 != resumed.1
+            precondition(cursorClickChangedPixels, "cursorClick must change real renderer pixels")
+        }
         await withCheckedContinuation { done in independentRemote.close(peerConfig.sessionID,generation:peerConfig.generation) { done.resume() } }
         await withCheckedContinuation { done in remote.close(config.sessionID,generation:config.generation) { done.resume() } }
         let closedRejected:Bool = await withCheckedContinuation { done in
@@ -200,7 +209,7 @@ import OpenWallpaperEngine
                 elapsedSeconds:1,cursorX:nil,cursorY:nil,leftMouseDown:false))) { _,_,error in done.resume(returning:error != nil) }
         }
         precondition(closedRejected)
-        let result:[String:Any] = ["success":true,"strictReady":true,"configuredFPS":requestedFPS,"outputWidth":outputWidth,"outputHeight":outputHeight,"separateHelperPID":connection.processIdentifier,
+        let result:[String:Any] = ["success":true,"strictReady":true,"cursorClickTested":cursorClickTested,"cursorClickChangedPixels":cursorClickChangedPixels,"configuredFPS":requestedFPS,"outputWidth":outputWidth,"outputHeight":outputHeight,"separateHelperPID":connection.processIdentifier,
             "probePID":getpid(),"helperPID":ownerStatus.helperPID,"helperInstanceID":ownerStatus.instanceID.uuidString,
             "secondConnectionPID":secondStatus.helperPID,"secondConnectionInstanceID":secondStatus.instanceID.uuidString,
             "sameServiceConnectionsShareProcess":sharedServiceInstance,"secondConnectionOwnsSession":secondStatus.ownsSession,"observerPrepareRejected":observerPrepareRejected,

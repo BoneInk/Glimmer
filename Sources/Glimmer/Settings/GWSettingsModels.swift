@@ -52,7 +52,7 @@ struct GWPreferencesSettings: Codable, Equatable, Sendable {
         case backgroundBrightness
         case backgroundBlur
         case wallpaperFPS
-        case lockScreenExport
+        case lockScreenRender
         case restoreWallpapersOnLaunch
     }
 
@@ -74,7 +74,7 @@ struct GWPreferencesSettings: Codable, Equatable, Sendable {
     var wallpaperFPS: Int {
         didSet { wallpaperFPS = Self.normalizedFPS(wallpaperFPS) }
     }
-    var lockScreenExport: GWLockScreenExportSettings
+    var lockScreenRender: GWLockScreenRenderSettings
     /// 启动应用时恢复上次的桌面视频壁纸。
     var restoreWallpapersOnLaunch: Bool
 
@@ -83,14 +83,14 @@ struct GWPreferencesSettings: Codable, Equatable, Sendable {
         backgroundBrightness: Double = 0.15,
         backgroundBlur: Double = 0.15,
         wallpaperFPS: Int = 30,
-        lockScreenExport: GWLockScreenExportSettings = .init(),
+        lockScreenRender: GWLockScreenRenderSettings = .init(),
         restoreWallpapersOnLaunch: Bool = false
     ) {
         self.appearance = appearance
         self.backgroundBrightness = Self.normalizedUnitValue(backgroundBrightness, fallback: 0.15)
         self.backgroundBlur = Self.normalizedUnitValue(backgroundBlur, fallback: 0.15)
         self.wallpaperFPS = Self.normalizedFPS(wallpaperFPS)
-        self.lockScreenExport = lockScreenExport
+        self.lockScreenRender = lockScreenRender
         self.restoreWallpapersOnLaunch = restoreWallpapersOnLaunch
     }
 
@@ -119,8 +119,8 @@ struct GWPreferencesSettings: Codable, Equatable, Sendable {
         wallpaperFPS = Self.normalizedFPS(
             (try? container.decode(Int.self, forKey: .wallpaperFPS)) ?? defaults.wallpaperFPS
         )
-        lockScreenExport = (try? container.decode(GWLockScreenExportSettings.self, forKey: .lockScreenExport))
-            ?? defaults.lockScreenExport
+        lockScreenRender = (try? container.decode(GWLockScreenRenderSettings.self, forKey: .lockScreenRender))
+            ?? defaults.lockScreenRender
         restoreWallpapersOnLaunch = try container.decodeIfPresent(
             Bool.self,
             forKey: .restoreWallpapersOnLaunch

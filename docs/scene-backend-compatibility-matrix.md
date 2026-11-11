@@ -16,10 +16,10 @@
 | 内嵌视频纹理 | 有 | 已接入 | 原始 muted 解码帧、原视频运行时存在性 | `missing.video_frame` / `missing.required_video_runtime` |
 | Bloom/HDR | 有 | 已接入（要求原链） | `original_bloom` 审计 | `unsupported.original_bloom` |
 | 系统音频捕获/频谱响应 | 有（应用内） | **未接入**：helper 频谱恒为静音；不宣称支持，不代替用户授权录音 | 无 | 不涉及（能力未宣称） |
-| 鼠标左键交互 | 有 | **未接入** | 无 | `unsupported` |
+| 鼠标左键交互 | 有 | 已接入：应用观察桌面鼠标事件且不吞掉 Finder 原始事件；光标与左键状态经帧输入交给 helper 和现有 SceneScript cursor pass；暂停/锁屏不注入点击 | `evidence/desktop-input-20261023/scene-cursor-report.json`：真实 XPC 点击脚本切换图层显隐并改变 GPU 像素；另测位移与短点击、暂停清理 | 仍受既有 SceneScript 属性写回和渲染能力范围限制，不宣称全量 Windows 交互等价 |
 | SceneTexture / userShortcut 作者属性 | 有 | **未接入** | 无 | `unsupportedCapability` |
 | 声明式 Workshop 依赖自动安装 | 有（应用侧 Steam 会话） | **未实现自动安装**；现有入口仅在已验证公共 assets 登记缺失时经授权 Steam 下载一次并校验登记，失败保留且不循环；不按缺失文件名任意联网 | 公共 assets manifest 校验 | 下载/校验失败原样保留 |
-| 锁屏/导出 | 本次接入 | 独立通用 XPC 手动帧会话 → 10 秒、30 FPS、1920×1080 H.264 无音轨视频；共用 Web/Scene 缓存状态机，包含原作、作者参数、实际引擎与资产身份 | 真实编码、多帧变化、时钟推进、方向、缓存/取消/租约验证；未实机提交锁屏 | 缺能力/黑帧/编码失败不发布缓存 |
+| 实时锁屏 | 有 | 系统壁纸扩展内独立 Scene XPC 会话持续渲染；按锁屏画质或桌面设置确定尺寸与帧率；时间、日期及脚本继续推进，已移除录制视频与导出缓存路径 | 签名沙盒中的真实多帧渲染、时钟推进、休眠/唤醒与进程恢复；视觉显示仍需实机锁屏验收 | 缺能力/缺资源时保留诊断，不生成替代录制视频 |
 
 ## 本次修复的共同根因
 

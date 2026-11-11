@@ -3,7 +3,21 @@ import CoreGraphics
 import Foundation
 import Observation
 
-/// 一台显示器的稳定描述符。
+/// Fallback IDs live only while a UUID-less display remains continuously online.
+/// A reconnect receives a new identity even if CoreGraphics reuses its numeric ID.
+struct DisplaySessionIdentities {
+    private var fallbacks: [UInt32: String] = [:]
+    mutating func retainOnline(_ ids: Set<UInt32>) { fallbacks = fallbacks.filter { ids.contains($0.key) } }
+    mutating func identifier(for displayID: UInt32, stableUUID: String?) -> String {
+        if let stableUUID { fallbacks.removeValue(forKey: displayID); return stableUUID }
+        if let existing = fallbacks[displayID] { return existing }
+        let value = "session-display:" + UUID().uuidString
+        fallbacks[displayID] = value
+        return value
+    }
+}
+
+/// 一台显示器的描述符；session-display 前缀不允许持久化。
 struct DisplayDescriptor: Identifiable, Hashable, Sendable {
     /// 系统分配的稳定 UUID（`CGDisplayCreateUUIDFromDisplayID`），用于跨重启持久化。
     let id: String
@@ -106,6 +120,12 @@ final class DisplayRegistry {
     }
 
     /// 系统枚举：同时使用 CGDisplay 与 NSScreen，两者都失败时返回空数组（不崩溃）。
+    private static var sessionIdentities = DisplaySessionIdentities()
+
+    static func identifier(for displayID: CGDirectDisplayID) -> String {
+        sessionIdentities.identifier(for: displayID, stableUUID: uuidString(for: displayID))
+    }
+
     static func enumerate() -> [DisplayDescriptor] {
         var count: UInt32 = 0
         var ids = [CGDirectDisplayID](repeating: 0, count: 16)
@@ -122,9 +142,10 @@ final class DisplayRegistry {
             }
         }
 
+        sessionIdentities.retainOnline(Set(displayIDs))
         var descriptors: [DisplayDescriptor] = []
         for displayID in displayIDs {
-            guard let uuid = uuidString(for: displayID) else { continue }
+            let uuid = identifier(for: displayID)
             // On scaled Retina displays CGDisplayPixelsWide/High can report
             // logical mode dimensions. The active mode exposes backing pixels.
             let mode = CGDisplayCopyDisplayMode(displayID)

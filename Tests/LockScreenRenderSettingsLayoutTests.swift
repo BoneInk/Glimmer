@@ -2,25 +2,25 @@ import AppKit
 import SwiftUI
 
 @main @MainActor
-enum LockScreenExportSettingsLayoutTests {
+enum LockScreenRenderSettingsLayoutTests {
     struct Failure: Error { let message: String }
     static func main() async throws {
         _ = NSApplication.shared
         let coordinator = GWSettingsCoordinator(persistenceEnabled: false)
-        let output = URL(fileURLWithPath: ProcessInfo.processInfo.environment["GW_LOCK_EXPORT_UI_EVIDENCE"]
-            ?? FileManager.default.temporaryDirectory.appendingPathComponent("GW-Lock-Export-UI").path)
+        let output = URL(fileURLWithPath: ProcessInfo.processInfo.environment["GW_LOCK_RENDER_UI_EVIDENCE"]
+            ?? FileManager.default.temporaryDirectory.appendingPathComponent("GW-Lock-Render-UI").path)
         try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
         for sync in [true, false] {
             coordinator.updatePreferences {
-                $0.lockScreenExport = .init(syncWallpaperSettings: sync, resolution: .uhd2160, framesPerSecond: 60)
+                $0.lockScreenRender = .init(syncWallpaperSettings: sync, resolution: .uhd2160, framesPerSecond: 60)
             }
-            let view = LockScreenExportSettingsSection(coordinator: coordinator)
+            let view = LockScreenRenderSettingsSection(coordinator: coordinator)
                 .padding(20).frame(width: 700).environment(\.colorScheme, .dark)
                 .environment(\.windowGlassReduceTransparencyOverride, true)
                 .background(Color(nsColor: .windowBackgroundColor))
             let host = NSHostingView(rootView: view)
             let size = host.fittingSize
-            guard size.height > 200, size.height < 720 else { throw Failure(message: "unexpected settings layout size \(size)") }
+            guard size.height > 160, size.height < 720 else { throw Failure(message: "unexpected settings layout size \(size)") }
             host.frame = CGRect(origin: .zero, size: size)
             let window = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: false)
             window.contentView = host

@@ -77,6 +77,7 @@ final class DesktopPlaybackSession {
     private var webHostToken: UUID?
     private let authorStorage: AppStorage
     private var wallpaperFPS: Int
+    private var inputForwarder: DesktopWallpaperInputForwarder?
 
 
     var isPlaying: Bool {
@@ -183,7 +184,9 @@ final class DesktopPlaybackSession {
         do {
             let project = try WebWallpaperProjectDescriptor(projectURL: item.fileURL)
             let runtime = try WebWallpaperRuntime(projectURL: project.projectURL,
-                entryURL: project.entryURL, propertiesJSON: Data("{}".utf8))
+                entryURL: project.entryURL, propertiesJSON: Data("{}".utf8), allowHTTPS: item.webAllowHTTPS == true,
+                mutedPlayback: settings.isMuted, allowsAudioAutoplay: true)
+            try runtime.setMuted(settings.isMuted)
             try runtime.setFrameRateLimit(wallpaperFPS)
             webRuntime = runtime
             webHostToken = AuthorPropertyServices.shared.register(runtime, itemID: item.id, onConfigurationChange: { [weak self] in self?.webPropertyRevision += 1 })
@@ -196,6 +199,7 @@ final class DesktopPlaybackSession {
                     level: desktopLevel, displayID: display.displayID)
                 window.orderFrontRegardless()
                 self.window = window
+                installInputForwarder(window)
             }
             let revision = webPropertyRevision
             webSetupTask = Task { [weak self, weak runtime] in
@@ -238,6 +242,7 @@ final class DesktopPlaybackSession {
                 // after the actual image is ready, preserving the previous wallpaper.
                 window = DesktopWallpaperWindow(frame: display.frame, hostView: runtime.hostView,
                     level: desktopLevel, displayID: display.displayID)
+                if let window { installInputForwarder(window) }
             }
             sceneSetupTask = Task { [weak self, weak runtime] in
                 guard let self, let runtime else { throw CancellationError() }
@@ -283,11 +288,22 @@ final class DesktopPlaybackSession {
 
     // MARK: - 播放控制
 
+    private func installInputForwarder(_ window: NSWindow) {
+        inputForwarder = DesktopWallpaperInputForwarder(window: window) { [weak self] event, point in
+            guard let self, self.isPlaying else { return }
+            if let webRuntime { webRuntime.forwardMouseEvent(event, screenPoint: point) }
+            if event.type == .leftMouseDown || event.type == .leftMouseUp {
+                sceneRuntime?.setPointerButton(down: event.type == .leftMouseDown, screenPoint: point)
+            }
+        }
+    }
+
     func play() {
         startPlayback()
     }
 
     func pause() {
+        sceneRuntime?.setPointerButton(down: false, screenPoint: NSEvent.mouseLocation)
         sceneRuntime?.setPaused(true)
         webPaused = true
         webRuntime?.setPaused(true)
@@ -332,6 +348,12 @@ final class DesktopPlaybackSession {
         if let webRuntime {
             webPaused = newSettings.isPaused || !allowPlay
             webRuntime.setPaused(webPaused)
+            do {
+                try webRuntime.setMuted(newSettings.isMuted)
+                storedLastError = nil
+            } catch {
+                storedLastError = error.localizedDescription
+            }
             return
         }
         guard let player else { return }
@@ -360,6 +382,8 @@ final class DesktopPlaybackSession {
     }
 
     func tearDown() {
+        inputForwarder?.stop()
+        inputForwarder = nil
         sceneSetupTask?.cancel()
         sceneSetupTask = nil
         if let sceneHostToken { AuthorPropertyServices.shared.unregisterScene(itemID: item.id, token: sceneHostToken) }
@@ -667,7 +691,7 @@ final class DesktopPlaybackController {
         return lastError
     }
 
-    private func startSession(item: WallpaperItem, display: DisplayDescriptor, problems: inout [String]) {
+    private func startSession(item: WallpaperItem, display: DisplayDescriptor, problems: inout [String], settingsOverride: DisplayPlaybackSettings? = nil) {
         if item.isSceneWallpaper {
             invalidateSceneRequest(display.id)
             let ticket = UUID()
@@ -678,7 +702,7 @@ final class DesktopPlaybackController {
             }
             return
         }
-        let settings = effectiveSettings(for: item.id, displayID: display.id)
+        let settings = settingsOverride ?? effectiveSettings(for: item.id, displayID: display.id)
         let session = DesktopPlaybackSession(
             display: display,
             item: item,
@@ -957,6 +981,24 @@ final class DesktopPlaybackController {
             return previewPreference?.applying(to: base) ?? base
         }
         return store.videoPlaybackPreferences(for: itemID)?.applying(to: base) ?? base
+    }
+
+    /// Rebuild matching documents so CSP changes take effect immediately.
+    func updateWebHTTPS(_ enabled: Bool, itemID: UUID) {
+        guard var updated = store.item(withID: itemID) else { return }
+        updated.webAllowHTTPS = enabled
+        if writesToLibrary { store.mutate(id: itemID) { $0.webAllowHTTPS = enabled } }
+        let targets = sessions.filter { $0.value.item.id == itemID }.map(\.key)
+        var problems: [String] = []
+        for id in targets {
+            guard let session = sessions[id] else { continue }
+            // Rebuilding CSP is a preference change, so retain this host's pause
+            // intent and audio controls, including isolated preview-only settings.
+            startSession(item: updated, display: session.display, problems: &problems,
+                         settingsOverride: session.settings)
+        }
+        if writesToLibrary { store.flush() }
+        if !problems.isEmpty { lastError = problems.joined(separator: "；") }
     }
 
     /// Updates only sessions displaying this wallpaper. Nil returns to the display defaults.

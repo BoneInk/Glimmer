@@ -18,7 +18,7 @@ enum LiveLockScreenPreparationTests {
         let root = URL(fileURLWithPath: CommandLine.arguments[2]).resolvingSymlinksInPath().appendingPathComponent("GW-Live-Preparation-\(UUID())")
         try LockScreenOwnedFiles.makePrivateDirectory(root)
         defer { try? fm.removeItem(at: root) }
-        guard let profile = ProcessInfo.processInfo.environment["GW_SCENE_EXPORT_ASSET_PROFILE"] else { throw Failure(message: "Missing verified asset profile") }
+        guard let profile = ProcessInfo.processInfo.environment["GW_SCENE_ASSET_PROFILE"] else { throw Failure(message: "Missing verified asset profile") }
         let original = URL(fileURLWithPath: profile)
         let receipt = try Data(contentsOf: original.appendingPathComponent("SceneBackend/active-receipt.json"))
         let json = try JSONSerialization.jsonObject(with: receipt) as? [String: Any]
@@ -37,17 +37,17 @@ enum LiveLockScreenPreparationTests {
             let project = root.appendingPathComponent(kind + "-source")
             try fm.copyItem(at: fixtures.appendingPathComponent(kind + "/" + liveName + "/project"), to: project)
             let item = WallpaperItem(title: "Live integration \(kind)", filePath: project.appendingPathComponent("project.json").path,
-                                     contentKind: kind == "scene" ? .scene : .web)
+                                     contentKind: kind == "scene" ? .scene : .web, webAllowHTTPS: kind == "web")
             let storage = AppStorage(root: root.appendingPathComponent(kind))
             let shared = fixtures.appendingPathComponent("prepared-" + kind)
             let review = ExperimentalLockScreenEnvironment.review(storage: storage)
             let environment = ExperimentalLockScreenEnvironment(storeDirectory: review.storeDirectory, sharedDirectory: shared,
-                legacySharedDirectory: nil, extensionURL: nil, isReview: true)
-            var configuration = LockScreenExportConfiguration(settings: .init(allowWebHTTPS: kind == "web"),
+                extensionURL: nil, isReview: true)
+            var configuration = LockScreenRenderConfiguration(settings: .init(),
                 wallpaperWidth: 640, wallpaperHeight: 400, wallpaperFPS: 12)
             // Capture mutable settings in a main-actor box used by the production entry point.
             let preferences = Preferences(configuration)
-            let coordinator = ExperimentalLockScreenCoordinator(storage: storage, environment: environment, exportConfiguration: { _, _ in preferences.value })
+            let coordinator = ExperimentalLockScreenCoordinator(storage: storage, environment: environment, renderConfiguration: { _, _ in preferences.value })
             await coordinator.prepare(item: item)
             guard let first = coordinator.preparedAsset, let recipe = first.liveRecipe else { throw Failure(message: coordinator.lastError ?? "No live recipe") }
             try check(recipe.width <= 640 && recipe.height <= 400 && recipe.fps == 12, "\(kind) live settings respect desktop and source limits")
@@ -74,8 +74,8 @@ enum LiveLockScreenPreparationTests {
         print("RESULT live preparation, replacement, private staging and rollback checks passed; no actual system store changed")
     }
     @MainActor final class Preferences {
-        var value: LockScreenExportConfiguration
-        init(_ value: LockScreenExportConfiguration) { self.value = value }
+        var value: LockScreenRenderConfiguration
+        init(_ value: LockScreenRenderConfiguration) { self.value = value }
     }
     static func main() {
         NSApplication.shared.setActivationPolicy(.accessory)

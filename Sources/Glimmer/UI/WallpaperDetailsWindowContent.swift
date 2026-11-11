@@ -13,6 +13,7 @@ struct WallpaperDetailsWindowContent: View {
     var onItemRemoved: ((UUID) -> Void)? = nil
     var immersive = false
     var wallpaperFPS = 30
+    var initialAuthor: WorkshopAuthor? = nil
     @GlassState private var errorMessage: String?
     @GlassState private var errorToast: TransientToast?
     @GlassState private var applyState = DetailWallpaperApplyState()
@@ -42,7 +43,8 @@ struct WallpaperDetailsWindowContent: View {
                         sharedApplyState: applyState,
                         immersive: immersive,
                         topContentInset: 0,
-                        wallpaperFPS: wallpaperFPS
+                        wallpaperFPS: wallpaperFPS,
+                        initialAuthor: initialAuthor
                     )
                     .id(item.id)
                 } else {

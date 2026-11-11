@@ -39,6 +39,16 @@ enum MaximizedWindowPolicyTests {
                   "a full-screen window covers only its own display")
         try check(GWMaximizedWindowGeometry.coveredDisplays(frames: frames, windows: [visible, quartz]) == ["screen-a", "screen-b"],
                   "multiple covering windows pause their respective displays")
+        let mirrors = ["mirror-a": "screen-a", "mirror-b": "screen-a"]
+        try check(GWMaximizedWindowGeometry.coveredDisplays(frames: frames, windows: [visible], mirroredDisplaySources: mirrors)
+                  == ["screen-a", "mirror-a", "mirror-b"],
+                  "coverage pauses every mirror receiver without an independent NSScreen")
+        try check(GWMaximizedWindowGeometry.coveredDisplays(frames: frames, windows: [quartz], mirroredDisplaySources: mirrors)
+                  == ["screen-b"], "covering an extended display does not pause another mirror group")
+        try check(GWMaximizedWindowGeometry.coveredDisplays(frames: frames, windows: [], mirroredDisplaySources: mirrors).isEmpty,
+                  "uncovering the mirror source clears coverage for all receivers")
+        try check(GWMaximizedWindowGeometry.coveredDisplays(frames: frames, windows: [visible], mirroredDisplaySources: [:])
+                  == ["screen-a"], "leaving mirror mode restores independent coverage")
 
         let legacy = try JSONDecoder().decode(GWPolicySettings.self, from: Data("{}".utf8))
         try check(!legacy.pauseOnMaximizedWindow, "existing configurations keep the new policy disabled")
@@ -247,6 +257,11 @@ enum MaximizedWindowPolicyTests {
         let maximizedBounds = try actualBounds()
         try check(GWMaximizedWindowGeometry.covers(visible, window: maximizedBounds), "real maximized NSWindow matches WindowServer bounds")
         try check(GWMaximizedWindowDetector.hasMaximizedWindow(), "live detector recognizes a real maximized app window")
+        let coveredIDs = GWMaximizedWindowDetector.maximizedDisplayIDs()
+        let screenID = (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
+        for display in DisplayRegistry.enumerate() where CGDisplayMirrorsDisplay(display.displayID) == screenID {
+            try check(coveredIDs.contains(display.id), "live detector also pauses mirror receiver \(display.id)")
+        }
         if !AXIsProcessTrusted() {
             let controller = GWPolicyController(
                 settings: GWPolicySettings(pauseOnMaximizedWindow: true), persistenceEnabled: false,

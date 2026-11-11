@@ -1,15 +1,9 @@
 import AppKit
 import CoreGraphics
-import CoreVideo
 import CryptoKit
 import Foundation
 import IOSurface
 import Observation
-
-enum SceneManualFrameError: LocalizedError, Equatable, Sendable {
-    case notInManualMode
-    var errorDescription: String? { "Scene 未处于独立导出模式。" }
-}
 
 @MainActor @Observable
 final class UniversalSceneBackendRuntime {
@@ -36,17 +30,19 @@ final class UniversalSceneBackendRuntime {
 
     private let surface: SceneBackendMetalHostView
     private let followsHostScreen: Bool
-    private let manualFrameExport: Bool
     private let registry: SceneRuntimeAssetRegistry
     private let transportFactory: @MainActor (String) -> SceneBackendSessionTransport
     private let pool: SceneBackendServicePool
     private var context: Session?
     private var desiredPaused = false
     private var aspectFill = true
+    private var pointerLeftHeld = false
+    private var pendingPointerPress: NSPoint?
     /// The user's scene-music intent, default off; forwarded to the helper after every load.
     private(set) var soundEnabled = false
     private(set) var soundVolume: Double = 1
     private var frameLoop: Task<Void, Never>?
+    private var frameSleep: Task<Void, Error>?
     private var frameLoopID: UUID?
     private var frameLoopSuspensions = 0
     private var lastTick: ContinuousClock.Instant?
@@ -75,15 +71,13 @@ final class UniversalSceneBackendRuntime {
         var sequence: UInt64
     }
 
-    convenience init(projectURL: URL, screenResolution: SceneVector2? = nil, followsHostScreen: Bool = false,
-                     manualFrameExport: Bool = false) throws {
+    convenience init(projectURL: URL, screenResolution: SceneVector2? = nil, followsHostScreen: Bool = false) throws {
         try self.init(projectURL: projectURL, screenResolution: screenResolution,
-                      followsHostScreen: followsHostScreen, manualFrameExport: manualFrameExport, registry: .production,
+                      followsHostScreen: followsHostScreen, registry: .production,
                       pool: .shared, transportFactory: { SceneBackendXPCClient(serviceName: $0) })
     }
 
     init(projectURL: URL, screenResolution: SceneVector2?, followsHostScreen: Bool,
-         manualFrameExport: Bool = false,
          registry: SceneRuntimeAssetRegistry, pool: SceneBackendServicePool,
          transportFactory: @escaping @MainActor (String) -> SceneBackendSessionTransport) throws {
         let project = try AuthorPropertyProject.load(projectURL: projectURL,
@@ -93,7 +87,6 @@ final class UniversalSceneBackendRuntime {
         self.projectURL = project.projectURL
         self.screenResolution = screenResolution
         self.followsHostScreen = followsHostScreen
-        self.manualFrameExport = manualFrameExport
         self.registry = registry; self.pool = pool; self.transportFactory = transportFactory
         surface = try SceneBackendMetalHostView.make()
         if followsHostScreen {
@@ -345,6 +338,8 @@ final class UniversalSceneBackendRuntime {
         guard frameRateLimit != value else { return }
         frameRateLimit = value
         let revision = UUID(); fpsRevision = revision
+        // Wake an old low-FPS deadline without cancelling an in-flight render.
+        frameSleep?.cancel()
         fpsUpdateTask?.cancel()
         guard let session = context else { return }
         fpsUpdateTask = Task { [weak self, weak client = session.client] in
@@ -377,6 +372,7 @@ final class UniversalSceneBackendRuntime {
     func setPaused(_ value: Bool) {
         guard state != .disposed else { return }
         desiredPaused = value
+        if value { pointerLeftHeld = false; pendingPointerPress = nil }
         let revision = UUID(); pauseRevision = revision
         if value { stopFrameLoop(); lastTick = nil; if state == .ready { state = .paused } }
         guard let session = context else { return }
@@ -454,8 +450,11 @@ final class UniversalSceneBackendRuntime {
         stopFrameLoop(); screenReload?.cancel(); screenReload = nil
         fpsUpdateTask?.cancel(); aspectUpdateTask?.cancel(); frameGate.cancelWaiters()
         let session = context; context = nil
-        guard let session else { return }
-        Task { [pool] in
+        let retiringLoop = frameLoop
+        Task { [pool, surface] in
+            await retiringLoop?.value
+            surface.resetSourceTextureCache()
+            guard let session else { return }
             let reusable = await Self.closeAndConfirmExit(client: session.client,
                 sessionID: session.sessionID, generation: session.generation, helperPID: session.helperPID)
             pool.release(session.leaseIndex, reusable: reusable)
@@ -486,10 +485,12 @@ final class UniversalSceneBackendRuntime {
         session.sequence &+= 1
         guard session.sequence > 0, elapsed.isFinite, elapsed >= 0 else { throw UniversalSceneBackendError.invalidFrame }
         context = session
-        let cursor = cursorPosition(width: session.width, height: session.height)
+        let cursor = cursorPosition(width: session.width, height: session.height, screenPoint: pendingPointerPress)
+        let leftDown = !desiredPaused && cursor != nil && (pointerLeftHeld || pendingPointerPress != nil)
+        pendingPointerPress = nil
         let input = SceneFrameInput(sessionID: session.sessionID, generation: session.generation,
             sequence: session.sequence, elapsedSeconds: elapsed, cursorX: cursor?.0, cursorY: cursor?.1,
-            leftMouseDown: false)
+            leftMouseDown: leftDown)
         let (token, ioSurface) = try await session.client.render(input)
         guard context?.sessionID == session.sessionID, operationTicket == ticket,
               token.sessionID == session.sessionID, token.generation == session.generation,
@@ -502,63 +503,15 @@ final class UniversalSceneBackendRuntime {
         frameCount += 1
     }
 
-    /// Finite export mode: one frame per explicit timestamp and no automatic
-    /// loop. The helper clock advances from each supplied timestamp instead of
-    /// being frozen by `setPaused(true)`. The token is acknowledged only after
-    /// the display-equivalent GPU copy into the encoder pixel buffer completes.
-    func renderManualFrame(elapsed: Double, into pixelBuffer: CVPixelBuffer) async throws {
-        guard manualFrameExport else { throw SceneManualFrameError.notInManualMode }
-        try await frameGate.acquire()
-        defer { frameGate.release() }
-        try Task.checkCancellation(); try requireActive()
-        guard state == .ready || state == .paused, var session = context else {
-            throw UniversalSceneBackendError.notReady
-        }
-        session.sequence &+= 1
-        guard session.sequence > 0, elapsed.isFinite, elapsed >= 0 else {
-            throw UniversalSceneBackendError.invalidFrame
-        }
-        context = session
-        let ticket = operationTicket
-        let input = SceneFrameInput(sessionID: session.sessionID, generation: session.generation,
-            sequence: session.sequence, elapsedSeconds: elapsed,
-            cursorX: nil, cursorY: nil, leftMouseDown: false)
-        let (token, ioSurface) = try await session.client.render(input)
-        guard context?.sessionID == session.sessionID, operationTicket == ticket,
-              token.sessionID == session.sessionID, token.generation == session.generation,
-              token.sequence == session.sequence, token.width == session.width,
-              token.height == session.height else {
-            throw UniversalSceneBackendError.invalidFrame
-        }
-        try await surface.copyFrame(surface: ioSurface, token: token, into: pixelBuffer)
-        try await session.client.acknowledge(token)
-        guard context?.sessionID == session.sessionID, operationTicket == ticket else {
-            throw CancellationError()
-        }
-        frameCount += 1
-        activeRuntime = elapsed
-    }
-
-    /// Reads the helper's real Scene clock (no inferred/fake ACK) so the export
-    /// can prove its timestamps advanced Scene time.
-    func currentHelperSceneSeconds() async throws -> Double? {
-        try requireActive()
-        guard let session = context else { throw UniversalSceneBackendError.notReady }
-        let status = try await session.client.status()
-        guard status.sessionID == session.sessionID, status.generation == session.generation else {
-            throw UniversalSceneBackendError.interrupted
-        }
-        processStatus = status
-        return status.sceneSeconds
-    }
-
     private func startFrameLoop() {
-        guard frameLoop == nil, frameLoopSuspensions == 0, !desiredPaused, !manualFrameExport, state == .ready else { return }
+        guard frameLoop == nil, frameLoopSuspensions == 0, !desiredPaused, state == .ready else { return }
         let ticket = operationTicket
         let loopID = UUID(); frameLoopID = loopID
         if lastTick == nil { lastTick = .now }
         frameLoop = Task { [weak self] in
             guard let self else { return }
+            var schedule = SceneFrameSchedule(framesPerSecond: self.frameRateLimit, now: .now)
+            var scheduleRevision = self.fpsRevision
             defer {
                 if self.frameLoopID == loopID {
                     self.frameLoop = nil; self.frameLoopID = nil
@@ -569,9 +522,25 @@ final class UniversalSceneBackendRuntime {
                 }
             }
             while !Task.isCancelled, self.state == .ready, self.operationTicket == ticket, !self.desiredPaused {
-                let interval = Duration.seconds(1.0 / Double(self.frameRateLimit))
-                try? await Task.sleep(for: interval)
-                guard !Task.isCancelled, self.state == .ready, !self.desiredPaused else { break }
+                if scheduleRevision != self.fpsRevision {
+                    schedule = SceneFrameSchedule(framesPerSecond: self.frameRateLimit, now: .now)
+                    scheduleRevision = self.fpsRevision
+                }
+                let deadline = schedule.deadline
+                let sleeper = Task { try await ContinuousClock().sleep(until: deadline) }
+                self.frameSleep = sleeper
+                do { try await sleeper.value }
+                catch {
+                    self.frameSleep = nil
+                    if Task.isCancelled { break }
+                    // A frame-rate edit invalidates only the sleep, never the
+                    // render/copy/ACK chain. Re-anchor the new cadence above.
+                    continue
+                }
+                self.frameSleep = nil
+                guard !Task.isCancelled, self.state == .ready, self.operationTicket == ticket,
+                      !self.desiredPaused else { break }
+                guard scheduleRevision == self.fpsRevision else { continue }
                 let now = ContinuousClock.now
                 let delta = self.lastTick.map { instant -> Double in
                     let duration = instant.duration(to: now).components
@@ -581,11 +550,12 @@ final class UniversalSceneBackendRuntime {
                 do { try await self.requestFrame(elapsed: self.activeRuntime, ticket: ticket) }
                 catch is CancellationError { break }
                 catch { self.fail(error.localizedDescription); break }
+                schedule.advance(after: .now)
             }
         }
     }
 
-    private func stopFrameLoop() { frameLoop?.cancel(); lastTick = nil }
+    private func stopFrameLoop() { frameLoop?.cancel(); frameSleep?.cancel(); lastTick = nil }
     private func waitForFrameLoop() async {
         if let frameLoop {
             let id = frameLoopID
@@ -596,6 +566,7 @@ final class UniversalSceneBackendRuntime {
 
     private func retireCurrentSession() async {
         stopFrameLoop(); await waitForFrameLoop()
+        surface.resetSourceTextureCache()
         guard let session = context else { return }
         context = nil; processStatus = nil
         await session.client.close(sessionID: session.sessionID, generation: session.generation)
@@ -640,9 +611,16 @@ final class UniversalSceneBackendRuntime {
         }
     }
 
-    private func cursorPosition(width: Int, height: Int) -> (Float, Float)? {
+    func setPointerButton(down: Bool, screenPoint: NSPoint) {
+        guard !desiredPaused, state != .disposed else { return }
+        pointerLeftHeld = down
+        if down { pendingPointerPress = screenPoint }
+    }
+
+    private func cursorPosition(width: Int, height: Int, screenPoint: NSPoint? = nil) -> (Float, Float)? {
         guard let window = surface.window, !window.isMiniaturized else { return nil }
-        let point = surface.convert(window.mouseLocationOutsideOfEventStream, from: nil)
+        let windowPoint = screenPoint.map { window.convertPoint(fromScreen: $0) } ?? window.mouseLocationOutsideOfEventStream
+        let point = surface.convert(windowPoint, from: nil)
         guard surface.bounds.contains(point), surface.bounds.width > 0, surface.bounds.height > 0 else { return nil }
         return (Float(point.x / surface.bounds.width * CGFloat(width)),
                 Float(point.y / surface.bounds.height * CGFloat(height)))
@@ -702,7 +680,7 @@ final class UniversalSceneBackendRuntime {
     }
 
     isolated deinit {
-        frameLoop?.cancel(); fpsUpdateTask?.cancel(); aspectUpdateTask?.cancel(); screenReload?.cancel()
+        frameLoop?.cancel(); frameSleep?.cancel(); fpsUpdateTask?.cancel(); aspectUpdateTask?.cancel(); screenReload?.cancel()
         if let context {
             Task { @MainActor [pool] in
                 let reusable = await Self.closeAndConfirmExit(client: context.client,

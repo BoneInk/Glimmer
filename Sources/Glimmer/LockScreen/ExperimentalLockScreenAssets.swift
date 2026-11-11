@@ -17,7 +17,6 @@ struct ExperimentalLockScreenAsset: Codable, Identifiable, Sendable {
 struct ExperimentalLockScreenEnvironment: Sendable {
     let storeDirectory: URL
     let sharedDirectory: URL
-    let legacySharedDirectory: URL?
     let extensionURL: URL?
     let isReview: Bool
     var reviewReloadFailureMessage: String? = nil
@@ -27,8 +26,6 @@ struct ExperimentalLockScreenEnvironment: Sendable {
             .appendingPathComponent("Library/Application Support/com.apple.wallpaper/Store"),
              sharedDirectory: URL(fileURLWithPath: "/Users/Shared/\(GlimmerIdentity.lockScreenSharedFolderName)", isDirectory: true)
                 .appendingPathComponent(String(getuid()), isDirectory: true),
-             legacySharedDirectory: URL(fileURLWithPath: "/Users/Shared/\(GlimmerIdentity.legacyLockScreenSharedFolderName)", isDirectory: true)
-                .appendingPathComponent(String(getuid()), isDirectory: true),
              extensionURL: Bundle.main.builtInPlugInsURL?.appendingPathComponent("GlimmerWallpaperExtension.appex"),
              isReview: false)
     }
@@ -36,7 +33,6 @@ struct ExperimentalLockScreenEnvironment: Sendable {
     static func review(storage: AppStorage) -> Self {
         Self(storeDirectory: storage.root.resolvingSymlinksInPath().appendingPathComponent("LockScreenReview/Store"),
              sharedDirectory: storage.root.resolvingSymlinksInPath().appendingPathComponent("LockScreenReview/Shared"),
-             legacySharedDirectory: nil,
              extensionURL: nil, isReview: true)
     }
 }
@@ -96,20 +92,20 @@ actor ExperimentalLockScreenAssetPreparer {
         return destination
     }
 
-    func prepare(item: WallpaperItem, sourceURL: URL? = nil, root: URL,
-                 configuration: LockScreenExportConfiguration? = nil,
+    func prepare(item: WallpaperItem, root: URL,
+                 configuration: LockScreenRenderConfiguration? = nil,
                  progress: @escaping @Sendable (String) async -> Void = { _ in }) async throws -> ExperimentalLockScreenAsset {
         await progress("正在检查视频编码与时长")
-        let source = sourceURL ?? item.fileURL
+        let source = item.fileURL
         let probe = try await VideoProbe.probe(url: source)
         guard probe.isPlayable, probe.durationSeconds.isFinite, probe.durationSeconds > 0,
               probe.pixelWidth > 0, probe.pixelHeight > 0 else {
             throw ExperimentalLockScreenFailure(message: "视频时长或编码不可用，无法准备动态锁屏。")
         }
         guard let sourceFPS = probe.frameRate, sourceFPS.isFinite, sourceFPS > 0 else {
-            throw LockScreenExportConfigurationFailure(message: "无法读取视频原始帧率，已停止锁屏导出。")
+            throw LockScreenRenderConfigurationFailure(message: "无法读取视频原始帧率，无法准备视频锁屏。")
         }
-        let sourceSpecification = LockScreenExportSpecification(width: probe.pixelWidth,
+        let sourceSpecification = LockScreenRenderSpecification(width: probe.pixelWidth,
             height: probe.pixelHeight, framesPerSecond: sourceFPS)
         let specification = try (configuration ?? .init(settings: .original)).resolve(source: sourceSpecification)
         try Task.checkCancellation()

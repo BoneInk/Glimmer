@@ -33,6 +33,23 @@ enum WorkshopCreatorAvatarTransitionTests {
         transition.finish(flight.id)
         check(transition.authorID == nil && transition.source == nil && transition.flight == nil,
               "landing releases the overlay and reveals the destination avatar")
+        transition.beginReturn(authorID: "author", reduceMotion: false)
+        check(transition.source?.frame == target.frame && transition.flight == nil,
+              "Back captures the gallery avatar before the gallery unmounts")
+        transition.update([sourceKey: source])
+        let returning = transition.flight!
+        check(returning.frame(at: 0) == target.frame && returning.frame(at: 1) == source.frame,
+              "Back reverses the original path from the gallery header to the detail badge")
+        check(returning.frame(at: 0.5) == flight.frame(at: 0.5),
+              "both directions share the same geometric path")
+        transition.finish(flight.id)
+        check(transition.flight?.id == returning.id, "a forward completion cannot interrupt the return flight")
+        let relocatedDetail = WorkshopCreatorAvatarGeometry(frame: source.frame.offsetBy(dx: 20, dy: 0), image: image)
+        transition.update([sourceKey: relocatedDetail])
+        check(transition.flight == nil, "resizing during return cancels the stale detail destination")
+        transition.update([targetKey: target])
+        transition.beginReturn(authorID: "author", reduceMotion: true)
+        check(transition.authorID == nil, "Reduce Motion also skips the return flight")
         transition.update([sourceKey: source, targetKey: target])
         transition.begin(authorID: "author", reduceMotion: true)
         check(transition.flight == nil && transition.authorID == nil, "Reduce Motion reveals the author page directly")

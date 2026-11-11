@@ -67,10 +67,11 @@ enum LibraryPersistence {
         let data = try Data(contentsOf: url)
         if data.isEmpty { return LibraryDocument() }
         do {
-            let document = try makeDecoder().decode(LibraryDocument.self, from: data)
+            var document = try makeDecoder().decode(LibraryDocument.self, from: data)
             guard document.schemaVersion <= AppConstants.librarySchemaVersion else {
                 throw LibraryStoreError.unsupportedSchema(document.schemaVersion)
             }
+            removeSessionDisplays(from: &document)
             return document
         } catch let error as LibraryStoreError {
             throw error
@@ -84,11 +85,18 @@ enum LibraryPersistence {
     static func save(_ document: LibraryDocument, to url: URL) throws -> Int {
         var document = document
         document.updatedAt = Date()
+        removeSessionDisplays(from: &document)
         let data = try makeEncoder().encode(document)
         let directory = url.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try data.write(to: url, options: [.atomic])
         return data.count
+    }
+
+    /// Centralized for every save path (import, remove, migration and debounce).
+    private static func removeSessionDisplays(from document: inout LibraryDocument) {
+        document.assignments = document.assignments.filter { !$0.key.hasPrefix("session-display:") }
+        document.displaySettings = document.displaySettings.filter { !$0.key.hasPrefix("session-display:") }
     }
 
     /// 将损坏的配置移动到旁路文件，便于诊断（不直接删除用户数据）。

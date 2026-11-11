@@ -501,6 +501,8 @@ enum GlimmerStorageMigration {
                 }
                 let name = directoryEntryName(item)
                 if name == "." || name == ".." { continue }
+                // Retired lock-screen state and recordings are not migrated.
+                if prefix.isEmpty && name == "ExperimentalLockScreen" { continue }
                 visited += 1
                 guard visited <= maximumEntries else { throw MigrationError.unsafeSource("迁移目录项目过多") }
                 let relative = prefix.isEmpty ? name : prefix + "/" + name
@@ -587,6 +589,8 @@ enum GlimmerStorageMigration {
                 }
                 let name = directoryEntryName(item)
                 if name == "." || name == ".." { continue }
+                // Retired lock-screen state and recordings are not migrated.
+                if prefix.isEmpty && name == "ExperimentalLockScreen" { continue }
                 let relative = prefix.isEmpty ? name : prefix + "/" + name
                 var info = stat()
                 guard fstatat(sourceFD, name, &info, AT_SYMLINK_NOFOLLOW) == 0 else {
@@ -846,7 +850,7 @@ enum GlimmerStorageMigration {
     /// security-scoped bookmark bytes are copied byte-for-byte.
     private static func relocateManagedReferences(in stage: URL, legacyRoot: URL, newRoot: URL) throws {
         let referenceKeys: Set<String> = ["filePath", "originalPath", "videoURL", "posterURL"]
-        let documents = ["library.json", "ExperimentalLockScreen/state.json"]
+        let documents = ["library.json"]
         for relative in documents {
             let url = stage.appendingPathComponent(relative)
             var info = stat()

@@ -1,6 +1,5 @@
 import AppKit
 import CoreImage
-import CoreVideo
 import IOSurface
 @preconcurrency import Metal
 @preconcurrency import MetalKit
@@ -14,11 +13,16 @@ final class SceneBackendMetalHostView: MTKView, MTKViewDelegate {
     private var pooledTextures: [TextureKey: [MTLTexture]] = [:]
     private var activeTextureKey: TextureKey?
     private var textureAllocationCount = 0
-    private var redrawRevision: UInt64 = 0
     private var consumeGeneration: UInt64 = 0
     private var aspectFill = true
     private var screenTokens = [NSObjectProtocol]()
     private static let maximumPooledTextures = 2
+    private static let maximumSourceTextures = 3
+    private var sourceTextures: [UUID: SourceTextureMapping] = [:]
+    private var sourceTextureSlots: [UUID] = []
+    private var sourceTextureContext: SourceTextureContext?
+    private var sourceTextureAllocationCount = 0
+    var onDrawableForTesting: ((ObjectIdentifier) -> Void)?
 
     var retainedFrameSizeForTesting: CGSize? {
         retainedFrame.map { CGSize(width: $0.width, height: $0.height) }
@@ -30,6 +34,17 @@ final class SceneBackendMetalHostView: MTKView, MTKViewDelegate {
 
     var textureAllocationCountForTesting: Int {
         textureAllocationCount
+    }
+
+    var sourceTextureCountForTesting: Int { sourceTextures.count }
+    var sourceTextureAllocationCountForTesting: Int { sourceTextureAllocationCount }
+
+    /// Drop the helper's input mappings when its session is closed. Submitted
+    /// commands retain their mapping until completion, including during reload.
+    func resetSourceTextureCache() {
+        sourceTextures.removeAll(keepingCapacity: true)
+        sourceTextureSlots.removeAll(keepingCapacity: true)
+        sourceTextureContext = nil
     }
 
     static func make() throws -> SceneBackendMetalHostView {
@@ -69,7 +84,6 @@ final class SceneBackendMetalHostView: MTKView, MTKViewDelegate {
     func setAspectFill(_ value: Bool) {
         guard aspectFill != value else { return }
         aspectFill = value
-        redrawRevision &+= 1
         setNeedsDisplay(bounds)
     }
 
@@ -79,30 +93,21 @@ final class SceneBackendMetalHostView: MTKView, MTKViewDelegate {
               let command = commands.makeCommandBuffer(), let blit = command.makeBlitCommandEncoder() else {
             throw UniversalSceneBackendError.unavailable
         }
-        blit.copy(from: source, sourceSlice: 0, sourceLevel: 0,
+        blit.copy(from: source.texture, sourceSlice: 0, sourceLevel: 0,
                   sourceOrigin: .init(x: 0, y: 0, z: 0),
                   sourceSize: .init(width: token.width, height: token.height, depth: 1),
                   to: retained, destinationSlice: 0, destinationLevel: 0,
                   destinationOrigin: .init(x: 0, y: 0, z: 0))
         blit.endEncoding()
-        let drawable = currentDrawable
-        let presented = drawable != nil
-        if let drawable {
-            do {
-                try encode(texture: source, to: drawable.texture, command: command)
-            } catch {
-                recycle(retained)
-                throw error
-            }
-            command.present(drawable)
-        }
         let previous = retainedFrame.map(TextureTransfer.init)
-        let presentationRevision = redrawRevision
         consumeGeneration &+= 1
         let generation = consumeGeneration
         let transfer = TextureTransfer(retained)
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            command.addCompletedHandler { [weak self] completed in
+            command.addCompletedHandler { [weak self, source] completed in
+                // Cache eviction/reset must not release an IOSurface while the
+                // GPU is still reading it. Completion is the ownership boundary.
+                withExtendedLifetime(source) {}
                 Task { @MainActor in
                     guard completed.status == .completed else {
                         continuation.resume(throwing: UniversalSceneBackendError.invalidFrame); return
@@ -114,12 +119,12 @@ final class SceneBackendMetalHostView: MTKView, MTKViewDelegate {
                     }
                     self.retainedFrame = transfer.texture
                     if let previous { self.retire(previous.texture) }
-                    // A successful drawable presentation already showed this frame.
-                    // Headless preload and a concurrent fit/resize/style change
-                    // still need one retained-frame draw.
-                    if Self.requestsRetainedRedraw(
-                        presented: presented,
-                        revisionChanged: self.redrawRevision != presentationRevision) {
+                    if self.window != nil {
+                        // MTKView owns the drawable lifecycle. Acquiring/presenting
+                        // currentDrawable outside draw() leaves its cached drawable
+                        // alive and subsequent frames can present the first one again.
+                        self.draw()
+                    } else {
                         self.setNeedsDisplay(self.bounds)
                     }
                     continuation.resume()
@@ -129,41 +134,9 @@ final class SceneBackendMetalHostView: MTKView, MTKViewDelegate {
         }
     }
 
-    /// Export path: render the exact display image (same Y flip/aspect-fill
-    /// encode used by `draw`) directly into an AVAssetWriter pixel buffer.
-    /// Returning only after GPU completion lets the caller ACK the helper
-    /// token without a CPU readback or a premature token release.
-    func copyFrame(surface: IOSurface, token: SceneFrameToken,
-                   into pixelBuffer: CVPixelBuffer) async throws {
-        let source = try validatedSourceTexture(surface: surface, token: token)
-        guard CVPixelBufferGetPixelFormatType(pixelBuffer) == kCVPixelFormatType_32BGRA,
-              CVPixelBufferGetWidth(pixelBuffer) == token.width,
-              CVPixelBufferGetHeight(pixelBuffer) == token.height,
-              let ioSurface = CVPixelBufferGetIOSurface(pixelBuffer)?.takeUnretainedValue(),
-              IOSurfaceGetWidth(ioSurface) == token.width,
-              IOSurfaceGetHeight(ioSurface) == token.height,
-              let device else { throw UniversalSceneBackendError.invalidFrame }
-        let descriptor = MTLTextureDescriptor.texture2DDescriptor(
-            pixelFormat: .bgra8Unorm, width: token.width, height: token.height, mipmapped: false)
-        descriptor.storageMode = .shared
-        descriptor.usage = [.shaderRead, .shaderWrite, .renderTarget]
-        guard let destination = device.makeTexture(descriptor: descriptor, iosurface: ioSurface, plane: 0),
-              let command = commands.makeCommandBuffer() else {
-            throw UniversalSceneBackendError.unavailable
-        }
-        // Encoder buffers store row zero at the top. Unlike a drawable's Core Image
-        // coordinate system, this boundary must retain the original IOSurface row order.
-        try encode(texture: source, to: destination, command: command, forDrawable: false)
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            command.addCompletedHandler { completed in
-                if completed.status == .completed { continuation.resume() }
-                else { continuation.resume(throwing: UniversalSceneBackendError.invalidFrame) }
-            }
-            command.commit()
-        }
-    }
-
-    private func validatedSourceTexture(surface: IOSurface, token: SceneFrameToken) throws -> MTLTexture {
+    private func validatedSourceTexture(surface: IOSurface, token: SceneFrameToken) throws -> SourceTextureMapping {
+        // Validate the untrusted wire metadata on every frame, before even a
+        // cache hit. A reused slot is never permission to skip these checks.
         guard token.pixelFormat == "BGRA8Unorm", token.width > 0, token.height > 0,
               token.width <= 8192, token.height <= 8192,
               token.width * token.height <= 16_777_216,
@@ -172,10 +145,40 @@ final class SceneBackendMetalHostView: MTKView, MTKViewDelegate {
               IOSurfaceGetHeight(surface) == token.height,
               IOSurfaceGetBytesPerRow(surface) == token.bytesPerRow,
               IOSurfaceGetPixelFormat(surface) == 0x4247_5241,
-              let device,
-              let source = device.makeTexture(descriptor: Self.surfaceDescriptor(token), iosurface: surface, plane: 0)
+              let device
         else { throw UniversalSceneBackendError.invalidFrame }
-        return source
+
+        let context = SourceTextureContext(sessionID: token.sessionID, generation: token.generation,
+                                           width: token.width, height: token.height,
+                                           bytesPerRow: token.bytesPerRow, pixelFormat: token.pixelFormat)
+        if context != sourceTextureContext {
+            resetSourceTextureCache()
+            sourceTextureContext = context
+        }
+        let surfaceID = IOSurfaceGetID(surface)
+        if let cached = sourceTextures[token.slotID], cached.surfaceID == surfaceID {
+            touchSourceTextureSlot(token.slotID)
+            return cached
+        }
+        guard let texture = device.makeTexture(descriptor: Self.surfaceDescriptor(token),
+                                               iosurface: surface, plane: 0) else {
+            throw UniversalSceneBackendError.invalidFrame
+        }
+        let mapping = SourceTextureMapping(surface: surface, texture: texture)
+        sourceTextureAllocationCount += 1
+        if sourceTextures[token.slotID] == nil, sourceTextures.count == Self.maximumSourceTextures,
+           let oldest = sourceTextureSlots.first {
+            sourceTextures.removeValue(forKey: oldest)
+            sourceTextureSlots.removeFirst()
+        }
+        sourceTextures[token.slotID] = mapping
+        touchSourceTextureSlot(token.slotID)
+        return mapping
+    }
+
+    private func touchSourceTextureSlot(_ slotID: UUID) {
+        sourceTextureSlots.removeAll { $0 == slotID }
+        sourceTextureSlots.append(slotID)
     }
 
     private func makePooledTexture(width: Int, height: Int) -> MTLTexture? {
@@ -232,28 +235,26 @@ final class SceneBackendMetalHostView: MTKView, MTKViewDelegate {
               let command = commands.makeCommandBuffer() else { return }
         do {
             try encode(texture: retainedFrame, to: drawable.texture, command: command)
+            onDrawableForTesting?(ObjectIdentifier(drawable as AnyObject))
             command.present(drawable); command.commit()
         } catch { return }
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
-        redrawRevision &+= 1
         if retainedFrame != nil {
             setNeedsDisplay(bounds)
         }
     }
 
     private func encode(texture: MTLTexture, to destination: MTLTexture, command: MTLCommandBuffer,
-                        forDrawable: Bool = true, aspectFill: Bool? = nil) throws {
+                        aspectFill: Bool? = nil) throws {
         guard let raw = CIImage(mtlTexture: texture, options: [.colorSpace: Self.colorSpace]) else {
             throw UniversalSceneBackendError.invalidFrame
         }
         // Shared Metal frames have a top-left row origin. Core Image uses a
         // bottom-left image origin; correct it once at the display boundary.
-        let source = forDrawable
-            ? raw.transformed(by: CGAffineTransform(scaleX: 1, y: -1))
-                .transformed(by: CGAffineTransform(translationX: 0, y: raw.extent.height))
-            : raw
+        let source = raw.transformed(by: CGAffineTransform(scaleX: 1, y: -1))
+            .transformed(by: CGAffineTransform(translationX: 0, y: raw.extent.height))
         let bounds = CGRect(x: 0, y: 0, width: destination.width, height: destination.height)
         let fills = aspectFill ?? self.aspectFill
         let scale = fills
@@ -275,10 +276,6 @@ final class SceneBackendMetalHostView: MTKView, MTKViewDelegate {
         return descriptor
     }
 
-    static func requestsRetainedRedraw(presented: Bool, revisionChanged: Bool) -> Bool {
-        !presented || revisionChanged
-    }
-
     private func stopScreenObservation() {
         screenTokens.forEach(NotificationCenter.default.removeObserver); screenTokens = []
     }
@@ -292,6 +289,15 @@ final class SceneBackendMetalHostView: MTKView, MTKViewDelegate {
     private struct TextureKey: Hashable {
         let width: Int
         let height: Int
+    }
+
+    private struct SourceTextureContext: Equatable {
+        let sessionID: UUID
+        let generation: UInt64
+        let width: Int
+        let height: Int
+        let bytesPerRow: Int
+        let pixelFormat: String
     }
 }
 
@@ -356,7 +362,7 @@ extension SceneBackendMetalHostView {
             throw UniversalSceneBackendError.unavailable
         }
         try encode(texture: retainedFrame, to: destination, command: command,
-                   forDrawable: true, aspectFill: aspectFill)
+                   aspectFill: aspectFill)
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             command.addCompletedHandler { completed in
                 if completed.status == .completed { continuation.resume() }
@@ -376,4 +382,18 @@ extension SceneBackendMetalHostView {
 private final class TextureTransfer: @unchecked Sendable {
     let texture: MTLTexture
     init(_ texture: MTLTexture) { self.texture = texture }
+}
+
+private final class SourceTextureMapping: @unchecked Sendable {
+    // XPC may deliver a new Swift wrapper for the same kernel surface. Holding
+    // that surface alive makes its IOSurface ID a stable identity (no ID reuse).
+    let surface: IOSurface
+    let surfaceID: IOSurfaceID
+    let texture: MTLTexture
+
+    init(surface: IOSurface, texture: MTLTexture) {
+        self.surface = surface
+        surfaceID = IOSurfaceGetID(surface)
+        self.texture = texture
+    }
 }

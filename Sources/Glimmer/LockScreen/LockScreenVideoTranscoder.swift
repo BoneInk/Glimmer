@@ -2,17 +2,17 @@ import AVFoundation
 import Foundation
 
 enum LockScreenVideoTranscoder {
-    static func export(source: URL, to output: URL, specification: LockScreenExportSpecification) async throws {
+    static func export(source: URL, to output: URL, specification: LockScreenRenderSpecification) async throws {
         let asset = AVURLAsset(url: source)
         guard let track = try await asset.loadTracks(withMediaType: .video).first,
               let exporter = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetHighestQuality) else {
-            throw LockScreenExportConfigurationFailure(message: "系统无法创建锁屏视频转码任务。")
+            throw LockScreenRenderConfigurationFailure(message: "系统无法创建锁屏视频转码任务。")
         }
         let naturalSize = try await track.load(.naturalSize)
         let preferredTransform = try await track.load(.preferredTransform)
         let bounds = CGRect(origin: .zero, size: naturalSize).applying(preferredTransform)
         guard bounds.width > 0, bounds.height > 0 else {
-            throw LockScreenExportConfigurationFailure(message: "视频原始画面尺寸无效。")
+            throw LockScreenRenderConfigurationFailure(message: "视频原始画面尺寸无效。")
         }
         let transform = preferredTransform
             .concatenating(CGAffineTransform(translationX: -bounds.minX, y: -bounds.minY))

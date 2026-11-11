@@ -327,7 +327,7 @@ extension SceneMetalRenderer {
         let cursor = cursorSample.position
         // WE's scripts and `g_PointerState` see only clicks that land on the wallpaper.
         let leftDown = cursorSample.onDisplay
-            && clickReader.isDown(scripts.services?.clicks?.state ?? DesktopClickMonitor.State())
+            && (externalLeftMouseDown ?? clickReader.isDown(scripts.services?.clicks?.state ?? DesktopClickMonitor.State()))
         releaseFinishedEffectState()
         prelitImages.removeAll(keepingCapacity: true)
         spriteFrameVersions.removeAll(keepingCapacity: true)

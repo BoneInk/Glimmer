@@ -3,7 +3,7 @@ import AVFoundation
 import Foundation
 
 @main @MainActor
-enum LockScreenExportSettingsTests {
+enum LockScreenRenderSettingsTests {
     struct Failure: Error { let message: String }
     static var checks = 0
     static func check(_ condition: Bool, _ message: String) throws {
@@ -14,50 +14,53 @@ enum LockScreenExportSettingsTests {
     static func main() async throws {
         _ = NSApplication.shared
         let root = FileManager.default.temporaryDirectory.resolvingSymlinksInPath()
-            .appendingPathComponent("GW-Lock-Export-Settings-\(UUID())")
+            .appendingPathComponent("GW-Lock-Render-Settings-\(UUID())")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
-        let legacy = try JSONDecoder().decode(GWPreferencesSettings.self, from: Data("{}".utf8))
-        try check(legacy.lockScreenExport.projectPlayback == .live && !legacy.lockScreenExport.allowWebHTTPS, "older profiles default to live rendering with network disabled")
-        try check(legacy.lockScreenExport.syncWallpaperSettings, "older profiles acquire wallpaper synchronization")
-        let manual = GWLockScreenExportSettings(syncWallpaperSettings: false, resolution: .qhd1440, framesPerSecond: 60, projectPlayback: .recorded, allowWebHTTPS: true)
+        let obsolete = try JSONDecoder().decode(GWPreferencesSettings.self, from: Data(
+            #"{"lockScreenExport":{"projectPlayback":"recorded","allowWebHTTPS":true,"syncWallpaperSettings":false,"resolution":"uhd2160","framesPerSecond":120}}"#.utf8))
+        try check(obsolete.lockScreenRender == .init(), "retired recording preferences are ignored without migration")
+        let saved = String(decoding: try JSONEncoder().encode(obsolete), as: UTF8.self)
+        try check(!saved.contains("lockScreenExport") && !saved.contains("projectPlayback") && !saved.contains("allowWebHTTPS"),
+                  "saved settings contain no recording mode or legacy network defaults")
+        let manual = GWLockScreenRenderSettings(syncWallpaperSettings: false, resolution: .qhd1440, framesPerSecond: 60)
         let coordinator = GWSettingsCoordinator(paths: .init(root: root))
-        coordinator.updatePreferences { $0.lockScreenExport = manual }
+        coordinator.updatePreferences { $0.lockScreenRender = manual }
         let reload = GWSettingsCoordinator(paths: .init(root: root))
-        try check(reload.preferences.lockScreenExport == manual, "export configuration survives restarting settings")
+        try check(reload.preferences.lockScreenRender == manual, "render configuration survives restarting settings")
         let envelope = try GWJSONFileStore.makeEncoder().encode(reload.makeExportEnvelope())
         let imported = GWSettingsCoordinator(paths: .init(root: root.appendingPathComponent("Imported")))
         _ = try imported.commitImport(imported.validateImport(data: envelope))
-        try check(imported.preferences.lockScreenExport == manual, "configuration import/export includes lock-screen preferences")
-        imported.updatePreferences { $0.lockScreenExport.syncWallpaperSettings = true }
-        imported.updatePreferences { $0.lockScreenExport.syncWallpaperSettings = false }
-        try check(imported.preferences.lockScreenExport == manual, "synchronization preserves manual choices")
+        try check(imported.preferences.lockScreenRender == manual, "configuration import/export includes lock-screen preferences")
+        imported.updatePreferences { $0.lockScreenRender.syncWallpaperSettings = true }
+        imported.updatePreferences { $0.lockScreenRender.syncWallpaperSettings = false }
+        try check(imported.preferences.lockScreenRender == manual, "synchronization preserves manual choices")
         imported.resetPreferences()
-        try check(imported.preferences.lockScreenExport == .init(), "reset restores export defaults")
-        let invalid = try JSONDecoder().decode(GWLockScreenExportSettings.self,
+        try check(imported.preferences.lockScreenRender == .init(), "reset restores render defaults")
+        let invalid = try JSONDecoder().decode(GWLockScreenRenderSettings.self,
             from: Data(#"{"resolution":"future","framesPerSecond":999}"#.utf8))
         try check(invalid.resolution == .fullHD1080 && invalid.framesPerSecond == 240, "invalid saved choices normalize safely")
 
-        let fullHD = LockScreenExportSpecification(width: 1920, height: 1080, framesPerSecond: 24)
-        let tooHigh = LockScreenExportConfiguration(settings: .init(syncWallpaperSettings: false,
+        let fullHD = LockScreenRenderSpecification(width: 1920, height: 1080, framesPerSecond: 24)
+        let tooHigh = LockScreenRenderConfiguration(settings: .init(syncWallpaperSettings: false,
             resolution: .uhd2160, framesPerSecond: 120))
         try check(try tooHigh.resolve(source: fullHD) == fullHD, "4K/120 selection cannot upscale a 1080p/24 source")
-        let fractional = LockScreenExportSpecification(width: 2560, height: 1440, framesPerSecond: 24_000 / 1001)
-        let low = LockScreenExportConfiguration(settings: .init(syncWallpaperSettings: false,
+        let fractional = LockScreenRenderSpecification(width: 2560, height: 1440, framesPerSecond: 24_000 / 1001)
+        let low = LockScreenRenderConfiguration(settings: .init(syncWallpaperSettings: false,
             resolution: .hd720, framesPerSecond: 60))
         let fractionalOutput = try low.resolve(source: fractional)
         try check(fractionalOutput.width == 1280 && fractionalOutput.height == 720
             && fractionalOutput.framesPerSecond == fractional.framesPerSecond, "fractional source FPS is preserved without rounding up")
         let portrait = try low.resolve(source: .init(width: 1080, height: 1920, framesPerSecond: 30))
-        try check(portrait.width == 720 && portrait.height == 1280, "portrait export preserves orientation and aspect ratio")
+        try check(portrait.width == 720 && portrait.height == 1280, "portrait rendering preserves orientation and aspect ratio")
         let wide = try low.resolve(source: .init(width: 3440, height: 1440, framesPerSecond: 30))
         try check(wide.width <= 1280 && wide.height < 720 && wide.width % 2 == 0 && wide.height % 2 == 0,
-                  "ultrawide export fits the selected bounds with even dimensions")
-        let sync = LockScreenExportConfiguration(settings: .init(), wallpaperWidth: 2560, wallpaperHeight: 1440, wallpaperFPS: 25)
+                  "ultrawide rendering fits the selected bounds with even dimensions")
+        let sync = LockScreenRenderConfiguration(settings: .init(), wallpaperWidth: 2560, wallpaperHeight: 1440, wallpaperFPS: 25)
         let synchronized = try sync.resolve(source: .init(width: 3840, height: 2160, framesPerSecond: 60))
         try check(synchronized == .init(width: 2560, height: 1440, framesPerSecond: 25), "synchronization uses current desktop dimensions and FPS")
         try check(try sync.resolve(source: fullHD) == fullHD, "synchronization is also bounded by the source")
-        let huge = try LockScreenExportConfiguration(settings: .original).resolve(
+        let huge = try LockScreenRenderConfiguration(settings: .original).resolve(
             source: .init(width: 16_384, height: 8192, framesPerSecond: 120))
         try check(huge.width * huge.height <= 16_777_216 && huge.width <= 8192, "original resolution respects the renderer pixel budget")
 
@@ -67,10 +70,10 @@ enum LockScreenExportSettingsTests {
         try Data(#"{"type":"web","file":"index.html","general":{"orthogonalprojection":{"width":576,"height":324}}}"#.utf8).write(to: projectURL)
         try Data("<canvas></canvas>".utf8).write(to: webRoot.appendingPathComponent("index.html"))
         let web = WallpaperItem(title: "Web", filePath: projectURL.path, contentKind: .web)
-        let webContext = LockScreenExportConfiguration(settings: tooHigh.settings, wallpaperWidth: 3840, wallpaperHeight: 2160, wallpaperFPS: 30)
-        let webSource = try LockScreenExportSourceResolver.renderedSource(item: web, configuration: webContext)
+        let webContext = LockScreenRenderConfiguration(settings: tooHigh.settings, wallpaperWidth: 3840, wallpaperHeight: 2160, wallpaperFPS: 30)
+        let webSource = try LockScreenRenderSourceResolver.renderedSource(item: web, configuration: webContext)
         try check(try webContext.resolve(source: webSource) == .init(width: 576, height: 324, framesPerSecond: 30),
-                  "declared Web canvas and current runtime FPS cap bound export")
+                  "declared Web canvas and current runtime FPS cap bound rendering")
 
         let source = root.appendingPathComponent("source.mp4")
         try await SyntheticVideoWriter.write(to: source, options: .init(width: 1920, height: 1080, frameRate: 24, frameCount: 24))
@@ -86,10 +89,10 @@ enum LockScreenExportSettingsTests {
             && abs((reducedProbe.frameRate ?? 0) - 12) < 0.01, "real transcode produces 1280x720 at 12 FPS")
         let replaced = try await preparer.prepare(item: item, root: root.appendingPathComponent("Reduced"), configuration: tooHigh)
         try check(replaced.videoURL == reduced.videoURL && replaced.posterURL == reduced.posterURL && replaced.id != reduced.id,
-                  "changed export configuration replaces the same video and poster with a new revision")
+                  "changed render configuration replaces the same video and poster with a new revision")
         try check(try Data(contentsOf: replaced.videoURL) == sourceData, "replacement publishes the new validated video")
         do {
-            _ = try await preparer.prepare(item: item, sourceURL: root.appendingPathComponent("missing.mp4"),
+            _ = try await preparer.prepare(item: WallpaperItem(title: "Missing", filePath: root.appendingPathComponent("missing.mp4").path),
                 root: root.appendingPathComponent("Reduced"), configuration: tooHigh)
             throw Failure(message: "missing source unexpectedly exported")
         } catch is Failure { throw Failure(message: "missing source unexpectedly exported") }
@@ -124,6 +127,6 @@ enum LockScreenExportSettingsTests {
         try check(nativeProbe.pixelWidth == 3840 && nativeProbe.pixelHeight == 2160
             && abs((nativeProbe.frameRate ?? 0) - 12) < 0.01, "container conversion preserves actual 4K source resolution")
         try check(try Data(contentsOf: source) == sourceData, "export leaves the original video untouched")
-        print("RESULT \(checks) export settings and real-video checks passed; temporary files only")
+        print("RESULT \(checks) render settings and real-video checks passed; temporary files only")
     }
 }

@@ -1,6 +1,5 @@
 #if GW_UNIVERSAL_SCENE_BACKEND
 import AppKit
-import CoreVideo
 import Foundation
 import Observation
 
@@ -29,21 +28,18 @@ final class SceneWallpaperRuntime {
     var screenResolution: SceneVector2? { universal?.screenResolution ?? legacy?.screenResolution }
     var lastFrameInput: SceneScriptInputSnapshot { legacy?.lastFrameInput ?? .init() }
     var usesUniversalBackend: Bool { universal != nil }
-    var supportsManualFrameExport: Bool { universal != nil }
     var backendProcessStatus: SceneBackendProcessStatus? { universal?.processStatus }
     var sceneLoadTimingMilliseconds: [String: Double] { universal?.sceneLoadTimingMilliseconds ?? [:] }
     var shaderCacheRestoredFiles: Int { universal?.shaderCacheRestoredFiles ?? 0 }
 
     init(projectURL: URL, inspectionBarrier: (@Sendable () async throws -> Void)? = nil,
          workerExecutableURL: URL? = nil, screenResolution: SceneVector2? = nil,
-         followsHostScreen: Bool = false, engineAssets: SceneEngineAssetBundle? = nil,
-         manualFrameExport: Bool = false) throws {
+         followsHostScreen: Bool = false, engineAssets: SceneEngineAssetBundle? = nil) throws {
         self.projectURL = projectURL
         if SceneBackendAvailability.isInstalled, inspectionBarrier == nil,
            workerExecutableURL == nil, engineAssets == nil {
             universal = try UniversalSceneBackendRuntime(projectURL: projectURL,
-                screenResolution: screenResolution, followsHostScreen: followsHostScreen,
-                manualFrameExport: manualFrameExport)
+                screenResolution: screenResolution, followsHostScreen: followsHostScreen)
             legacy = nil
         } else {
             universal = nil
@@ -69,19 +65,12 @@ final class SceneWallpaperRuntime {
     /// Scene sound is a universal-backend capability; the legacy fallback has no audio player and
     /// never pretends it applied the intent.
     func setSceneSound(enabled: Bool, volume: Double) { universal?.setSceneSound(enabled: enabled, volume: volume) }
+    func setPointerButton(down: Bool, screenPoint: NSPoint) { universal?.setPointerButton(down: down, screenPoint: screenPoint) }
     func setFrameRateLimit(_ value: Int) throws {
         if let universal { try universal.setFrameRateLimit(value) }
         else { try legacy!.setFrameRateLimit(value) }
     }
     func setPaused(_ value: Bool) { universal?.setPaused(value); legacy?.setPaused(value) }
-    func renderManualFrame(elapsed: Double, into pixelBuffer: CVPixelBuffer) async throws {
-        guard let universal else { throw SceneManualFrameError.notInManualMode }
-        try await universal.renderManualFrame(elapsed: elapsed, into: pixelBuffer)
-    }
-    func currentHelperSceneSeconds() async throws -> Double? {
-        guard let universal else { throw SceneManualFrameError.notInManualMode }
-        return try await universal.currentHelperSceneSeconds()
-    }
     func dispose() { universal?.dispose(); legacy?.dispose() }
     static func physicalScreenResolution(displayID: UInt32) -> SceneVector2? {
         LegacySceneWallpaperRuntime.physicalScreenResolution(displayID: displayID)

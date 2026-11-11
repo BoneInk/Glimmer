@@ -40,19 +40,32 @@ final class WorkshopCreatorAvatarTransition {
     private(set) var authorID: String?
     private(set) var source: WorkshopCreatorAvatarGeometry?
     private(set) var flight: WorkshopCreatorAvatarFlight?
+    private(set) var destinationRole: WorkshopCreatorAvatarRole = .gallery
+    private(set) var navigationID: UUID?
     var progress: CGFloat = 0
     @ObservationIgnored private var geometries: [WorkshopCreatorAvatarKey: WorkshopCreatorAvatarGeometry] = [:]
 
     func begin(authorID: String, reduceMotion: Bool) {
+        begin(authorID: authorID, from: .detail, to: .gallery, reduceMotion: reduceMotion)
+    }
+
+    func beginReturn(authorID: String, reduceMotion: Bool) {
+        begin(authorID: authorID, from: .gallery, to: .detail, reduceMotion: reduceMotion)
+    }
+
+    private func begin(authorID: String, from role: WorkshopCreatorAvatarRole,
+                       to destinationRole: WorkshopCreatorAvatarRole, reduceMotion: Bool) {
         cancel()
-        guard !reduceMotion, let source = geometries[.init(authorID: authorID, role: .detail)], source.isValid else { return }
+        guard !reduceMotion, let source = geometries[.init(authorID: authorID, role: role)], source.isValid else { return }
+        self.destinationRole = destinationRole
+        navigationID = UUID()
         self.authorID = authorID; self.source = source
         prepareFlight()
     }
 
     func update(_ values: [WorkshopCreatorAvatarKey: WorkshopCreatorAvatarGeometry]) {
         geometries = values
-        if let flight, let latest = values[.init(authorID: flight.authorID, role: .gallery)],
+        if let flight, let latest = values[.init(authorID: flight.authorID, role: destinationRole)],
            latest.frame != flight.destination.frame {
             // Resizing cancels the flight instead of landing at a stale point.
             cancel(); return
@@ -62,12 +75,12 @@ final class WorkshopCreatorAvatarTransition {
 
     private func prepareFlight() {
         guard flight == nil, let authorID, let source,
-              let destination = geometries[.init(authorID: authorID, role: .gallery)], destination.isValid else { return }
+              let destination = geometries[.init(authorID: authorID, role: destinationRole)], destination.isValid else { return }
         flight = .init(authorID: authorID, source: source, destination: destination)
     }
 
     func finish(_ id: UUID) { if flight?.id == id { cancel() } }
-    func cancel() { authorID = nil; source = nil; flight = nil; progress = 0 }
+    func cancel() { navigationID = nil; authorID = nil; source = nil; flight = nil; progress = 0 }
 }
 
 private struct WorkshopCreatorAvatarGeometryKey: PreferenceKey {
@@ -139,6 +152,12 @@ struct WorkshopCreatorAvatarTransitionHost: ViewModifier {
                         transition.progress = 1
                     } completion: { transition.finish(id) }
                 }
+            }
+            .task(id: transition.navigationID) {
+                guard let id = transition.navigationID else { return }
+                try? await Task.sleep(for: .seconds(2))
+                guard !Task.isCancelled, transition.navigationID == id, transition.flight == nil else { return }
+                transition.cancel()
             }
             .onDisappear { transition.cancel() }
     }

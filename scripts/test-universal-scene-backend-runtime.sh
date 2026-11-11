@@ -12,6 +12,7 @@ struct SceneVector2: Codable, Equatable, Sendable {
 SWIFT
 swiftc -swift-version 6 -strict-concurrency=complete -warnings-as-errors -parse-as-library \
   "$ROOT/Sources/SceneBackendShared/SceneBackendTypes.swift" \
+  "$ROOT/Sources/SceneBackendShared/SceneFrameSchedule.swift" \
   "$ROOT/Sources/Glimmer/SteamContent/SteamContentTypes.swift" \
   "$ROOT/Sources/Glimmer/Support/SceneRuntimeAssetRegistry.swift" \
   "$ROOT/Sources/Glimmer/Support/AppConstants.swift" \

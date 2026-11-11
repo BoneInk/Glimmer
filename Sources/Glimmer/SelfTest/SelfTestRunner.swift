@@ -1573,7 +1573,7 @@ final class SelfTestRunner {
         playback.setRate(1.5, displayID: displayID)
         let exportURL = storage.root.appendingPathComponent("config-export.json")
         do {
-            let bytes = try settingsCoordinator.exportConfiguration(to: exportURL)
+            let bytes = try settingsCoordinator.renderConfiguration(to: exportURL)
             let validated = try settingsCoordinator.validateImport(contentsOf: exportURL)
             store.updateSettings(for: displayID) { current in
                 current.rate = 0.5

@@ -167,32 +167,32 @@ struct WorkshopSearchView: View {
                 }
             }
             WorkshopHorizontalFilterGroup(title: "主题") {
-                WorkshopChoiceChip(title: "不限", selected: coordinator.filters.genre == nil) {
-                    updateFilters { $0.genre = nil }
+                WorkshopChoiceChip(title: "不限", selected: coordinator.filters.genres.isEmpty) {
+                    updateFilters { $0.genres = [] }
                 }
                 ForEach(WorkshopGenre.allCases) { genre in
-                    WorkshopChoiceChip(title: genre.title, selected: coordinator.filters.genre == genre, tint: WorkshopChipPalette.genre(genre)) {
-                        updateFilters { $0.genre = genre }
+                    WorkshopChoiceChip(title: genre.title, selected: coordinator.filters.genres.contains(genre), tint: WorkshopChipPalette.genre(genre)) {
+                        updateFilters { $0.toggle(genre) }
                     }
                 }
             }
             WorkshopHorizontalFilterGroup(title: "分辨率") {
-                WorkshopChoiceChip(title: "不限", selected: coordinator.filters.resolution == nil) {
-                    updateFilters { $0.resolution = nil }
+                WorkshopChoiceChip(title: "不限", selected: coordinator.filters.resolutions.isEmpty) {
+                    updateFilters { $0.resolutions = [] }
                 }
                 ForEach(WorkshopResolution.allCases) { resolution in
-                    WorkshopChoiceChip(title: resolution.title, selected: coordinator.filters.resolution == resolution, tint: .cyan) {
-                        updateFilters { $0.resolution = resolution }
+                    WorkshopChoiceChip(title: resolution.title, selected: coordinator.filters.resolutions.contains(resolution), tint: .cyan) {
+                        updateFilters { $0.toggle(resolution) }
                     }
                 }
             }
             WorkshopHorizontalFilterGroup(title: "分级") {
-                WorkshopChoiceChip(title: "不限", selected: coordinator.filters.ageRating == nil) {
-                    updateFilters { $0.ageRating = nil }
+                WorkshopChoiceChip(title: "不限", selected: coordinator.filters.ageRatings.isEmpty) {
+                    updateFilters { $0.ageRatings = [] }
                 }
                 ForEach(WorkshopAgeRating.allCases) { rating in
-                    WorkshopChoiceChip(title: rating.title, selected: coordinator.filters.ageRating == rating, tint: WorkshopChipPalette.rating(rating)) {
-                        updateFilters { $0.ageRating = rating }
+                    WorkshopChoiceChip(title: rating.title, selected: coordinator.filters.ageRatings.contains(rating), tint: WorkshopChipPalette.rating(rating)) {
+                        updateFilters { $0.toggle(rating) }
                     }
                 }
             }
@@ -338,7 +338,7 @@ struct WorkshopSearchView: View {
 
     private var pagination: some View {
         HStack(spacing: 12) {
-            Text("第 \(coordinator.lastRequest.page) 页 · 本页 \(coordinator.results.count) 项 · 共 \(WorkshopMetric.compact(coordinator.totalCount)) 项")
+            Text("第 \(coordinator.lastRequest.page) 页 · 本页 \(coordinator.results.count) 项 · \(coordinator.isTotalCountExact ? "共" : "已找到") \(WorkshopMetric.compact(coordinator.totalCount)) 项")
                 .font(.caption).foregroundStyle(.secondary).monospacedDigit()
             Spacer()
             Button { coordinator.previousPage() } label: { Label("上一页", systemImage: "chevron.left") }

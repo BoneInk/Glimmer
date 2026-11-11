@@ -7,7 +7,7 @@ import ImageIO
 @MainActor
 enum LiveWallpaperPreparer {
     static func prepare(item: WallpaperItem, storage: AppStorage, root: URL,
-                        specification: LockScreenExportSpecification, allowHTTPS: Bool) async throws -> ExperimentalLockScreenAsset {
+                        specification: LockScreenRenderSpecification, allowHTTPS: Bool) async throws -> ExperimentalLockScreenAsset {
         let project = try AuthorPropertyProject.load(projectURL: item.fileURL, allowedRoot: item.fileURL.deletingLastPathComponent())
         let kind: LiveWallpaperRecipe.Kind = item.isSceneWallpaper ? .scene : .web
         var entry: String?, sceneValues = [String: String](), assets: URL?

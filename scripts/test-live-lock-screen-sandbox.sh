@@ -5,7 +5,7 @@ umask 077
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP="${GW_LIVE_LOCK_SCREEN_APP:-$ROOT/build/live-lock-screen/Glimmer.app}"
 OUT="${GW_LIVE_LOCK_SCREEN_EVIDENCE:-$ROOT/evidence/live-lock-screen}"
-PROFILE="${GW_SCENE_EXPORT_ASSET_PROFILE:-$HOME/Library/Application Support/Glimmer}"
+PROFILE="${GW_SCENE_ASSET_PROFILE:-$HOME/Library/Application Support/Glimmer}"
 [[ -d "$APP/Contents/PlugIns/GlimmerWallpaperExtension.appex/Contents/XPCServices" ]] || { echo 'Build the full live-lock-screen app first.' >&2; exit 1; }
 WORK="$(mktemp -d /tmp/glimmer-live-sandbox.XXXXXX)"
 FIXTURES=""
@@ -25,7 +25,7 @@ SWIFT
 swiftc -parse-as-library "$ROOT/Sources/Glimmer/Media/SyntheticVideoWriter.swift" "$WORK/MakeVideo.swift" -o "$WORK/make-video"
 "$WORK/make-video" "$WORK/video.mp4"
 FIXTURES="$(python3 "$ROOT/Tests/LiveLockScreenFixtureBuilder.py" "$PROFILE" "$WORK/video.mp4")"
-GW_CONFIGURED_EXPORT_APP="$APP" GW_LIVE_PROBE_FIXTURES="$FIXTURES" GW_SCENE_EXPORT_ASSET_PROFILE="$PROFILE" \
+GW_LIVE_PREPARATION_APP="$APP" GW_LIVE_PROBE_FIXTURES="$FIXTURES" GW_SCENE_ASSET_PROFILE="$PROFILE" \
   bash "$ROOT/scripts/test-live-lock-screen-preparation.sh" > "$OUT/preparation.log" 2>&1
 for kind in scene web web-network prepared-scene prepared-web; do
   python3 "$ROOT/Tests/NativeWallpaperRecoveryDriver.py" \

@@ -58,22 +58,62 @@ actor FilterSearchFixture {
             check(items.filter { $0.name.contains("tags") }.compactMap(\.value) == ["Video", age.rawValue]
                   && !items.contains { $0.name.contains("adult") || $0.name.contains("agecheck") }, "age tag never bypasses content settings")
         }
+        var multiple = WorkshopSearchFilters(resolution: .size1920X1080, genre: .nature, ageRating: .everyone)
+        multiple.toggle(WorkshopResolution.size2560X1440)
+        multiple.toggle(WorkshopGenre.landscape)
+        multiple.toggle(WorkshopAgeRating.questionable)
+        check(multiple.resolutions == [.size1920X1080, .size2560X1440] && multiple.genres == [.landscape, .nature]
+              && multiple.ageRatings == [.everyone, .questionable], "all three groups retain multiple choices")
+        check(multiple.activeCount == 6 && multiple.activeLabels.count == 3, "all selected values are counted with one summary per group")
+        let combinations = multiple.searchBranches
+        check(combinations.count == 8 && combinations.allSatisfy { $0.requiredTags.count == 3 }, "OR within groups expands to valid AND queries across groups")
+        check(Set(combinations.map(\.requiredTags)).count == 8 && combinations == multiple.searchBranches, "every combination is unique and deterministic")
+        multiple.toggle(WorkshopGenre.landscape)
+        check(multiple.genres == [.nature] && multiple.resolutions.count == 2 && multiple.ageRatings.count == 2, "clicking a selected chip removes only that value")
+        multiple.genres = []
+        check(multiple.genres.isEmpty && multiple.resolutions.count == 2 && multiple.ageRatings.count == 2, "unlimited clears only its own group")
+        multiple.genres = [.landscape, .nature]
+
+        let service = WorkshopService(searchPageLoader: { request in
+            let firstGenre = request.filters.genre == .landscape
+            let ids: [String]
+            if request.page == 1 { ids = firstGenre ? ["shared", "landscape"] : ["shared"] }
+            else { ids = firstGenre ? ["landscape2"] : ["nature2"] }
+            return WorkshopSearchPage(request: request, totalCount: firstGenre ? 3 : 2, totalPages: 2,
+                results: ids.map { .init(publishedFileID: $0, title: $0, shortDescription: "", tags: request.filters.requiredTags + ["Video"], childCount: 0, isCollection: false) },
+                discoveryPath: "overlapping-genre-fixture")
+        })
+        var groupedRequest = WorkshopSearchRequest(pageSize: 2)
+        groupedRequest.filters.genres = [.nature, .landscape]
+        let groupedFirst = try await service.search(groupedRequest)
+        groupedRequest.page = 2
+        let groupedSecond = try await service.search(groupedRequest)
+        check(groupedFirst.results.map(\.id) == ["shared", "landscape"] && groupedSecond.results.map(\.id) == ["nature2", "landscape2"], "overlap and short server pages do not reorder or repeat logical pages")
+        check(!groupedSecond.hasNextPage && groupedSecond.totalCount == 4 && groupedSecond.totalPages == 2, "a full final union page exposes the exact deduplicated count without a phantom next page")
+        let repeatedSecond = try await service.search(groupedRequest)
+        check(repeatedSecond == groupedSecond, "retry reuses the same stable union page")
+        groupedRequest.page = 1
+        let refreshedFirst = try await service.search(groupedRequest)
+        check(refreshedFirst.results == groupedFirst.results, "refresh returns the same deterministic first page")
+        filters = multiple
         filters.type = .web
         check(tags(WorkshopSearchRequest(filters: filters)).first == "Web", "Web filter selected before coordinator pagination and retry regression")
-        func result(_ id: String, _ type: String) -> WorkshopSearchResult {
-            .init(publishedFileID: id, title: id, shortDescription: "", tags: [type], childCount: 0, isCollection: false)
-        }
         var unionRequest = WorkshopSearchRequest(page: 1, pageSize: 2, filters: .init(types: [.video, .web], genre: .nature))
-        let branches = [[result("v1", "Video"), result("v2", "Video"), result("v3", "Video")],
-                        [result("w1", "Web"), result("w2", "Web"), result("w3", "Web")]]
-        let unionFirst = WorkshopSearchUnion.merge(request: unionRequest, branches: branches, reportedTotal: 6, discoveryPaths: ["video", "web"])
+        let typeService = WorkshopService(searchPageLoader: { request in
+            let type = request.filters.type == .video ? "Video" : "Web"
+            let prefix = type == "Video" ? "v" : "w"
+            let results = (1...3).map { index in
+                WorkshopSearchResult(publishedFileID: "\(prefix)\(index)", title: type, shortDescription: "", tags: [type], childCount: 0, isCollection: false)
+            }
+            return WorkshopSearchPage(request: request, totalCount: 3, totalPages: 1, results: results, discoveryPath: "type-fixture")
+        })
+        let unionFirst = try await typeService.search(unionRequest)
         unionRequest.page = 2
-        let unionSecond = WorkshopSearchUnion.merge(request: unionRequest, branches: branches, reportedTotal: 6, discoveryPaths: ["video", "web"])
+        let unionSecond = try await typeService.search(unionRequest)
         check(unionFirst.results.map(\.id) == ["v1", "w1"] && unionSecond.results.map(\.id) == ["v2", "w2"], "multi-type pagination is stable and does not repeat the first logical page")
-        check(unionSecond.totalCount == 6 && unionSecond.totalPages == 3 && unionSecond.hasNextPage, "multi-type union exposes truthful summed partition pagination")
-        let duplicateBranches = [[result("same", "Video"), result("v2", "Video")], [result("same", "Web"), result("w2", "Web")]]
-        let deduplicated = WorkshopSearchUnion.merge(request: WorkshopSearchRequest(pageSize: 4, filters: .init(types: [.video, .web])), branches: duplicateBranches, reportedTotal: 4, discoveryPaths: [])
-        check(deduplicated.results.map(\.id) == ["same", "v2", "w2"] && deduplicated.totalCount == 3 && deduplicated.totalPages == 1, "cross-type duplicate IDs are removed from cards and pagination totals")
+        unionRequest.page = 3
+        let unionLast = try await typeService.search(unionRequest)
+        check(unionLast.totalCount == 6 && unionLast.totalPages == 3 && !unionLast.hasNextPage && unionLast.isTotalCountExact, "multi-type union ends with exact partition pagination")
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         let fixture = FilterSearchFixture()

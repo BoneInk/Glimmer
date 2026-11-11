@@ -19,26 +19,12 @@ swiftc -swift-version 6 -strict-concurrency=complete -target arm64-apple-macos26
  "$ROOT/Sources/Glimmer/AuthorProperties/AuthorPropertyProject.swift" \
  "$ROOT/Sources/Glimmer/AuthorProperties/AuthorPropertyOverrideStore.swift" \
  "$ROOT/Sources/Glimmer/Support/WebWallpaperLockScreenConfiguration.swift" \
- "$ROOT/Sources/Glimmer/WebWallpaper/WebWallpaperConfiguration.swift" \
- "$ROOT/Sources/Glimmer/WebWallpaper/WebWallpaperResourceSnapshot.swift" \
- "$ROOT/Sources/Glimmer/WebWallpaper/WebWallpaperResourceBridge.swift" \
- "$ROOT/Sources/Glimmer/WebWallpaper/WebWallpaperBridge.swift" \
- "$ROOT/Sources/Glimmer/WebWallpaper/LocalWallpaperSchemeHandler.swift" \
- "$ROOT/Sources/Glimmer/WebWallpaper/LocalWallpaperFileResource.swift" \
- "$ROOT/Sources/Glimmer/WebWallpaper/WebMVP9Container.swift" \
- "$ROOT/Sources/Glimmer/WebWallpaper/WebWallpaperMediaResolver.swift" \
- "$ROOT/Sources/Glimmer/WebWallpaper/WebWallpaperRuntime.swift" \
- "$ROOT/Sources/Glimmer/WebWallpaper/WebWallpaperFramePacer.swift" \
- "$ROOT/Sources/Glimmer/WebWallpaper/WebWallpaperMutedMediaPolicy.swift" \
  "$ROOT/Sources/Glimmer/LockScreen/LockScreenStoreTransaction.swift" \
- "$ROOT/Sources/Glimmer/LockScreen/LockScreenExportSettings.swift" \
+ "$ROOT/Sources/Glimmer/LockScreen/LockScreenRenderSettings.swift" \
  "$ROOT/Sources/Glimmer/LockScreen/LockScreenVideoTranscoder.swift" \
- "$ROOT/Sources/Glimmer/LockScreen/LockScreenExportSourceResolver.swift" \
+ "$ROOT/Sources/Glimmer/LockScreen/LockScreenRenderSourceResolver.swift" \
  "$ROOT/Sources/Glimmer/LockScreen/ExperimentalLockScreenAssets.swift" \
  "$ROOT/Sources/Glimmer/LockScreen/LiveWallpaperBundle.swift" \
- "$ROOT/Sources/Glimmer/LockScreen/WebWallpaperLockScreenExporter.swift" \
- "$ROOT/Sources/Glimmer/LockScreen/RenderedLockScreenVideoCache.swift" \
- "$ROOT/Sources/Glimmer/LockScreen/WebWallpaperLockScreenVideoCache.swift" \
  "$ROOT/Sources/Glimmer/LockScreen/ExperimentalLockScreenCoordinator.swift" \
  "$ROOT/Sources/Glimmer/LockScreen/LiveWallpaperPreparer.swift" \
  "$ROOT/Tests/ExperimentalLockScreenTests.swift" -o "$WORK/probe"

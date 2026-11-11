@@ -2,7 +2,7 @@
 set -euo pipefail
 umask 077
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUILT_APP="${GW_CONFIGURED_EXPORT_APP:-$ROOT/build/live-lock-screen/Glimmer.app}"
+BUILT_APP="${GW_LIVE_PREPARATION_APP:-$ROOT/build/live-lock-screen/Glimmer.app}"
 [[ -f "$BUILT_APP/Contents/MacOS/Glimmer" ]] || { echo 'Build the full app before running this live preparation test.' >&2; exit 1; }
 WORK="$(mktemp -d /tmp/glimmer-live-preparation.XXXXXX)"
 trap 'rm -rf "$WORK"' EXIT
@@ -16,8 +16,5 @@ swiftc -swift-version 6 -strict-concurrency=complete -whole-module-optimization 
  "${SOURCES[@]}" "$ROOT/Tests/LiveLockScreenPreparationTests.swift" -o "$APP/Contents/MacOS/Glimmer"
 source "$ROOT/scripts/signing-identity.sh"
 codesign --force --sign "$(gw_resolve_signing_identity)" --timestamp=none "$APP"
-ASSET_PROFILE="${GW_SCENE_EXPORT_ASSET_PROFILE:-$HOME/Library/Application Support/Glimmer}"
-if [[ ! -f "$ASSET_PROFILE/SceneBackend/active-receipt.json" && -z "${GW_SCENE_EXPORT_ASSET_PROFILE:-}" ]]; then
- ASSET_PROFILE="$HOME/Library/Application Support/GlassWallpaper"
-fi
-GW_SCENE_EXPORT_ASSET_PROFILE="$ASSET_PROFILE" "$APP/Contents/MacOS/Glimmer" "${GW_LIVE_PROBE_FIXTURES:?Set GW_LIVE_PROBE_FIXTURES to the isolated sandbox fixture root}" "$ROOT/build"
+ASSET_PROFILE="${GW_SCENE_ASSET_PROFILE:-$HOME/Library/Application Support/Glimmer}"
+GW_SCENE_ASSET_PROFILE="$ASSET_PROFILE" "$APP/Contents/MacOS/Glimmer" "${GW_LIVE_PROBE_FIXTURES:?Set GW_LIVE_PROBE_FIXTURES to the isolated sandbox fixture root}" "$ROOT/build"

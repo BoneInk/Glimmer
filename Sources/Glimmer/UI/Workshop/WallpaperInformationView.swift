@@ -71,12 +71,13 @@ private struct WallpaperInformationPresentation: ViewModifier {
 struct WallpaperCreatorBadge: View {
     let item: WallpaperItem
     let detail: WorkshopItemDetail?
+    var initialAuthor: WorkshopAuthor? = nil
     var fallbackName = "本地壁纸"
     @GlassState private var presented = false
     @Environment(\.workshopCreatorNavigation) private var openCreator
 
     var body: some View {
-        let author = detail?.authors.first
+        let author = detail?.authors.first ?? initialAuthor
         Button {
             if let author, let openCreator { openCreator(author) }
             else { presented = true }

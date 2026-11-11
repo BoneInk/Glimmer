@@ -1,7 +1,7 @@
 import Foundation
 
 /// Resolves the same validated scalar defaults and saved per-item overrides used by
-/// Web preview. Native resource grants stay closed during recording.
+/// Web preview. Native resource grants stay closed in the live lock-screen extension.
 enum WebWallpaperLockScreenConfiguration {
     static func payload(item: WallpaperItem, storage: AppStorage) async throws -> Data {
         let project = try AuthorPropertyProject.load(projectURL: item.fileURL,

@@ -149,20 +149,8 @@ struct GlimmerStorageMigrationTests {
         try check(item["securityScopedBookmark"] as? String == bookmark,
                   "opaque security-scoped bookmark bytes are preserved verbatim")
 
-        let migratedState = try json(target.appendingPathComponent("ExperimentalLockScreen/state.json"))
-        let asset = try checkDictionary(migratedState["asset"], "lock-screen asset")
-        let videoString = try checkString(asset["videoURL"], "videoURL")
-        let posterString = try checkString(asset["posterURL"], "posterURL")
-        let videoURL = try checkURL(videoString, "videoURL")
-        let posterURL = try checkURL(posterString, "posterURL")
-        try check(videoURL.isFileURL && posterURL.isFileURL,
-                  "lock-screen Codable URLs remain file URLs")
-        try check(videoURL.path.hasPrefix(target.path + "/"),
-                  "lock-screen video URL is inside the new root")
-        try check(posterURL.path.hasPrefix(target.path + "/"),
-                  "lock-screen poster URL is inside the new root")
-        try check(fm.fileExists(atPath: videoURL.path) && fm.fileExists(atPath: posterURL.path),
-                  "rebased lock-screen assets remain usable")
+        try check(!fm.fileExists(atPath: target.appendingPathComponent("ExperimentalLockScreen").path),
+                  "obsolete lock-screen state and recordings are not migrated")
 
         let targetFramework = target.appendingPathComponent(
             "Workshop/SteamCMD/Frameworks/Breakpad.framework")
