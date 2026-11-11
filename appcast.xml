@@ -4,26 +4,29 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <channel>
         <title>Glimmer</title>
         <item>
-            <title>0.18.3</title>
-            <pubDate>Mon, 02 Nov 2026 20:32:48 +0800</pubDate>
-            <sparkle:version>49</sparkle:version>
-            <sparkle:shortVersionString>0.18.3</sparkle:shortVersionString>
+            <title>0.18.4</title>
+            <pubDate>Wed, 11 Nov 2026 09:38:32 +0800</pubDate>
+            <sparkle:version>50</sparkle:version>
+            <sparkle:shortVersionString>0.18.4</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description sparkle:format="plain-text"><![CDATA[Glimmer 0.18.3（构建 49）
+            <description sparkle:format="plain-text"><![CDATA[Glimmer 0.18.4（构建 50）
 
-修复锁屏首次启动时回退到默认动态锁屏的问题。
+- 修复单独设置显示器锁屏后，系统因配置格式错误回退默认壁纸的问题。点击「锁屏」会自动启用 Glimmer，无需再到系统设置手动选择；其他显示器保留原有选择。
+- 新增锁屏画质设置，可同步桌面设置，或独立选择原始、720p、1080p、1440p、4K 和帧率。Scene / Web 锁屏继续实时渲染，移除旧的录制导出与缓存流程。
+- 优化 Scene 帧调度及 IOSurface 纹理复用，改善桌面鼠标交互与暂停后的输入清理。
+- 优化 Web 动画帧率控制、暂停恢复、声音控制和桌面鼠标交互。每个 Web 壁纸可独立启用 HTTPS，选择会随素材保存，并用于预览、桌面和实时锁屏。
+- 创意工坊支持主题、分辨率和年龄分级多选，修复组合筛选的分页、去重和结果计数。
+- 修复镜像显示器的最大化暂停判断，并改善临时显示器标识与旧配置的兼容处理。
 
-动态锁屏按系统设定的显示器休眠时长保亮，解锁或主动睡眠时释放，不修改电源设置。
+需要 Apple Silicon Mac 和 macOS 26 或更高版本。
 
-应用运行时，在系统重新注册终止扩展后自动恢复连接。采用事件监听，无周期性检测，保留当前壁纸选择。
-
-Apple Silicon，macOS 26 或更高版本。Apple Development 签名，未经过 Apple 公证。实验性锁屏接口的系统兼容性限制仍适用。
+本版本沿用 Apple Development 签名，尚未经过 Apple 公证。原生锁屏依赖未公开系统接口，不支持开机或 FileVault 登录界面的动态壁纸。
 ]]></description>
-            <enclosure url="https://github.com/BoneInk/Glimmer/releases/download/v0.18.3/Glimmer-0.18.3-arm64.zip" length="344436427" type="application/octet-stream" sparkle:edSignature="WdH4+81gWArddG/H9VhpGYvNCA3Pk0bqtTMWS5tGSpELcpgG7Dta7GjbhQuutSEVKrrC5m7yFGLIap3VtaXKAA=="></enclosure>
+            <enclosure url="https://github.com/BoneInk/Glimmer/releases/download/v0.18.4/Glimmer-0.18.4-arm64.zip" length="344375678" type="application/octet-stream" sparkle:edSignature="Mr5gGyC8Rhh9ml2621n3/CipFfkySO3hycYiJQ4Z3R/GrZHvxVssgCLsPonpuNEDYxGXIo+AkBiaZAL986kaCQ=="></enclosure>
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: b57y+MHYXDD1phZxxW54RaEXnhhXANQWhAZbb2iU9hVx/sbD+nYsRehsCZHbUG66E6VFuTYiMBo2m3YIng4zDQ==
-length: 1726
+edSignature: pknoC+KfpG25KyqHkQcanxlvocCzDCC6fwun/OHkcGT0ku1kB3Ctp4qOkLvJEx2bqyruSHu3lutvHsSuCx7PAQ==
+length: 2419
 -->
